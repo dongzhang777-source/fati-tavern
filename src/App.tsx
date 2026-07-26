@@ -66,10 +66,54 @@ function Gallery() {
       {showSettings && <SettingsPanel />}
 
       {characters.length === 0 ? (
-        <div className="empty-gallery">
-          <p className="empty-icon">🃏</p>
-          <p>拖一张 SillyTavern 角色卡到这里</p>
-          <p className="sub">支持 .png（v3 tEXt）和 .json（v1/v2）格式</p>
+        <div className="landing">
+          <div className="landing-hero">
+            <h2>拖一张角色卡进来，和 TA 聊天</h2>
+            <p className="landing-sub">支持 SillyTavern 角色卡（PNG / JSON），3 分钟开始你的第一次对话</p>
+          </div>
+
+          <div className="landing-demo">
+            <div className="demo-step">
+              <span className="demo-num">1</span>
+              <div className="demo-card">
+                <span className="demo-icon">🃏</span>
+                <span>拖入角色卡</span>
+              </div>
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-step">
+              <span className="demo-num">2</span>
+              <div className="demo-card">
+                <span className="demo-icon">⚙️</span>
+                <span>填入你的 API Key</span>
+              </div>
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-step">
+              <span className="demo-num">3</span>
+              <div className="demo-card">
+                <span className="demo-icon">💬</span>
+                <span>开始聊天</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-cta">
+            <button className="btn-import big" onClick={() => fileRef.current?.click()}>导入第一张角色卡</button>
+            <span className="landing-hint">或者直接把文件拖到页面任意位置</span>
+          </div>
+
+          <div className="landing-privacy">
+            <h3>🔒 隐私承诺</h3>
+            <p>你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有数据上传，没有账号注册。关闭页面后一切仍在本地。</p>
+          </div>
+
+          <div className="landing-features">
+            <div className="feature"><span>🚀</span><p>纯前端 PWA<br/>零安装零注册</p></div>
+            <div className="feature"><span>🔑</span><p>BYOK 自带 Key<br/>DeepSeek / Kimi / OpenAI / 本地</p></div>
+            <div className="feature"><span>📱</span><p>手机电脑通用<br/>可添加到主屏幕</p></div>
+            <div className="feature"><span>💾</span><p>数据存本地<br/>刷新不丢失</p></div>
+          </div>
         </div>
       ) : (
         <div className="card-grid">
