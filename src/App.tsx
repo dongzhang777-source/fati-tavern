@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard } from './lib/tavern'
-import { PRESETS } from './lib/api'
+import { PRESETS, fetchModels } from './lib/api'
 import './App.css'
 
 export default function App() {
@@ -141,14 +141,10 @@ function ChatView() {
           </div>
           <ul className="conv-list">
             {conversations.map((c) => (
-              <li
-                key={c.id}
-                className={c.id === activeConvId ? 'active' : ''}
-                onClick={() => selectConversation(c.id)}
-              >
-                <span>{c.title}</span>
-                <button className="btn-del" onClick={(e) => { e.stopPropagation(); deleteConversation(c.id) }}>×</button>
-              </li>
+              <ConvItem key={c.id} conv={c} active={c.id === activeConvId}
+                onSelect={() => selectConversation(c.id)}
+                onDelete={() => deleteConversation(c.id)}
+              />
             ))}
           </ul>
         </aside>
@@ -199,9 +195,68 @@ function ChatView() {
   )
 }
 
+// ─── 会话列表项（双击编辑标题）───────────────────────
+function ConvItem({ conv, active, onSelect, onDelete }: {
+  conv: { id: string; title: string }
+  active: boolean
+  onSelect: () => void
+  onDelete: () => void
+}) {
+  const { renameConversation } = useStore()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(conv.title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
+
+  function commit() {
+    const t = draft.trim()
+    if (t && t !== conv.title) renameConversation(conv.id, t)
+    setEditing(false)
+  }
+
+  return (
+    <li className={active ? 'active' : ''} onClick={onSelect} onDoubleClick={() => { setDraft(conv.title); setEditing(true) }}>
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="conv-rename"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <span>{conv.title}</span>
+      )}
+      <button className="btn-del" onClick={(e) => { e.stopPropagation(); onDelete() }}>×</button>
+    </li>
+  )
+}
+
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
   const { endpoint, setEndpoint } = useStore()
+  const [models, setModels] = useState<string[]>([])
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
+  const [statusMsg, setStatusMsg] = useState('')
+
+  async function handleTest() {
+    setStatus('loading')
+    setStatusMsg('')
+    try {
+      const list = await fetchModels(endpoint)
+      setModels(list)
+      setStatus('ok')
+      setStatusMsg(`连接成功，发现 ${list.length} 个模型`)
+    } catch (e: any) {
+      setStatus('error')
+      setStatusMsg(e.message || '连接失败')
+      setModels([])
+    }
+  }
+
   return (
     <div className="settings-panel">
       <h3>API 端点</h3>
@@ -210,7 +265,7 @@ function SettingsPanel() {
           <button
             key={p.label}
             className={endpoint.baseUrl === p.baseUrl ? 'active' : ''}
-            onClick={() => setEndpoint({ baseUrl: p.baseUrl, model: p.hint || endpoint.model })}
+            onClick={() => { setEndpoint({ baseUrl: p.baseUrl, model: p.hint || endpoint.model }); setModels([]); setStatus('idle') }}
           >{p.label}</button>
         ))}
       </div>
@@ -221,8 +276,21 @@ function SettingsPanel() {
         <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
       </label>
       <label>模型
-        <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
+        {models.length > 0 ? (
+          <select value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })}>
+            {!models.includes(endpoint.model) && <option value={endpoint.model}>{endpoint.model}</option>}
+            {models.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        ) : (
+          <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
+        )}
       </label>
+      <div className="test-row">
+        <button className="btn-test" onClick={handleTest} disabled={status === 'loading' || !endpoint.baseUrl}>
+          {status === 'loading' ? '测试中…' : '测试连接 & 拉取模型'}
+        </button>
+        {statusMsg && <span className={`test-msg ${status}`}>{statusMsg}</span>}
+      </div>
     </div>
   )
 }

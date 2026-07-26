@@ -46,6 +46,7 @@ interface State {
   newConversation: () => Promise<void>
   selectConversation: (id: string) => void
   deleteConversation: (id: string) => Promise<void>
+  renameConversation: (id: string, title: string) => void
 
   sendMessage: (text: string) => void
   stopStreaming: () => void
@@ -148,6 +149,14 @@ export const useStore = create<State>((set, get) => ({
         activeConvId: s.activeConvId === id ? (convs[0]?.id ?? null) : s.activeConvId,
       }
     })
+  },
+
+  renameConversation: (id, title) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) => c.id === id ? { ...c, title } : c),
+    }))
+    const conv = get().conversations.find((c) => c.id === id)
+    if (conv) dbPutConversation(conv)
   },
 
   sendMessage: (text) => {
