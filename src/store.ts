@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { TavernCard } from './lib/tavern'
 import { cardToSystemPrompt, bookToContext } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
+import { streamChat } from './lib/api'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -205,31 +206,28 @@ export const useStore = create<State>((set, get) => ({
       conversations: s.conversations.map((c) => c.id === conv.id ? { ...c, messages: withAssistant } : c),
     }))
 
-    import('./lib/api').then(({ streamChat }) => {
-      streamChat(endpoint, apiMessages, abortController!.signal, (delta) => {
-        assistantText += delta
-        set((s) => ({
-          conversations: s.conversations.map((c) => {
-            if (c.id !== conv.id) return c
-            const msgs = [...c.messages]
-            msgs[msgs.length - 1] = { role: 'assistant', content: assistantText, ts: Date.now() }
-            return { ...c, messages: msgs }
-          }),
-        }))
-      }).then(() => {
+    streamChat(endpoint, apiMessages, abortController!.signal, (delta) => {
+      assistantText += delta
+      set((s) => ({
+        conversations: s.conversations.map((c) => {
+          if (c.id !== conv.id) return c
+          const msgs = [...c.messages]
+          msgs[msgs.length - 1] = { role: 'assistant', content: assistantText, ts: Date.now() }
+          return { ...c, messages: msgs }
+        }),
+      }))
+    }).then(() => {
+      set({ streaming: false })
+      const final = get().conversations.find((c) => c.id === conv.id)
+      if (final) dbPutConversation(final)
+    }).catch((e: any) => {
+      if (e.name === 'AbortError') {
         set({ streaming: false })
-        // 持久化
-        const final = get().conversations.find((c) => c.id === conv.id)
-        if (final) dbPutConversation(final)
-      }).catch((e: any) => {
-        if (e.name === 'AbortError') {
-          set({ streaming: false })
-        } else {
-          set({ streaming: false, error: e.message || '请求失败' })
-        }
-        const final = get().conversations.find((c) => c.id === conv.id)
-        if (final) dbPutConversation(final)
-      })
+      } else {
+        set({ streaming: false, error: e.message || '请求失败' })
+      }
+      const final = get().conversations.find((c) => c.id === conv.id)
+      if (final) dbPutConversation(final)
     })
   },
 
