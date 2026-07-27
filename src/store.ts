@@ -7,7 +7,7 @@ import { trimMessages } from './lib/context'
 import { detectSelfHarm } from './lib/safety'
 import { detectLang, saveLang, t, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
-import { WEBLLM_BASE, streamWebLLM, webllmSupported, iosModelBlocked, setWebllmProgressHandler } from './lib/webllm'
+import { WEBLLM_BASE, streamWebLLM, webllmSupported, iosModelBlocked, setWebllmProgressHandler, isMobile, WEBLLM_MODEL_MOBILE } from './lib/webllm'
 import { BUILTIN_CHARACTERS } from './lib/catalog'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
@@ -78,7 +78,9 @@ function loadEndpoint(): EndpointConfig {
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
   // 默认 WebLLM 浏览器本地推理，零配置即可聊天
-  return { baseUrl: 'webllm', apiKey: 'not-needed', model: 'Qwen3-1.7B-q4f16_1-MLC' }
+  // 移动端默认 0.6B 避免内存不足闪退
+  const model = isMobile() ? WEBLLM_MODEL_MOBILE : 'Qwen3-1.7B-q4f16_1-MLC'
+  return { baseUrl: 'webllm', apiKey: 'not-needed', model }
 }
 
 function saveEndpoint(cfg: EndpointConfig) {

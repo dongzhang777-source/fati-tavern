@@ -1,16 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     react(),
+    // 开发时自动签发 HTTPS，WebGPU 要求安全上下文（手机真机调试必须）
+    basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
         // web-llm 推理引擎分包（数 MB）只被免 Key 体验档懒加载，
         // 不进 SW 预缓存，避免所有访客后台白下载
         globIgnores: ['**/webllm-*.js'],
+        // 移动端 dynamic import 大分包时 SW 拦截会导致
+        // "importing a module script failed"，排除运行时缓存策略
+        runtimeCaching: [
+          {
+            urlPattern: /webllm-.*\.js$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'webllm-chunks',
+              expiration: { maxEntries: 3, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'FATI Tavern',

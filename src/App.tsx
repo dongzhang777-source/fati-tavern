@@ -519,6 +519,8 @@ function WebLLMModelPicker({
       const raw = String(e?.message || e)
       if (/adapter|WebGPU|gpu/i.test(raw)) {
         setErr(t(lang, 'webllm.unsupported'))
+      } else if (/import.*module|module.*script|Failed to load/i.test(raw)) {
+        setErr('加载引擎失败（网络中断）。请检查网络后重试，已下载部分会自动续传。')
       } else if (/network|fetch|Failed to load|timeout|abort/i.test(raw)) {
         setErr('下载中断（网络问题）。模型较大，请保持网络通畅后重试，已下载部分会续传。')
       } else {
