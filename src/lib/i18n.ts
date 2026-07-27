@@ -107,6 +107,18 @@ const dict: Record<string, { zh: string; en: string }> = {
   'import.unsupported': { zh: '仅支持 .png / .json 文件', en: 'Only .png / .json files are supported' },
   'import.fail': { zh: '导入失败', en: 'Import failed' },
 
+  // ── 模型选择器 ──
+  'model.picker': { zh: '选择模型', en: 'Select model' },
+  'model.recommended': { zh: '编辑推荐', en: 'Editor\'s pick' },
+  'model.tier.phone': { zh: '手机/低配', en: 'Phone / low-end' },
+  'model.tier.balanced': { zh: '中等性能', en: 'Balanced' },
+  'model.tier.high': { zh: '高性能', en: 'High performance' },
+  'model.usage.phone': { zh: '适合低端手机或旧设备，响应快、耗资源少', en: 'Best for low-end phones or older devices — fast and light' },
+  'model.usage.balanced': { zh: '适合普通手机或平板，质量与速度均衡', en: 'Good for most phones or tablets — balanced quality and speed' },
+  'model.usage.high': { zh: '适合高性能设备或桌面端，效果最好但更慢更占资源', en: 'Best for powerful devices or desktop — top quality but slower and heavier' },
+  'model.other': { zh: '其他模型', en: 'Other models' },
+  'model.selectDefault': { zh: '根据你的设备自动选择', en: 'Auto-select based on your device' },
+
   // ── WebLLM 免 Key 体验档 ──
   'webllm.preset': { zh: '免 Key 体验', en: 'Free demo (local)' },
   'webllm.hint': {

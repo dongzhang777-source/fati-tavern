@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
-import { PRESETS, fetchModels, testChat } from './lib/api'
+import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
+import { webllmSupported, loadWebLLMModel, loadedWebLLMModel } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import type { StoredCharacter } from './lib/db'
 import './App.css'
@@ -477,6 +478,129 @@ function ConvItem({ conv, active, onSelect, onDelete }: {
   )
 }
 
+// ─── WebLLM 模型选择器（卡片式 + 下载/启用按钮，借 fati ModelPicker 思路） ───────────
+function WebLLMModelPicker({
+  endpoint,
+  setEndpoint,
+  lang,
+}: {
+  endpoint: EndpointConfig
+  setEndpoint: (cfg: Partial<EndpointConfig>) => void
+  lang: Lang
+}) {
+  const [downloading, setDownloading] = useState<string | null>(null)
+  const [progress, setProgress] = useState<{ pct: number; text: string }>({ pct: 0, text: '' })
+  const [err, setErr] = useState<string | null>(null)
+
+  const supported = webllmSupported()
+  const loaded = endpoint.model && loadedWebLLMModel() === endpoint.model
+  const deviceTier = (() => {
+    if (typeof navigator === 'undefined') return 'balanced' as const
+    const cores = navigator.hardwareConcurrency || 4
+    const mem = (navigator as any).deviceMemory || 4
+    if (cores <= 2 || mem <= 2) return 'phone' as const
+    if (cores >= 8 && mem >= 8) return 'high' as const
+    return 'balanced' as const
+  })()
+
+  async function handleDownload(modelId: string) {
+    if (downloading) return
+    setErr(null)
+    setDownloading(modelId)
+    setProgress({ pct: 0, text: '' })
+    try {
+      // 设置端点 + 选模型，下载/加载完成后即是当前模型
+      setEndpoint({ model: modelId, baseUrl: 'webllm', apiKey: 'not-needed' })
+      await loadWebLLMModel(modelId, (pct, text) => {
+        setProgress({ pct, text })
+      })
+      setProgress({ pct: 100, text: '' })
+    } catch (e: any) {
+      const raw = String(e?.message || e)
+      if (/adapter|WebGPU|gpu/i.test(raw)) {
+        setErr(t(lang, 'webllm.unsupported'))
+      } else if (/network|fetch|Failed to load|timeout|abort/i.test(raw)) {
+        setErr('下载中断（网络问题）。模型较大，请保持网络通畅后重试，已下载部分会续传。')
+      } else {
+        setErr(raw.slice(0, 200) || '下载失败')
+      }
+    } finally {
+      setDownloading(null)
+    }
+  }
+
+  return (
+    <div className="webllm-picker">
+      <p className="cors-hint">{t(lang, 'webllm.hint')}</p>
+
+      {!supported && (
+        <div className="webllm-unsupported">{t(lang, 'webllm.unsupported')}</div>
+      )}
+
+      {/* 当前已启用模型 */}
+      {endpoint.model && (
+        <div className="webllm-current">
+          当前模型：<strong>{endpoint.model}</strong>
+          {loaded && <span className="webllm-ready"> · 已就绪</span>}
+        </div>
+      )}
+
+      {/* 三档卡片 */}
+      <div className="webllm-cards">
+        {WEBLLM_MODELS.map((m) => {
+          const isDownloading = downloading === m.id
+          const isLoaded = loadedWebLLMModel() === m.id
+          const isCurrent = endpoint.model === m.id
+          return (
+            <div
+              key={m.id}
+              className={`webllm-card tier-${m.tier} ${isCurrent ? 'active' : ''}`}
+            >
+              <div className="webllm-card-head">
+                <span className="webllm-card-name">{m.name}</span>
+                {m.recommended && <span className="webllm-badge">推荐</span>}
+                {m.tier === deviceTier && <span className="webllm-badge auto">适合你的设备</span>}
+              </div>
+              <div className="webllm-card-desc">{m.desc}</div>
+              <div className="webllm-card-size">约 {m.sizeMB} MB</div>
+
+              {isDownloading ? (
+                <div className="webllm-progress-wrap">
+                  <div className="webllm-progress-bar">
+                    <div className="webllm-progress-fill" style={{ width: `${progress.pct}%` }} />
+                  </div>
+                  <div className="webllm-progress-text">
+                    {progress.pct < 100 ? `下载中 ${progress.pct}%` : '加载中…'}
+                    {progress.text && <span className="webllm-progress-detail"> · {progress.text}</span>}
+                  </div>
+                </div>
+              ) : isLoaded ? (
+                <button
+                  className="webllm-btn ready"
+                  onClick={() => setEndpoint({ model: m.id })}
+                  disabled={isCurrent}
+                >
+                  {isCurrent ? '✓ 使用中' : '使用'}
+                </button>
+              ) : (
+                <button
+                  className="webllm-btn"
+                  onClick={() => handleDownload(m.id)}
+                  disabled={!supported}
+                >
+                  下载并启用
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {err && <div className="webllm-err">{err}</div>}
+    </div>
+  )
+}
+
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
   const { endpoint, setEndpoint, lang, setLang } = useStore()
@@ -490,6 +614,19 @@ function SettingsPanel() {
   const isLocalEndpoint = /localhost|127\.0\.0\.1/.test(endpoint.baseUrl)
   // WebLLM 免 Key 档：浏览器本地推理，无 HTTP 端点可测
   const isWebllm = endpoint.baseUrl === 'webllm'
+
+  // 检测当前设备/性能档位
+  const deviceTier = (() => {
+    if (typeof navigator === 'undefined') return 'balanced' as const
+    const cores = navigator.hardwareConcurrency || 4
+    const mem = (navigator as any).deviceMemory || 4
+    if (cores <= 2 || mem <= 2) return 'phone' as const
+    if (cores >= 8 && mem >= 8) return 'high' as const
+    return 'balanced' as const
+  })()
+
+  // 选中的档
+  const selectedTier = endpoint.tier || deviceTier
 
   async function handleTest() {
     setStatus('loading')
@@ -542,7 +679,11 @@ function SettingsPanel() {
         ))}
       </div>
       {isWebllm ? (
-        <p className="cors-hint">{t(lang, 'webllm.hint')}</p>
+        <WebLLMModelPicker
+          endpoint={endpoint}
+          setEndpoint={setEndpoint}
+          lang={lang}
+        />
       ) : (
         <>
           <label>{t(lang, 'settings.baseUrl')}
@@ -554,16 +695,41 @@ function SettingsPanel() {
           <label>{t(lang, 'settings.apiKey')}
             <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
           </label>
-          <label>{t(lang, 'settings.model')}
-            {models.length > 0 ? (
-              <select value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })}>
-                {!models.includes(endpoint.model) && <option value={endpoint.model}>{endpoint.model}</option>}
-                {models.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            ) : (
-              <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
-            )}
+          {/* ── 模型选择下拉 ── */}
+          <label>{t(lang, 'model.picker')}
+            <select
+              value={endpoint.model}
+              onChange={(e) => setEndpoint({ model: e.target.value })}
+            >
+              {/* 自动推荐 */}
+              <optgroup label={t(lang, 'model.selectDefault')}>
+                <option value={TIER_DEFAULT_MODEL[selectedTier]}>
+                  {t(lang, `model.tier.${selectedTier}`)} — {TIER_DEFAULT_MODEL[selectedTier]}
+                </option>
+              </optgroup>
+              {/* 编辑推荐 */}
+              <optgroup label={t(lang, 'model.recommended')}>
+                {EDIT_RECOMMENDED.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </optgroup>
+              {/* 其他模型 */}
+              {models.length > 0 && models.filter((m) => !EDIT_RECOMMENDED.includes(m)).length > 0 && (
+                <optgroup label={t(lang, 'model.other')}>
+                  {models.filter((m) => !EDIT_RECOMMENDED.includes(m)).map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </optgroup>
+              )}
+              {!models.includes(endpoint.model) && endpoint.model && (
+                <option value={endpoint.model}>{endpoint.model}</option>
+              )}
+            </select>
           </label>
+          {/* 档位说明 */}
+          <p className="tier-hint">
+            {t(lang, `model.usage.${selectedTier}`)}
+          </p>
         </>
       )}
       <div className="param-row">

@@ -78,7 +78,7 @@ function loadEndpoint(): EndpointConfig {
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
   // 默认 WebLLM 浏览器本地推理，零配置即可聊天
-  return { baseUrl: 'webllm', apiKey: '', model: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC' }
+  return { baseUrl: 'webllm', apiKey: 'not-needed', model: 'Qwen3-1.7B-q4f16_1-MLC' }
 }
 
 function saveEndpoint(cfg: EndpointConfig) {
@@ -308,8 +308,8 @@ export const useStore = create<State>((set, get) => ({
 
     // WebLLM 档：注册进度回调（模型下载/编译状态展示）并分流
     if (useWebllm) {
-      setWebllmProgressHandler((progressText, done) => {
-        set({ webllmProgress: done ? null : progressText })
+      setWebllmProgressHandler((p) => {
+        set({ webllmProgress: p.done ? null : p.text })
       })
     }
     const doStream = useWebllm ? streamWebLLM : streamChat

@@ -9,11 +9,72 @@ export interface EndpointConfig {
   model: string
   temperature?: number // 默认 0.8
   maxTokens?: number   // 默认 2048——角色扮演常需长回复
+  tier?: 'phone' | 'balanced' | 'high' // 设备档位，留空则自动检测
 }
+
+// ── 本地模型卡片（WebLLM 格式，借 fati MobileModelCatalog 思路） ──
+// 每档一张卡片：用户点「下载并启用」即拉取该模型（浏览器 OPFS 缓存，离线可用）。
+// model_id 必须是 WebLLM prebuiltAppConfig 里真实存在的 MLC ID，否则 404。
+export interface WebLLMModelCard {
+  id: string          // WebLLM model_id
+  name: string        // 展示名
+  desc: string        // 一句话说明
+  tier: 'phone' | 'balanced' | 'high'
+  sizeMB: number      // 下载体积（估算）
+  recommended?: boolean
+}
+
+export const WEBLLM_MODELS: WebLLMModelCard[] = [
+  {
+    id: 'Qwen3-0.6B-q4f16_1-MLC',
+    name: 'Qwen3 0.6B',
+    desc: '最轻量，手机/旧设备可跑，基础对话够用',
+    tier: 'phone',
+    sizeMB: 450,
+    recommended: true,
+  },
+  {
+    id: 'Qwen3-1.7B-q4f16_1-MLC',
+    name: 'Qwen3 1.7B',
+    desc: '轻量本地档，响应快、占资源少',
+    tier: 'phone',
+    sizeMB: 1100,
+  },
+  {
+    id: 'Qwen3-4B-q4f16_1-MLC',
+    name: 'Qwen3 4B',
+    desc: '质量与速度均衡，普通电脑/平板推荐',
+    tier: 'balanced',
+    sizeMB: 2600,
+    recommended: true,
+  },
+  {
+    id: 'Qwen3-8B-q4f16_1-MLC',
+    name: 'Qwen3 8B',
+    desc: '效果最好，但更慢更占内存，适合高性能设备',
+    tier: 'high',
+    sizeMB: 5000,
+    recommended: true,
+  },
+]
+
+// 各档推荐默认模型
+export const TIER_DEFAULT_MODEL: Record<string, string> = {
+  phone: 'Qwen3-1.7B-q4f16_1-MLC',
+  balanced: 'Qwen3-4B-q4f16_1-MLC',
+  high: 'Qwen3-8B-q4f16_1-MLC',
+}
+
+// 编辑推荐（下拉顶部标签）
+export const EDIT_RECOMMENDED = [
+  'Qwen3-1.7B-q4f16_1-MLC',
+  'Qwen3-4B-q4f16_1-MLC',
+  'Qwen3-8B-q4f16_1-MLC',
+]
 
 export const PRESETS: { label: string; baseUrl: string; hint: string }[] = [
   // 免 Key 本地档：baseUrl 为特殊标记，store 分流到 WebLLM 浏览器本地推理
-  { label: 'WebLLM', baseUrl: 'webllm', hint: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC' },
+  { label: 'WebLLM', baseUrl: 'webllm', hint: 'Qwen3-1.7B-q4f16_1-MLC' },
   { label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', hint: 'deepseek-chat' },
   { label: 'Kimi (Moonshot)', baseUrl: 'https://api.moonshot.cn/v1', hint: 'moonshot-v1-8k' },
   { label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', hint: 'gpt-4o-mini' },
