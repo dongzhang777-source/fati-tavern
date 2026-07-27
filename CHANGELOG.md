@@ -2,6 +2,15 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.1] - 2026-07-27
+
+### Changed
+- 漏斗自定义事件从 Vercel Analytics 切换到 PostHog 免费档（Hobby 档不支持自定义事件）：纯 fetch 直连 capture API、零 SDK 依赖，key 走 `VITE_POSTHOG_KEY` 环境变量，未配置时静默降级；Vercel Analytics 保留收 pageview
+- 新增 `.env.example`；`.gitignore` 覆盖 `.env*`
+
+### Fixed
+- 修复 Vercel 部署阻断：本仓 git 提交邮箱改为 GitHub 账号官方 noreply 邮箱
+
 ## [0.6.0] - 2026-07-27
 
 品牌视觉正式版 + 开源就绪 + UGC 分级。
