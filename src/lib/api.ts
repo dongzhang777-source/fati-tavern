@@ -1,7 +1,9 @@
 /**
  * BYOK OpenAI-compatible 流式客户端（精简版）。
- * 无 daemon / 无 LAN token / 无 thinking 抑制——纯前端直连用户自己的端点。
+ * 无 daemon / 无 LAN token——纯前端直连用户自己的端点。
+ * 已内置 thinking 抑制：请求参数 + 流式 <think> 标签剥离双保险。
  */
+import { ThinkTagFilter } from './think-filter'
 
 export interface EndpointConfig {
   baseUrl: string
@@ -108,6 +110,9 @@ export async function streamChat(
       stream: true,
       temperature: endpoint.temperature ?? 0.8,
       max_tokens: endpoint.maxTokens ?? 2048,
+      // 抑制推理过程输出（Qwen3 / DeepSeek 等支持此参数的模型）
+      enable_thinking: false,
+      chat_template_kwargs: { enable_thinking: false },
     }),
     signal,
   })
@@ -120,6 +125,7 @@ export async function streamChat(
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
+  const filter = new ThinkTagFilter()
   let buffer = ''
 
   while (true) {
@@ -132,17 +138,28 @@ export async function streamChat(
       const trimmed = line.trim()
       if (!trimmed || !trimmed.startsWith('data:')) continue
       const data = trimmed.slice(5).trim()
-      if (data === '[DONE]') return
+      if (data === '[DONE]') {
+        const tail = filter.flush()
+        if (tail) onChunk(tail)
+        return
+      }
       try {
         const json = JSON.parse(data)
         if (json.error) throw new Error(json.error.message || '模型返回错误')
+        // 忽略 reasoning_content（部分模型单独字段输出推理）
         const delta = json.choices?.[0]?.delta?.content
-        if (delta) onChunk(delta)
+        if (delta) {
+          const clean = filter.push(delta)
+          if (clean) onChunk(clean)
+        }
       } catch (e) {
         if (!(e instanceof SyntaxError)) throw e
       }
     }
   }
+  // 流正常结束（无 [DONE]）时 flush 残余
+  const tail = filter.flush()
+  if (tail) onChunk(tail)
 }
 
 /** 获取可用模型列表 */

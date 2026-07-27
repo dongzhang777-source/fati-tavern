@@ -5,6 +5,7 @@
  * 需要 WebGPU；不支持时给出明确提示。
  */
 import type { EndpointConfig } from './api'
+import { ThinkTagFilter } from './think-filter'
 
 /** 特殊 baseUrl 标记，store 据此分流到 WebLLM 而非 fetch */
 export const WEBLLM_BASE = 'webllm'
@@ -79,6 +80,7 @@ export async function streamWebLLM(
     temperature: endpoint.temperature ?? 0.8,
     max_tokens: endpoint.maxTokens ?? 1024, // 端侧推理保守些
   })
+  const filter = new ThinkTagFilter()
   for await (const chunk of chunks) {
     if (signal.aborted) {
       engine.interruptGenerate()
@@ -87,6 +89,11 @@ export async function streamWebLLM(
       throw err
     }
     const delta = chunk.choices?.[0]?.delta?.content
-    if (delta) onChunk(delta)
+    if (delta) {
+      const clean = filter.push(delta)
+      if (clean) onChunk(clean)
+    }
   }
+  const tail = filter.flush()
+  if (tail) onChunk(tail)
 }
