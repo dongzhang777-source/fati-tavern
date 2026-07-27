@@ -28,6 +28,13 @@ export interface WebLLMModelCard {
 
 export const WEBLLM_MODELS: WebLLMModelCard[] = [
   {
+    id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
+    name: 'Qwen2.5 0.5B',
+    desc: '最轻量，极低内存设备可用，基础对话',
+    tier: 'phone',
+    sizeGB: 0.4,
+  },
+  {
     id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
     name: 'Qwen2.5 1.5B',
     desc: '稳定可靠，手机/电脑均可流畅运行，角色扮演首选',
@@ -36,11 +43,20 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     recommended: true,
   },
   {
-    id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
-    name: 'Qwen2.5 0.5B',
-    desc: '最轻量，极低内存设备可用，基础对话',
-    tier: 'phone',
-    sizeGB: 0.4,
+    id: 'Qwen3-1.7B-q4f16_1-MLC',
+    name: 'Qwen3 1.7B',
+    desc: '新一代轻量档，响应快、质量高，需 6GB+ 内存',
+    tier: 'balanced',
+    sizeGB: 1.1,
+    recommended: true,
+  },
+  {
+    id: 'Qwen3-4B-q4f16_1-MLC',
+    name: 'Qwen3 4B',
+    desc: '质量与速度均衡，普通电脑/高端手机推荐',
+    tier: 'balanced',
+    sizeGB: 2.6,
+    recommended: true,
   },
   {
     id: 'Qwen2.5-7B-Instruct-q4f16_1-MLC',
@@ -49,19 +65,28 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     tier: 'high',
     sizeGB: 4.5,
   },
+  {
+    id: 'Qwen3-8B-q4f16_1-MLC',
+    name: 'Qwen3 8B',
+    desc: '旗舰体验，需要大内存高性能设备',
+    tier: 'high',
+    sizeGB: 5.0,
+  },
 ]
 
 // 各档推荐默认模型
 export const TIER_DEFAULT_MODEL: Record<string, string> = {
   phone: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-  balanced: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-  high: 'Qwen2.5-7B-Instruct-q4f16_1-MLC',
+  balanced: 'Qwen3-1.7B-q4f16_1-MLC',
+  high: 'Qwen3-8B-q4f16_1-MLC',
 }
 
 // 编辑推荐（下拉顶部标签）
 export const EDIT_RECOMMENDED = [
   'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-  'Qwen2.5-7B-Instruct-q4f16_1-MLC',
+  'Qwen3-1.7B-q4f16_1-MLC',
+  'Qwen3-4B-q4f16_1-MLC',
+  'Qwen3-8B-q4f16_1-MLC',
 ]
 
 export const PRESETS: { label: string; baseUrl: string; hint: string }[] = [

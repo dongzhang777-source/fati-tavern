@@ -32,35 +32,61 @@ export function isMobile(): boolean {
 
 /**
  * 是否 iOS 设备（iPhone / iPad / iPod）。
- * 真机验证：1.7B 跑得稳，但 4B / 8B 在 iOS Safari 的
- * WebGPU 标签页内存上限下会 OOM 整页闪退（GPU 进程崩溃，JS 捕获不到）。
- * 故 iOS 上仅开放 0.6B / 1.7B 两档。
+ * iOS 上所有浏览器均使用 WebKit 引擎（苹果强制），
+ * 单标签页内存上限约 1.5–2GB，超出后 GPU 进程被杀（闪退）。
  */
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
-/** iOS 上允许运行的模型 id（内存受限，只放开小档位） */
-const IOS_ALLOWED = new Set(['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'])
-/** 移动端通用允许档位（低内存 Android 同样受限） */
-const MOBILE_ALLOWED = new Set(['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'])
+/**
+ * 设备内存分档模型限制策略：
+ * - iOS（任何浏览器）: 只开放 ≤1.5B（WebKit 单页内存硬限制）
+ * - Android ≤4GB: 同 iOS
+ * - Android 6-8GB: 开放到 1.7B
+ * - Android ≥12GB: 开放到 4B
+ * - 桌面端: 全部开放
+ */
 
-export function iosModelBlocked(modelId: string): { blocked: boolean; reason?: string } {
-  // iOS 严格限制
-  if (isIOS()) {
-    if (IOS_ALLOWED.has(modelId)) return { blocked: false }
-    return { blocked: true, reason: 'iOS 设备内存有限，建议改用 1.7B 及以下档位' }
-  }
-  // 其他移动端（低内存 Android）也拦截大模型
+/** 模型内存等级（数字越大越吃内存） */
+const MODEL_MEM_RANK: Record<string, number> = {
+  'Qwen2.5-0.5B-Instruct-q4f16_1-MLC': 1,
+  'Qwen2.5-1.5B-Instruct-q4f16_1-MLC': 2,
+  'Qwen3-1.7B-q4f16_1-MLC': 3,
+  'Qwen3-4B-q4f16_1-MLC': 4,
+  'Qwen2.5-7B-Instruct-q4f16_1-MLC': 5,
+  'Qwen3-8B-q4f16_1-MLC': 6,
+}
+
+/** 各平台允许的最大内存等级 */
+function maxAllowedRank(): number {
+  if (isIOS()) return 2 // iOS 只允许 ≤1.5B
   if (isMobile()) {
     const mem = (navigator as any).deviceMemory || 4
-    if (mem <= 4 && !MOBILE_ALLOWED.has(modelId)) {
-      return { blocked: true, reason: '设备内存不足，建议使用 1.7B 及以下档位避免闪退' }
-    }
+    if (mem <= 4) return 2   // ≤4GB: ≤1.5B
+    if (mem <= 8) return 3   // 6-8GB: ≤1.7B
+    return 4                  // ≥12GB: ≤4B
   }
-  return { blocked: false }
+  return Infinity // 桌面端全部开放
 }
+
+export function modelBlocked(modelId: string): { blocked: boolean; reason?: string } {
+  const rank = MODEL_MEM_RANK[modelId]
+  // 未知模型不拦截（向前兼容）
+  if (rank === undefined) return { blocked: false }
+  const maxRank = maxAllowedRank()
+  if (rank <= maxRank) return { blocked: false }
+
+  // 生成友好提示
+  if (isIOS()) {
+    return { blocked: true, reason: 'iOS 设备内存受限，该模型会导致闪退' }
+  }
+  return { blocked: true, reason: '该设备内存不足，运行此模型可能闪退' }
+}
+
+/** @deprecated 兼容旧引用，内部已统一为 modelBlocked */
+export const iosModelBlocked = modelBlocked
 
 // 模型下载/编译进度回调（由 store 注册，用于 UI 展示）
 export interface WebLLMProgress {

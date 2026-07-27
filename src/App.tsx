@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
-import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, iosModelBlocked } from './lib/webllm'
+import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import type { StoredCharacter } from './lib/db'
 import './App.css'
@@ -553,7 +553,7 @@ function WebLLMModelPicker({
           const isDownloading = downloading === m.id
           const isLoaded = loadedWebLLMModel() === m.id
           const isCurrent = endpoint.model === m.id
-          const iosBlock = iosModelBlocked(m.id)
+          const iosBlock = modelBlocked(m.id)
           const disabled = !supported || iosBlock.blocked
           return (
             <div

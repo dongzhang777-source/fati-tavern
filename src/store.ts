@@ -7,7 +7,7 @@ import { trimMessages } from './lib/context'
 import { detectSelfHarm } from './lib/safety'
 import { detectLang, saveLang, t, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
-import { WEBLLM_BASE, streamWebLLM, webllmSupported, iosModelBlocked, setWebllmProgressHandler, isMobile, WEBLLM_MODEL_MOBILE } from './lib/webllm'
+import { WEBLLM_BASE, streamWebLLM, webllmSupported, modelBlocked, setWebllmProgressHandler, isMobile, WEBLLM_MODEL_MOBILE } from './lib/webllm'
 import { BUILTIN_CHARACTERS } from './lib/catalog'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
@@ -264,7 +264,7 @@ export const useStore = create<State>((set, get) => ({
     }
     // iOS 上若之前存过 4B/8B 大模型配置，发送前拦截，避免 WebGPU OOM 整页闪退
     if (useWebllm) {
-      const iosBlock = iosModelBlocked(endpoint.model || '')
+      const iosBlock = modelBlocked(endpoint.model || '')
       if (iosBlock.blocked) {
         set({ error: iosBlock.reason || t(lang, 'webllm.unsupported') })
         return
