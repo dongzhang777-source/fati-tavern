@@ -18,27 +18,53 @@ export default function App() {
 }
 
 // ─── 角色库画廊 ───────────────────────────────────────────
+interface ImportResult {
+  ok: number
+  fails: { name: string; reason: string }[]
+}
+
 function Gallery() {
   const { characters, importCard, removeCharacter, openCharacter } = useStore()
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // 每个文件独立解析，成功/失败都必须给用户可见反馈
   async function handleFiles(files: FileList | File[]) {
+    let ok = 0
+    const fails: { name: string; reason: string }[] = []
     for (const file of Array.from(files)) {
-      if (file.name.toLowerCase().endsWith('.png')) {
-        const buf = await file.arrayBuffer()
-        const card = parsePngCard(buf)
-        if (card) await importCard(card, file)
-      } else if (file.name.toLowerCase().endsWith('.json')) {
-        const text = await file.text()
-        try {
-          const json = JSON.parse(text)
+      try {
+        if (file.name.toLowerCase().endsWith('.png')) {
+          const buf = await file.arrayBuffer()
+          const card = await parsePngCard(buf)
+          await importCard(card, file)
+          ok++
+        } else if (file.name.toLowerCase().endsWith('.json')) {
+          const text = await file.text()
+          let json: any
+          try {
+            json = JSON.parse(text)
+          } catch {
+            throw new Error('JSON 解析失败')
+          }
           const card = parseCharacterJson(json)
-          if (card) await importCard(card, file)
-        } catch { /* skip */ }
+          if (!card) throw new Error('无法识别的角色卡格式')
+          await importCard(card, file)
+          ok++
+        } else {
+          throw new Error('仅支持 .png / .json 文件')
+        }
+      } catch (e: any) {
+        fails.push({ name: file.name, reason: e?.message || '导入失败' })
       }
     }
+    setImportResult({ ok, fails })
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    // 有失败时多停留一会儿让用户看清原因
+    toastTimer.current = setTimeout(() => setImportResult(null), fails.length > 0 ? 8000 : 3000)
   }
 
   return (
@@ -141,6 +167,15 @@ function Gallery() {
       <footer className="gallery-footer">
         <span>BYOK · 你的 Key 和聊天记录不离开你的设备</span>
       </footer>
+
+      {importResult && (
+        <div className={`import-toast ${importResult.fails.length > 0 ? 'has-fail' : ''}`} onClick={() => setImportResult(null)}>
+          {importResult.ok > 0 && <p>✓ 已导入 {importResult.ok} 张角色卡</p>}
+          {importResult.fails.map((f) => (
+            <p key={f.name} className="fail-line">✗ {f.name}：{f.reason}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -80,25 +80,49 @@ function normalizeBook(raw: any): TavernBook {
 }
 
 // ─── PNG 角色卡解析 ────────────────────────────────────────
-// SillyTavern v3 把 JSON 存在 PNG 的 tEXt chunk，key="chara"
-// 值是 base64 编码的 gzip 压缩 JSON（也可能未压缩，做兼容）
-// 纯 JS 解析 PNG tEXt chunk，不依赖 Node Buffer
+// SillyTavern 把 JSON 存在 PNG 的 tEXt/zTXt chunk：
+//   v3 规范 key="ccv3"（优先），v2 及更早 key="chara"（回退）
+// 值是 base64 编码的 JSON，可能再套一层 gzip；zTXt 本身是 deflate 压缩
+// 纯 JS + Web API（DecompressionStream），不依赖 Node Buffer / pako
+// 解析失败抛出带原因的 Error，供导入 UI 反馈
 
-export function parsePngCard(arrayBuffer: ArrayBuffer): TavernCard | null {
-  try {
-    const chara = extractPngTextChunk(arrayBuffer, 'chara')
-    if (!chara) return null
-    const jsonStr = decodeCharData(chara)
-    const raw = JSON.parse(jsonStr)
-    return parseCharacterJson(raw)
-  } catch (err) {
-    console.error('[tavern] PNG parse failed:', err)
-    return null
+export async function parsePngCard(arrayBuffer: ArrayBuffer): Promise<TavernCard> {
+  const chunks = extractPngTextChunks(arrayBuffer)
+  if (chunks === null) throw new Error('不是有效的 PNG 文件')
+
+  // v3 的 ccv3 优先于 v2 的 chara
+  const hit = chunks.find((c) => c.keyword === 'ccv3') ?? chunks.find((c) => c.keyword === 'chara')
+  if (!hit) throw new Error('PNG 中没有角色卡数据（缺少 ccv3 / chara 区块）')
+
+  let base64: string
+  if (hit.type === 'zTXt') {
+    // zTXt: 1 字节压缩方法（0=deflate/zlib）+ 压缩数据
+    if (hit.data[0] !== 0) throw new Error('zTXt 区块使用了未知压缩方法')
+    base64 = await decompressToText(hit.data.slice(1), 'deflate', 'latin1')
+  } else {
+    base64 = new TextDecoder('latin1').decode(hit.data)
   }
+
+  const jsonStr = await decodeCharData(base64)
+  let raw: any
+  try {
+    raw = JSON.parse(jsonStr)
+  } catch {
+    throw new Error('角色卡 JSON 解析失败')
+  }
+  const card = parseCharacterJson(raw)
+  if (!card) throw new Error('无法识别的角色卡数据结构')
+  return card
 }
 
-// 从 PNG ArrayBuffer 中提取指定 key 的 tEXt chunk 值
-function extractPngTextChunk(buf: ArrayBuffer, key: string): string | null {
+interface PngTextChunk {
+  keyword: string
+  type: 'tEXt' | 'zTXt'
+  data: Uint8Array
+}
+
+// 扫描 PNG 中全部 tEXt / zTXt chunk；不是 PNG 返回 null
+function extractPngTextChunks(buf: ArrayBuffer): PngTextChunk[] | null {
   const bytes = new Uint8Array(buf)
   // PNG signature: 8 bytes
   // 然后 chunks: 4 bytes length + 4 bytes type + data + 4 bytes CRC
@@ -106,46 +130,58 @@ function extractPngTextChunk(buf: ArrayBuffer, key: string): string | null {
   // 验证 PNG signature (89 50 4E 47 0D 0A 1A 0A)
   if (bytes[0] !== 0x89 || bytes[1] !== 0x50) return null
 
+  const chunks: PngTextChunk[] = []
   let offset = 8
   while (offset < bytes.length - 12) {
     const len = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]
     const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7])
 
     if (type === 'IEND') break
-    if (type === 'tEXt') {
-      // data: keyword\0value (Latin-1)
+    if (type === 'tEXt' || type === 'zTXt') {
+      // data: keyword\0(压缩方法字节，仅 zTXt)value
       const dataStart = offset + 8
       const dataEnd = dataStart + len
       // 找 null 分隔符
       let i = dataStart
       while (i < dataEnd && bytes[i] !== 0) i++
       const keyword = new TextDecoder('latin1').decode(bytes.slice(dataStart, i))
-      if (keyword === key) {
-        const valueStart = i + 1
-        return new TextDecoder('latin1').decode(bytes.slice(valueStart, dataEnd))
-      }
+      chunks.push({ keyword, type, data: bytes.slice(i + 1, dataEnd) })
     }
     // 跳到下一个 chunk：length(4) + type(4) + data(len) + CRC(4)
     offset += 8 + len + 4
   }
-  return null
+  return chunks
 }
 
-function decodeCharData(data: string): string {
+async function decodeCharData(data: string): Promise<string> {
   // base64 → 可能是 gzip，也可能是纯 base64 JSON
   // 手动 base64 解码（不用 Buffer）
-  const binary = atob(data)
+  let binary: string
+  try {
+    binary = atob(data.trim())
+  } catch {
+    throw new Error('角色卡数据 base64 解码失败')
+  }
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
 
-  // gzip magic bytes 0x1f 0x8b
+  // gzip magic bytes 0x1f 0x8b（SillyTavern v3 默认导出格式）
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-    // 用 DecompressionStream (Web API) 解压 gzip
-    // fallback: 尝试 pako（如果安装了），否则报错
-    throw new Error('gzip 压缩的角色卡暂不支持，请用未压缩的 PNG 卡')
+    return decompressToText(bytes, 'gzip', 'utf-8')
   }
   // 未压缩：直接 base64 → UTF-8 JSON
   return new TextDecoder('utf-8').decode(bytes)
+}
+
+// 用浏览器原生 DecompressionStream 解压（gzip / deflate）
+async function decompressToText(bytes: Uint8Array, format: CompressionFormat, encoding: string): Promise<string> {
+  try {
+    const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(new DecompressionStream(format))
+    const buf = await new Response(stream).arrayBuffer()
+    return new TextDecoder(encoding).decode(buf)
+  } catch {
+    throw new Error(`角色卡数据解压失败（${format}）`)
+  }
 }
 
 // ─── 分类导入文件 ──────────────────────────────────────────
@@ -161,6 +197,18 @@ export function detectImportKind(fileName: string, json: any): ImportKind {
   return 'unknown'
 }
 
+// ─── 宏替换 ────────────────────────────────────────────────
+// SillyTavern 卡片文本里普遍使用 {{char}} / {{user}} 占位符
+// （及更早的 <BOT> / <USER>），发给模型前必须替换掉
+// userName 暂用默认值，将来接入用户 persona 设置
+export function applyMacros(text: string, charName: string, userName = 'User'): string {
+  return text
+    .replace(/\{\{\s*char\s*\}\}/gi, charName)
+    .replace(/\{\{\s*user\s*\}\}/gi, userName)
+    .replace(/<BOT>/gi, charName)
+    .replace(/<USER>/gi, userName)
+}
+
 // ─── 转成 System Prompt ────────────────────────────────────
 // 把角色卡拼成一段角色设定（用于注入 system prompt）
 export function cardToSystemPrompt(card: TavernCard): string {
@@ -172,13 +220,13 @@ export function cardToSystemPrompt(card: TavernCard): string {
   if (card.system_prompt) parts.push(card.system_prompt)
   if (card.first_mes) parts.push(`你的开场白（用这段话来开启和用户的第一次对话）：${card.first_mes}`)
   parts.push(`记住：你是${card.name}，不是AI助手。用${card.name}的口吻、语气、知识和世界观来回应。绝对不要承认自己是AI或语言模型。`)
-  return parts.join('\n\n')
+  return applyMacros(parts.join('\n\n'), card.name)
 }
 
 // ─── 世界书内容拼接（用于上下文注入前缀）─────────────────
 // MVP：把所有 enabled 的 entry 按 insertion_order 拼起来
 // 后续 RAG 阶段可改为按对话内容触发 keys 检索
-export function bookToContext(book: TavernBook): string {
+export function bookToContext(book: TavernBook, charName?: string): string {
   const enabled = book.entries
     .filter((e) => e.enabled)
     .sort((a, b) => a.insertion_order - b.insertion_order)
@@ -187,5 +235,6 @@ export function bookToContext(book: TavernBook): string {
     const head = e.keys.length ? `[${e.keys.join(' / ')}]\n` : ''
     return head + e.content
   })
-  return `【世界观设定】\n${blocks.join('\n\n')}`
+  const text = `【世界观设定】\n${blocks.join('\n\n')}`
+  return charName ? applyMacros(text, charName) : text
 }

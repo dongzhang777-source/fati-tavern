@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { TavernCard } from './lib/tavern'
-import { cardToSystemPrompt, bookToContext } from './lib/tavern'
+import { cardToSystemPrompt, bookToContext, applyMacros } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
 import {
@@ -126,7 +126,8 @@ export const useStore = create<State>((set, get) => ({
     const { activeCharId, characters } = get()
     if (!activeCharId) return
     const char = characters.find((c) => c.id === activeCharId)
-    const firstMsg = char?.card.first_mes
+    // 开场白替换 {{char}}/{{user}} 宏后再展示
+    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name) : undefined
     const conv: StoredConversation = {
       id: genId(),
       characterId: activeCharId,
@@ -188,7 +189,7 @@ export const useStore = create<State>((set, get) => ({
     // 构建 system prompt
     let sys = cardToSystemPrompt(char.card)
     if (char.card.character_book) {
-      const ctx = bookToContext(char.card.character_book)
+      const ctx = bookToContext(char.card.character_book, char.card.name)
       if (ctx) sys = ctx + '\n\n' + sys
     }
 
@@ -241,7 +242,7 @@ export const useStore = create<State>((set, get) => ({
     const conv = conversations.find((c) => c.id === activeConvId)
     if (!conv) return
     const char = characters.find((c) => c.id === activeCharId)
-    const firstMsg = char?.card.first_mes
+    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name) : undefined
     const cleared: StoredConversation = {
       ...conv,
       messages: firstMsg ? [{ role: 'assistant', content: firstMsg, ts: Date.now() }] : [],
