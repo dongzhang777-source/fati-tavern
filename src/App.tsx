@@ -155,7 +155,10 @@ function Gallery() {
                 }
               </div>
               <div className="card-info">
-                <strong className="card-name">{c.card.name}</strong>
+                <strong className="card-name">
+                  {c.card.name}
+                  {c.card.contentRating === 'adult' && <span className="badge-18">18+</span>}
+                </strong>
                 <span className="card-desc">{c.card.description?.slice(0, 60) || c.card.personality?.slice(0, 60) || t(lang, 'gallery.noDesc')}</span>
                 {c.card.tags?.length > 0 && (
                   <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
@@ -169,6 +172,7 @@ function Gallery() {
 
       <footer className="gallery-footer">
         <span>{t(lang, 'gallery.footer')}</span>
+        <span className="ugc-note">{t(lang, 'gallery.ugcNote')}</span>
       </footer>
 
       {importResult && (

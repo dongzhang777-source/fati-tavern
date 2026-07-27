@@ -50,9 +50,21 @@ export function parseCharacterJson(raw: any): TavernCard | null {
     creator: d.creator || '',
     tags: d.tags || [],
     character_book: d.character_book ? normalizeBook(d.character_book) : undefined,
-    contentRating: d.contentRating, // 保留来源分级，无则 undefined
+    contentRating: deriveContentRating(d), // 显式分级优先，其次按 tags 推断
   }
   return card
+}
+
+// 分级推断：来源显式声明 > tags 关键词 > unknown
+// UGC 合规钩子——导入时标记，画廊展示 18+ 徽标
+function deriveContentRating(d: any): TavernCard['contentRating'] {
+  if (d.contentRating === 'all' || d.contentRating === 'suggestive' || d.contentRating === 'adult') {
+    return d.contentRating
+  }
+  const tags: string[] = Array.isArray(d.tags) ? d.tags.map((t: any) => String(t).toLowerCase()) : []
+  const adultMarkers = ['nsfw', 'adult', '18+', 'r18', 'r-18', 'explicit', '成人', '限制级']
+  if (tags.some((t) => adultMarkers.some((m) => t.includes(m)))) return 'adult'
+  return 'unknown'
 }
 
 // ─── 世界书 JSON ──────────────────────────────────────────

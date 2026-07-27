@@ -86,6 +86,25 @@ describe('parseCharacterJson', () => {
   })
 })
 
+// ─── 内容分级推断 ─────────────────────────────────────────
+
+describe('contentRating 推断', () => {
+  it('显式声明优先', () => {
+    expect(parseCharacterJson({ name: 'a', contentRating: 'adult', tags: [] })?.contentRating).toBe('adult')
+    expect(parseCharacterJson({ name: 'a', contentRating: 'all', tags: ['nsfw'] })?.contentRating).toBe('all')
+  })
+
+  it('tags 含 NSFW 类标记推断为 adult（大小写不敏感）', () => {
+    expect(parseCharacterJson({ name: 'a', tags: ['Fantasy', 'NSFW'] })?.contentRating).toBe('adult')
+    expect(parseCharacterJson({ name: 'a', tags: ['r18'] })?.contentRating).toBe('adult')
+    expect(parseCharacterJson({ name: 'a', tags: ['成人向'] })?.contentRating).toBe('adult')
+  })
+
+  it('无标记时为 unknown', () => {
+    expect(parseCharacterJson({ name: 'a', tags: ['fantasy', 'cute'] })?.contentRating).toBe('unknown')
+  })
+})
+
 // ─── PNG 卡解析 ───────────────────────────────────────────
 
 describe('parsePngCard', () => {

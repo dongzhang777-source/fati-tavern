@@ -1,57 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- 肥猫酒馆 FATI Tavern logo：原创胖猫形象（圆润憨厚风，非任何受版权保护角色） -->
-  <rect width="512" height="512" rx="112" fill="#1a1a2e"/>
-  <circle cx="256" cy="272" r="190" fill="#e94560" opacity="0.08"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" width="320" height="256">
+      <defs>
+        <!-- 橘猫渐变 -->
+        <radialGradient id="bodyGrad" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="#FFA050"></stop>
+          <stop offset="60%" stop-color="#FF8C42"></stop>
+          <stop offset="100%" stop-color="#E07020"></stop>
+        </radialGradient>
+        <radialGradient id="bellyGrad" cx="50%" cy="45%" r="50%">
+          <stop offset="0%" stop-color="#FFE8CC"></stop>
+          <stop offset="100%" stop-color="#FFD699"></stop>
+        </radialGradient>
+        <radialGradient id="headGrad" cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stop-color="#FFB060"></stop>
+          <stop offset="100%" stop-color="#FF8C42"></stop>
+        </radialGradient>
+        <!-- 耳朵内部渐变 -->
+        <radialGradient id="earInner" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFD699"></stop>
+          <stop offset="100%" stop-color="#FFB060"></stop>
+        </radialGradient>
+        <!-- 阴影 -->
+        <filter id="softShadow">
+          <feOffset dx="0" dy="4"></feOffset>
+          <feGaussianBlur stdDeviation="4"></feGaussianBlur>
+          <feComponentTransfer><feFuncA type="linear" slope="0.25"></feFuncA></feComponentTransfer>
+        </filter>
+      </defs>
 
-  <!-- 尾巴 -->
-  <path d="M398 340c44 8 62 44 40 66-16 16-44 10-48-12" fill="none" stroke="#5d6d8f" stroke-width="26" stroke-linecap="round"/>
+      <!-- 背景圆 -->
+      <circle cx="200" cy="140" r="120" fill="none" stroke="#3d3028" stroke-width="1.5" opacity="0.5"></circle>
 
-  <!-- 耳朵 -->
-  <path d="M138 168 L112 84 c-2-9 7-15 14-10 l64 44 Z" fill="#5d6d8f"/>
-  <path d="M374 168 L400 84 c2-9-7-15-14-10 l-64 44 Z" fill="#5d6d8f"/>
-  <path d="M144 150 L130 106 l36 25 Z" fill="#f2e6d8" opacity="0.85"/>
-  <path d="M368 150 L382 106 l-36 25 Z" fill="#f2e6d8" opacity="0.85"/>
+      <!-- 身体 -- 肥猫圆滚滚 -->
+      <ellipse cx="200" cy="195" rx="85" ry="70" fill="url(#bodyGrad)" filter="url(#softShadow)"></ellipse>
+      <!-- 肚子 -- 浅色 -->
+      <ellipse cx="200" cy="205" rx="55" ry="45" fill="url(#bellyGrad)"></ellipse>
 
-  <!-- 身体（浑圆一体） -->
-  <path d="M256 96 c-104 0 -172 84 -172 192 0 86 76 132 172 132 s172 -46 172 -132 C428 180 360 96 256 96 Z" fill="#5d6d8f"/>
+      <!-- 尾巴 -- 龙猫式抽象曲线 -->
+      <path d="M 280,175 Q 320,140 310,100 Q 305,80 290,85 Q 275,90 280,105 Q 285,120 275,140" fill="none" stroke="#E07020" stroke-width="6" stroke-linecap="round"></path>
 
-  <!-- 肚皮 -->
-  <ellipse cx="256" cy="336" rx="112" ry="80" fill="#f2e6d8"/>
+      <!-- 头部 -->
+      <circle cx="200" cy="95" r="50" fill="url(#headGrad)"></circle>
 
-  <!-- 肚皮花纹（浅弧线三道，龙猫式憨感但为原创纹样） -->
-  <path d="M204 300 q10 -14 24 -2" fill="none" stroke="#d9c6ae" stroke-width="7" stroke-linecap="round"/>
-  <path d="M244 292 q10 -14 24 -2" fill="none" stroke="#d9c6ae" stroke-width="7" stroke-linecap="round"/>
-  <path d="M284 300 q10 -14 24 -2" fill="none" stroke="#d9c6ae" stroke-width="7" stroke-linecap="round"/>
+      <!-- 左耳 -->
+      <path d="M 165,70 L 150,30 L 180,55 Z" fill="#FF8C42"></path>
+      <path d="M 165,70 L 153,38 L 176,58 Z" fill="url(#earInner)"></path>
 
-  <!-- 眼睛 -->
-  <circle cx="200" cy="222" r="16" fill="#16213e"/>
-  <circle cx="312" cy="222" r="16" fill="#16213e"/>
-  <circle cx="205" cy="217" r="5" fill="#fff"/>
-  <circle cx="317" cy="217" r="5" fill="#fff"/>
+      <!-- 右耳 -->
+      <path d="M 235,70 L 250,30 L 220,55 Z" fill="#FF8C42"></path>
+      <path d="M 235,70 L 247,38 L 224,58 Z" fill="url(#earInner)"></path>
 
-  <!-- 鼻子与嘴 -->
-  <path d="M248 244 q8 8 16 0" fill="none" stroke="#16213e" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="256" cy="238" r="7" fill="#e94560"/>
+      <!-- 脸部线条 (龙猫抽象风格 -- 简洁线条) -->
+      <!-- 左眼 -->
+      <ellipse cx="183" cy="88" rx="8" ry="7" fill="#3D2B1F"></ellipse>
+      <circle cx="185" cy="86" r="2.5" fill="#FFE8CC"></circle>
+      <!-- 右眼 -->
+      <ellipse cx="217" cy="88" rx="8" ry="7" fill="#3D2B1F"></ellipse>
+      <circle cx="219" cy="86" r="2.5" fill="#FFE8CC"></circle>
 
-  <!-- 胡须 -->
-  <path d="M150 236 h-44 M154 254 l-42 12" stroke="#8fa0c2" stroke-width="6" stroke-linecap="round"/>
-  <path d="M362 236 h44 M358 254 l42 12" stroke="#8fa0c2" stroke-width="6" stroke-linecap="round"/>
+      <!-- 鼻子 -->
+      <path d="M 200,100 L 196,105 L 204,105 Z" fill="#FF6B35"></path>
 
-  <!-- 左爪搭在肚皮上 -->
-  <ellipse cx="176" cy="360" rx="34" ry="24" fill="#5d6d8f"/>
+      <!-- 嘴巴 -- 单一线条微笑 (龙猫抽象) -->
+      <path d="M 192,110 Q 200,118 208,110" fill="none" stroke="#3D2B1F" stroke-width="2" stroke-linecap="round"></path>
 
-  <!-- 木酒杯（右爪抱着） -->
-  <g transform="rotate(8 330 360)">
-    <rect x="296" y="322" width="70" height="86" rx="12" fill="#a4682d"/>
-    <rect x="296" y="322" width="70" height="86" rx="12" fill="none" stroke="#7d4e1f" stroke-width="5"/>
-    <line x1="314" y1="330" x2="314" y2="400" stroke="#7d4e1f" stroke-width="4"/>
-    <line x1="348" y1="330" x2="348" y2="400" stroke="#7d4e1f" stroke-width="4"/>
-    <path d="M366 340 q26 4 22 28 q-4 22 -24 18" fill="none" stroke="#7d4e1f" stroke-width="10" stroke-linecap="round"/>
-    <!-- 泡沫 -->
-    <circle cx="310" cy="318" r="12" fill="#fff8ee"/>
-    <circle cx="331" cy="312" r="14" fill="#fff8ee"/>
-    <circle cx="352" cy="318" r="11" fill="#fff8ee"/>
-  </g>
-  <!-- 右爪 -->
-  <ellipse cx="306" cy="398" rx="30" ry="20" fill="#5d6d8f" transform="rotate(8 306 398)"/>
-</svg>
+      <!-- 胡须 -- 三根 per side, 轻细 -->
+      <line x1="165" y1="98" x2="130" y2="93" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+      <line x1="163" y1="106" x2="128" y2="106" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+      <line x1="165" y1="114" x2="130" y2="117" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+      <line x1="235" y1="98" x2="270" y2="93" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+      <line x1="237" y1="106" x2="272" y2="106" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+      <line x1="235" y1="114" x2="270" y2="117" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"></line>
+
+      <!-- 头顶一根呆毛 (character mark) -->
+      <path d="M 200,45 L 196,25 L 204,28 L 202,45" fill="#FF8C42" stroke="#E07020" stroke-width="1"></path>
+
+      <!-- FATI 文字 -->
+      <text x="200" y="285" text-anchor="middle" font-family="Georgia, serif" font-size="32" font-weight="bold" fill="#f5f0e8" letter-spacing="4">FATI</text>
+      <text x="200" y="305" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#a89282" letter-spacing="3">TAVERN</text>
+    </svg>

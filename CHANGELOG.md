@@ -2,6 +2,17 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.0] - 2026-07-27
+
+品牌视觉正式版 + 开源就绪 + UGC 分级。
+
+### Added
+- **正式 logo 上线**：橘色肥猫 + FATI TAVERN 字标（用户提供），favicon / 页头 / PWA 方形图标（深色底）全套更新
+- **内容分级标记**：导入时按来源声明与 tags（nsfw/r18/成人 等）推断 `contentRating`，画廊卡片显示 18+ 徽标；页脚新增 UGC 免责声明（不托管、不分发、成人内容限成年人）
+- **README 重写**：产品定位、特性清单、开发指南、合规立场（替换 Vite 模板原文）；新增 MIT LICENSE——转公开仓的前置件就绪
+- **分享回路设计稿**（`docs/SHARE-LOOP-DESIGN.md`）：卡片链接分享（URL fragment，零服务器）/ 对话导出图 / 卡廊三回路，含优先级与埋点设计
+- contentRating 推断单测 3 条
+
 ## [0.5.0] - 2026-07-27
 
 Sprint T3 核心两项：漏斗埋点 + 免 Key 体验档。

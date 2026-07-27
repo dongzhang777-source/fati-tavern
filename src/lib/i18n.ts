@@ -33,6 +33,10 @@ const dict: Record<string, { zh: string; en: string }> = {
   'gallery.noDesc': { zh: '暂无描述', en: 'No description' },
   'gallery.delete': { zh: '删除', en: 'Delete' },
   'gallery.footer': { zh: 'BYOK · 你的 Key 和聊天记录不离开你的设备', en: 'BYOK · Your key and chats never leave your device' },
+  'gallery.ugcNote': {
+    zh: '角色卡为用户自行导入的第三方内容，本站不托管、不分发；标记为 18+ 的内容仅限成年人使用。',
+    en: 'Character cards are third-party content imported by users — this site hosts and distributes nothing; 18+ content is for adults only.',
+  },
   'landing.title': { zh: '拖一张角色卡进来，和 TA 聊天', en: 'Drop a character card in and start chatting' },
   'landing.sub': { zh: '支持 SillyTavern 角色卡（PNG / JSON），3 分钟开始你的第一次对话', en: 'Supports SillyTavern cards (PNG / JSON) — first conversation in 3 minutes' },
   'landing.step1': { zh: '拖入角色卡', en: 'Drop a card' },
