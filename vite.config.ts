@@ -7,6 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // web-llm 推理引擎分包（数 MB）只被免 Key 体验档懒加载，
+        // 不进 SW 预缓存，避免所有访客后台白下载
+        globIgnores: ['**/webllm-*.js'],
+      },
       manifest: {
         name: 'FATI Tavern',
         short_name: 'Tavern',
@@ -21,4 +26,12 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // 固定 web-llm 分包名，配合上面的 globIgnores
+        manualChunks: (id: string) => (id.includes('@mlc-ai') ? 'webllm' : undefined),
+      },
+    },
+  },
 })

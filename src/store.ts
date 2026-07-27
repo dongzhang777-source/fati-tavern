@@ -6,6 +6,8 @@ import { streamChat } from './lib/api'
 import { trimMessages } from './lib/context'
 import { detectSelfHarm } from './lib/safety'
 import { detectLang, saveLang, t, type Lang } from './lib/i18n'
+import { trackOnce } from './lib/analytics'
+import { WEBLLM_BASE, streamWebLLM, webllmSupported, setWebllmProgressHandler } from './lib/webllm'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -38,6 +40,7 @@ interface State {
   streaming: boolean
   error: string | null
   safetyNotice: boolean // 自伤关键词命中后显示危机资源提示
+  webllmProgress: string | null // WebLLM 模型下载/编译进度文本
 
   // 语言
   lang: Lang
@@ -90,6 +93,7 @@ export const useStore = create<State>((set, get) => ({
   streaming: false,
   error: null,
   safetyNotice: false,
+  webllmProgress: null,
   lang: detectLang(),
   endpoint: loadEndpoint(),
 
@@ -110,6 +114,7 @@ export const useStore = create<State>((set, get) => ({
     }
     await dbPutCharacter(stored)
     set((s) => ({ characters: [stored, ...s.characters] }))
+    trackOnce('import_success') // 漏斗事件②：导入成功（每设备一次）
   },
 
   removeCharacter: async (id) => {
@@ -198,8 +203,21 @@ export const useStore = create<State>((set, get) => ({
       set({ safetyNotice: true })
     }
 
+    // WebLLM 档需要 WebGPU，提前拦截给明确提示
+    const useWebllm = endpoint.baseUrl === WEBLLM_BASE
+    if (useWebllm && !webllmSupported()) {
+      set({ error: t(lang, 'webllm.unsupported') })
+      return
+    }
+
     const userMsg: ChatMessage = { role: 'user', content: text, ts: Date.now() }
     const updatedMessages = [...conv.messages, userMsg]
+
+    // 漏斗事件③④：首条消息 / 第二轮对话（每设备一次）
+    trackOnce('first_message')
+    if (updatedMessages.filter((m) => m.role === 'user').length >= 2) {
+      trackOnce('second_round')
+    }
 
     // 更新会话消息
     const updatedConv = { ...conv, messages: updatedMessages, updatedAt: Date.now() }
@@ -237,7 +255,15 @@ export const useStore = create<State>((set, get) => ({
       conversations: s.conversations.map((c) => c.id === conv.id ? { ...c, messages: withAssistant } : c),
     }))
 
-    streamChat(endpoint, apiMessages, abortController!.signal, (delta) => {
+    // WebLLM 档：注册进度回调（模型下载/编译状态展示）并分流
+    if (useWebllm) {
+      setWebllmProgressHandler((progressText, done) => {
+        set({ webllmProgress: done ? null : progressText })
+      })
+    }
+    const doStream = useWebllm ? streamWebLLM : streamChat
+
+    doStream(endpoint, apiMessages, abortController!.signal, (delta) => {
       assistantText += delta
       set((s) => ({
         conversations: s.conversations.map((c) => {
@@ -249,14 +275,17 @@ export const useStore = create<State>((set, get) => ({
         }),
       }))
     }).then(() => {
-      set({ streaming: false })
+      set({ streaming: false, webllmProgress: null })
       const final = get().conversations.find((c) => c.id === conv.id)
       if (final) dbPutConversation(final)
     }).catch((e: any) => {
       if (e.name === 'AbortError') {
-        set({ streaming: false })
+        set({ streaming: false, webllmProgress: null })
       } else {
-        set({ streaming: false, error: e.message || t(get().lang, 'error.request') })
+        const msg = e.message === 'WEBGPU_UNSUPPORTED'
+          ? t(get().lang, 'webllm.unsupported')
+          : (e.message || t(get().lang, 'error.request'))
+        set({ streaming: false, webllmProgress: null, error: msg })
       }
       const final = get().conversations.find((c) => c.id === conv.id)
       if (final) dbPutConversation(final)

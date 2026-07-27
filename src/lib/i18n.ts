@@ -42,8 +42,8 @@ const dict: Record<string, { zh: string; en: string }> = {
   'landing.ctaHint': { zh: '或者直接把文件拖到页面任意位置', en: 'or just drag a file anywhere on this page' },
   'landing.privacyTitle': { zh: '🔒 隐私承诺', en: '🔒 Privacy promise' },
   'landing.privacyBody': {
-    zh: '你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有数据上传，没有账号注册。关闭页面后一切仍在本地。',
-    en: 'Your API key, character cards and chats live only in your browser. No backend, no uploads, no sign-up. Everything stays local after you close the page.',
+    zh: '你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有内容上传，没有账号注册。关闭页面后一切仍在本地。我们仅统计匿名的功能使用计数（访问 / 导入 / 发消息），不含任何聊天内容、角色卡或 Key。',
+    en: 'Your API key, character cards and chats live only in your browser. No backend, no content uploads, no sign-up. Everything stays local after you close the page. We only collect anonymous feature-usage counts (visit / import / message) — never any chat content, cards or keys.',
   },
   'landing.feat1': { zh: '纯前端 PWA<br/>零安装零注册', en: 'Pure frontend PWA<br/>No install, no sign-up' },
   'landing.feat2': { zh: 'BYOK 自带 Key<br/>DeepSeek / Kimi / OpenAI / 本地', en: 'BYOK — bring your key<br/>DeepSeek / Kimi / OpenAI / local' },
@@ -96,6 +96,18 @@ const dict: Record<string, { zh: string; en: string }> = {
   'import.unknownFormat': { zh: '无法识别的角色卡格式', en: 'Unrecognized card format' },
   'import.unsupported': { zh: '仅支持 .png / .json 文件', en: 'Only .png / .json files are supported' },
   'import.fail': { zh: '导入失败', en: 'Import failed' },
+
+  // ── WebLLM 免 Key 体验档 ──
+  'webllm.preset': { zh: '免 Key 体验', en: 'Free demo (local)' },
+  'webllm.hint': {
+    zh: '⚡ 免 Key 体验：模型完全在你的浏览器本地运行，无需任何 API Key。首次使用需下载约 900MB 模型（之后有缓存），需要支持 WebGPU 的浏览器（Chrome / Edge 113+）。',
+    en: '⚡ Free demo: the model runs entirely in your browser — no API key needed. First use downloads ~900MB (cached afterwards). Requires a WebGPU-capable browser (Chrome / Edge 113+).',
+  },
+  'webllm.unsupported': {
+    zh: '当前浏览器不支持 WebGPU，免 Key 体验档无法运行。请改用 Chrome / Edge 113+，或配置 BYOK 端点。',
+    en: 'Your browser does not support WebGPU, so the free demo cannot run. Use Chrome / Edge 113+, or configure a BYOK endpoint.',
+  },
+  'webllm.loading': { zh: '正在准备本地模型：', en: 'Preparing local model: ' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {

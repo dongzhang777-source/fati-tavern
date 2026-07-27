@@ -17,6 +17,8 @@ export const PRESETS: { label: string; baseUrl: string; hint: string }[] = [
   { label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', hint: 'gpt-4o-mini' },
   { label: 'LM Studio', baseUrl: 'http://localhost:1234/v1', hint: 'loaded-model' },
   { label: 'Ollama', baseUrl: 'http://localhost:11434/v1', hint: 'qwen3:8b' },
+  // 免 Key 体验档：baseUrl 为特殊标记，store 分流到 WebLLM 浏览器本地推理
+  { label: 'WebLLM', baseUrl: 'webllm', hint: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC' },
   { label: '自定义', baseUrl: '', hint: '' },
 ]
 

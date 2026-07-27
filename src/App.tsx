@@ -189,7 +189,7 @@ function ChatView() {
     characters, activeCharId, conversations, activeConvId,
     streaming, error, sendMessage, stopStreaming, clearChat,
     newConversation, selectConversation, deleteConversation, backToGallery,
-    lang, safetyNotice, dismissSafetyNotice,
+    lang, safetyNotice, dismissSafetyNotice, webllmProgress,
   } = useStore()
 
   const [input, setInput] = useState('')
@@ -269,6 +269,11 @@ function ChatView() {
           </div>
         )}
 
+        {/* WebLLM 模型下载/编译进度 */}
+        {webllmProgress !== null && (
+          <div className="webllm-progress">⏳ {t(lang, 'webllm.loading')}{webllmProgress}</div>
+        )}
+
         {error && <div className="error-bar">⚠ {error}</div>}
 
         <footer className="input-bar">
@@ -341,6 +346,8 @@ function SettingsPanel() {
 
   // 本地端点需要用户自行开启 CORS，否则从 HTTPS 页面必然连不上
   const isLocalEndpoint = /localhost|127\.0\.0\.1/.test(endpoint.baseUrl)
+  // WebLLM 免 Key 档：浏览器本地推理，无 HTTP 端点可测
+  const isWebllm = endpoint.baseUrl === 'webllm'
 
   async function handleTest() {
     setStatus('loading')
@@ -389,28 +396,34 @@ function SettingsPanel() {
             key={p.label}
             className={endpoint.baseUrl === p.baseUrl ? 'active' : ''}
             onClick={() => { setEndpoint({ baseUrl: p.baseUrl, model: p.hint || endpoint.model }); setModels([]); setStatus('idle') }}
-          >{p.label}</button>
+          >{p.baseUrl === 'webllm' ? t(lang, 'webllm.preset') : p.label}</button>
         ))}
       </div>
-      <label>{t(lang, 'settings.baseUrl')}
-        <input value={endpoint.baseUrl} onChange={(e) => setEndpoint({ baseUrl: e.target.value })} placeholder="https://api.deepseek.com/v1" />
-      </label>
-      {isLocalEndpoint && (
-        <p className="cors-hint">{t(lang, 'settings.corsHint')}</p>
+      {isWebllm ? (
+        <p className="cors-hint">{t(lang, 'webllm.hint')}</p>
+      ) : (
+        <>
+          <label>{t(lang, 'settings.baseUrl')}
+            <input value={endpoint.baseUrl} onChange={(e) => setEndpoint({ baseUrl: e.target.value })} placeholder="https://api.deepseek.com/v1" />
+          </label>
+          {isLocalEndpoint && (
+            <p className="cors-hint">{t(lang, 'settings.corsHint')}</p>
+          )}
+          <label>{t(lang, 'settings.apiKey')}
+            <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
+          </label>
+          <label>{t(lang, 'settings.model')}
+            {models.length > 0 ? (
+              <select value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })}>
+                {!models.includes(endpoint.model) && <option value={endpoint.model}>{endpoint.model}</option>}
+                {models.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            ) : (
+              <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
+            )}
+          </label>
+        </>
       )}
-      <label>{t(lang, 'settings.apiKey')}
-        <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
-      </label>
-      <label>{t(lang, 'settings.model')}
-        {models.length > 0 ? (
-          <select value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })}>
-            {!models.includes(endpoint.model) && <option value={endpoint.model}>{endpoint.model}</option>}
-            {models.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-        ) : (
-          <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
-        )}
-      </label>
       <div className="param-row">
         <label>{t(lang, 'settings.temp')}
           <input
@@ -427,18 +440,22 @@ function SettingsPanel() {
           />
         </label>
       </div>
-      <div className="test-row">
-        <button className="btn-test" onClick={handleTest} disabled={status === 'loading' || !endpoint.baseUrl}>
-          {status === 'loading' ? t(lang, 'settings.testing') : t(lang, 'settings.test')}
-        </button>
-        {statusMsg && <span className={`test-msg ${status}`}>{statusMsg}</span>}
-      </div>
-      <div className="test-row">
-        <button className="btn-test" onClick={handleTestChat} disabled={chatStatus === 'loading' || !endpoint.baseUrl || !endpoint.model}>
-          {chatStatus === 'loading' ? t(lang, 'settings.sending') : t(lang, 'settings.sendTest')}
-        </button>
-        {chatMsg && <span className={`test-msg ${chatStatus}`}>{chatMsg}</span>}
-      </div>
+      {!isWebllm && (
+        <>
+          <div className="test-row">
+            <button className="btn-test" onClick={handleTest} disabled={status === 'loading' || !endpoint.baseUrl}>
+              {status === 'loading' ? t(lang, 'settings.testing') : t(lang, 'settings.test')}
+            </button>
+            {statusMsg && <span className={`test-msg ${status}`}>{statusMsg}</span>}
+          </div>
+          <div className="test-row">
+            <button className="btn-test" onClick={handleTestChat} disabled={chatStatus === 'loading' || !endpoint.baseUrl || !endpoint.model}>
+              {chatStatus === 'loading' ? t(lang, 'settings.sending') : t(lang, 'settings.sendTest')}
+            </button>
+            {chatMsg && <span className={`test-msg ${chatStatus}`}>{chatMsg}</span>}
+          </div>
+        </>
+      )}
     </div>
   )
 }
