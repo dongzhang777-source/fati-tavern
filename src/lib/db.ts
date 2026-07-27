@@ -13,6 +13,7 @@ export interface StoredCharacter {
   card: TavernCard
   avatarUrl?: string // data URL（从 PNG 提取）
   createdAt: number
+  builtin?: true     // 内置角色标记，不写 IndexedDB
 }
 
 export interface StoredConversation {

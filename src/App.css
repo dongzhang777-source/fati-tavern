@@ -25,10 +25,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .import-toast .fail-line { color: #f0a0b0; word-break: break-all; }
 
 /* ─── 品牌 logo ─── */
-.brand-logo { width: auto; height: 44px; vertical-align: middle; margin-right: 8px; }
+.brand-logo { height: 44px; width: 55px; object-fit: contain; vertical-align: middle; margin-right: 8px; flex-shrink: 0; }
 
 /* ─── 分级徽标 & UGC 免责 ─── */
 .badge-18 { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 0.6rem; font-weight: 700; color: #fff; background: var(--accent); border-radius: 4px; vertical-align: 2px; }
+.badge-free { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 0.6rem; font-weight: 500; color: #4caf50; background: rgba(76,175,80,0.15); border-radius: 4px; vertical-align: 2px; }
 .ugc-note { display: block; margin-top: 4px; font-size: 0.68rem; opacity: 0.7; }
 
 /* ─── AI 身份披露 & 危机资源提示 ─── */
@@ -48,9 +49,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .lang-toggle button.active { border-color: var(--accent); color: var(--accent); }
 
 /* ─── 画廊 ─── */
-.gallery { height: 100%; display: flex; flex-direction: column; padding: 24px 32px; position: relative; overflow-y: auto; }
-.gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.gallery-header h1 { font-size: 1.5rem; }
+.gallery { height: 100%; display: flex; flex-direction: column; padding: 24px 32px 0; position: relative; overflow: hidden; }
+.gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0; }
+.gallery-content { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 16px; }
+.gallery-header h1 { font-size: 1.5rem; font-weight: 300; color: #FF9F43; display: flex; align-items: center; }
 .gallery-actions { display: flex; gap: 10px; align-items: center; }
 .btn-import { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-size: 0.85rem; font-weight: 500; }
 .btn-import:hover { filter: brightness(1.1); }
@@ -93,8 +95,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .landing-hero h2 { font-size: 1.4rem; }
 }
 
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; flex: 1; }
-.char-card { background: var(--surface); border-radius: var(--radius); padding: 16px; cursor: pointer; display: flex; gap: 12px; align-items: flex-start; position: relative; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid transparent; }
+/* ─── 零摩擦目录页 ─── */
+.catalog-view { display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px; }
+.catalog-hero { text-align: center; padding: 16px 0 8px; }
+.catalog-hero h2 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.catalog-sub { color: var(--muted); font-size: 0.85rem; }
+.catalog-import-hint { text-align: center; padding: 16px 0; }
+.btn-import-secondary { background: none; border: 1px dashed rgba(255,255,255,0.2); color: var(--muted); padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.btn-import-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; width: 100%; }
+.char-card { background: var(--surface); border-radius: var(--radius); padding: 16px; cursor: pointer; display: flex; gap: 12px; align-items: flex-start; position: relative; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid rgba(255,255,255,0.08); }
 .char-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); border-color: rgba(233,69,96,0.3); }
 .card-avatar { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--surface2); display: flex; align-items: center; justify-content: center; }
 .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -105,7 +116,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .card-tags { font-size: 0.7rem; color: var(--accent); opacity: 0.8; }
 .char-card .btn-del { position: absolute; top: 8px; right: 8px; }
 
-.gallery-footer { margin-top: 20px; text-align: center; font-size: 0.72rem; color: var(--muted); }
+.gallery-footer { margin-top: 0; padding: 12px 0; text-align: center; font-size: 0.72rem; color: var(--muted); flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); background: var(--bg); }
 
 /* ─── 设置面板 ─── */
 .settings-panel { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
@@ -170,6 +181,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn-send { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500; }
 .btn-send:disabled { opacity: 0.4; cursor: default; }
 .btn-stop { background: var(--surface2); color: var(--text); border: 1px solid rgba(255,255,255,0.15); padding: 10px 16px; border-radius: var(--radius); cursor: pointer; }
+
+/* ─── 角色卡编辑按钮 ─── */
+.btn-edit { background: var(--surface2); border: 1px solid rgba(255,255,255,0.1); color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; position: absolute; top: 8px; right: 32px; }
+*:hover > .btn-edit { opacity: 1; }
+.btn-edit:hover { color: #4caf50; border-color: rgba(76,175,80,0.4); }
+
+/* ─── 角色卡编辑器弹窗 ─── */
+.editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.editor-modal { background: var(--surface); border-radius: var(--radius); width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
+.editor-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.editor-header h3 { font-size: 1rem; font-weight: 500; }
+.editor-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.editor-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 10px; }
+.editor-field { display: flex; flex-direction: column; gap: 4px; }
+.editor-field label { font-size: 0.75rem; color: var(--muted); }
+.editor-field input, .editor-field textarea, .editor-field select { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.85rem; outline: none; resize: vertical; font-family: inherit; }
+.editor-field input:focus, .editor-field textarea:focus, .editor-field select:focus { border-color: var(--accent); }
+.editor-builtin-note { font-size: 0.75rem; color: #e6b566; background: rgba(230,181,102,0.08); border: 1px solid rgba(230,181,102,0.25); border-radius: 6px; padding: 8px 10px; line-height: 1.5; }
+.btn-editor-cancel { background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
+.btn-editor-cancel:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+.btn-editor-save { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 500; }
+.btn-editor-save:hover { filter: brightness(1.1); }
 
 /* ─── 移动端 ─── */
 @media (max-width: 640px) {

@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
-import { parseCharacterJson, parsePngCard } from './lib/tavern'
+import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat } from './lib/api'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
+import type { StoredCharacter } from './lib/db'
 import './App.css'
 
 export default function App() {
@@ -20,6 +21,60 @@ export default function App() {
   )
 }
 
+// ─── 品牌 Logo（内联 SVG）─────────────────────────────
+function BrandLogo() {
+  return (
+    <svg className="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320">
+      <defs>
+        <radialGradient id="bodyGrad" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stopColor="#FFA050" />
+          <stop offset="60%" stopColor="#FF8C42" />
+          <stop offset="100%" stopColor="#E07020" />
+        </radialGradient>
+        <radialGradient id="bellyGrad" cx="50%" cy="45%" r="50%">
+          <stop offset="0%" stopColor="#FFE8CC" />
+          <stop offset="100%" stopColor="#FFD699" />
+        </radialGradient>
+        <radialGradient id="headGrad" cx="45%" cy="40%" r="50%">
+          <stop offset="0%" stopColor="#FFB060" />
+          <stop offset="100%" stopColor="#FF8C42" />
+        </radialGradient>
+        <radialGradient id="earInner" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFD699" />
+          <stop offset="100%" stopColor="#FFB060" />
+        </radialGradient>
+        <filter id="softShadow">
+          <feOffset dx="0" dy="4" />
+          <feGaussianBlur stdDeviation="4" />
+          <feComponentTransfer><feFuncA type="linear" slope="0.25" /></feComponentTransfer>
+        </filter>
+      </defs>
+      <circle cx="200" cy="140" r="120" fill="none" stroke="#3d3028" strokeWidth="1.5" opacity="0.5" />
+      <ellipse cx="200" cy="195" rx="85" ry="70" fill="url(#bodyGrad)" filter="url(#softShadow)" />
+      <ellipse cx="200" cy="205" rx="55" ry="45" fill="url(#bellyGrad)" />
+      <path d="M 280,175 Q 320,140 310,100 Q 305,80 290,85 Q 275,90 280,105 Q 285,120 275,140" fill="none" stroke="#E07020" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="200" cy="95" r="50" fill="url(#headGrad)" />
+      <path d="M 165,70 L 150,30 L 180,55 Z" fill="#FF8C42" />
+      <path d="M 165,70 L 153,38 L 176,58 Z" fill="url(#earInner)" />
+      <path d="M 235,70 L 250,30 L 220,55 Z" fill="#FF8C42" />
+      <path d="M 235,70 L 247,38 L 224,58 Z" fill="url(#earInner)" />
+      <ellipse cx="183" cy="88" rx="8" ry="7" fill="#3D2B1F" />
+      <circle cx="185" cy="86" r="2.5" fill="#FFE8CC" />
+      <ellipse cx="217" cy="88" rx="8" ry="7" fill="#3D2B1F" />
+      <circle cx="219" cy="86" r="2.5" fill="#FFE8CC" />
+      <path d="M 200,100 L 196,105 L 204,105 Z" fill="#FF6B35" />
+      <path d="M 192,110 Q 200,118 208,110" fill="none" stroke="#3D2B1F" strokeWidth="2" strokeLinecap="round" />
+      <line x1="165" y1="98" x2="130" y2="93" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="163" y1="106" x2="128" y2="106" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="165" y1="114" x2="130" y2="117" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="235" y1="98" x2="270" y2="93" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="237" y1="106" x2="272" y2="106" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="235" y1="114" x2="270" y2="117" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M 200,45 L 196,25 L 204,28 L 202,45" fill="#FF8C42" stroke="#E07020" strokeWidth="1" />
+    </svg>
+  )
+}
+
 // ─── 角色库画廊 ───────────────────────────────────────────
 interface ImportResult {
   ok: number
@@ -27,12 +82,17 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, openCharacter, lang } = useStore()
+  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang } = useStore()
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [editingChar, setEditingChar] = useState<StoredCharacter | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 区分内置角色和用户导入角色
+  const userChars = characters.filter((c) => !c.builtin)
+  const showCatalog = userChars.length === 0 // 没导入过卡 → 显示内置目录
 
   // 每个文件独立解析，成功/失败都必须给用户可见反馈
   async function handleFiles(files: FileList | File[]) {
@@ -80,7 +140,7 @@ function Gallery() {
       {dragOver && <div className="drop-overlay">{t(lang, 'gallery.dropOverlay')}</div>}
 
       <header className="gallery-header">
-        <h1><img className="brand-logo" src="/logo.svg" alt="" />{brandName(lang)}</h1>
+        <h1><BrandLogo />{brandName(lang)}</h1>
         <div className="gallery-actions">
           <button className="btn-import" onClick={() => fileRef.current?.click()}>{t(lang, 'gallery.import')}</button>
           <button className="btn-icon" onClick={() => setShowSettings(!showSettings)}>⚙</button>
@@ -92,56 +152,41 @@ function Gallery() {
         onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = '' }}
       />
 
+      <div className="gallery-content">
       {showSettings && <SettingsPanel />}
 
-      {characters.length === 0 ? (
-        <div className="landing">
-          <div className="landing-hero">
-            <h2>{t(lang, 'landing.title')}</h2>
-            <p className="landing-sub">{t(lang, 'landing.sub')}</p>
+      {showCatalog ? (
+        <div className="catalog-view">
+          <div className="catalog-hero">
+            <h2>{t(lang, 'landing.title2')}</h2>
+            <p className="catalog-sub">{t(lang, 'landing.subtitle2')}</p>
           </div>
 
-          <div className="landing-demo">
-            <div className="demo-step">
-              <span className="demo-num">1</span>
-              <div className="demo-card">
-                <span className="demo-icon">🃏</span>
-                <span>{t(lang, 'landing.step1')}</span>
+          <div className="card-grid">
+            {characters.filter((c) => c.builtin).map((c) => (
+              <div key={c.id} className="char-card" onClick={() => openCharacter(c.id)}>
+                <div className="card-avatar">
+                  <span className="avatar-placeholder">{c.card.name[0]}</span>
+                </div>
+                <div className="card-info">
+                  <strong className="card-name">
+                    {c.card.name}
+                    <span className="badge-free">{t(lang, 'catalog.free')}</span>
+                  </strong>
+                  <span className="card-desc">{c.card.description?.slice(0, 60) || c.card.personality?.slice(0, 60) || t(lang, 'gallery.noDesc')}</span>
+                  {c.card.tags?.length > 0 && (
+                    <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
+                  )}
+                </div>
+                <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{t(lang, 'gallery.edit')}</button>
               </div>
-            </div>
-            <span className="demo-arrow">→</span>
-            <div className="demo-step">
-              <span className="demo-num">2</span>
-              <div className="demo-card">
-                <span className="demo-icon">⚙️</span>
-                <span>{t(lang, 'landing.step2')}</span>
-              </div>
-            </div>
-            <span className="demo-arrow">→</span>
-            <div className="demo-step">
-              <span className="demo-num">3</span>
-              <div className="demo-card">
-                <span className="demo-icon">💬</span>
-                <span>{t(lang, 'landing.step3')}</span>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="landing-cta">
-            <button className="btn-import big" onClick={() => fileRef.current?.click()}>{t(lang, 'landing.cta')}</button>
-            <span className="landing-hint">{t(lang, 'landing.ctaHint')}</span>
-          </div>
-
-          <div className="landing-privacy">
-            <h3>{t(lang, 'landing.privacyTitle')}</h3>
-            <p>{t(lang, 'landing.privacyBody')}</p>
-          </div>
-
-          <div className="landing-features">
-            <div className="feature"><span>🚀</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat1') }} /></div>
-            <div className="feature"><span>🔑</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat2') }} /></div>
-            <div className="feature"><span>📱</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat3') }} /></div>
-            <div className="feature"><span>💾</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat4') }} /></div>
+          <div className="catalog-import-hint">
+            <button className="btn-import-secondary" onClick={() => fileRef.current?.click()}>
+              {t(lang, 'landing.browseCatalog')}
+            </button>
           </div>
         </div>
       ) : (
@@ -158,17 +203,20 @@ function Gallery() {
                 <strong className="card-name">
                   {c.card.name}
                   {c.card.contentRating === 'adult' && <span className="badge-18">18+</span>}
+                  {c.builtin && <span className="badge-free">{t(lang, 'catalog.free')}</span>}
                 </strong>
                 <span className="card-desc">{c.card.description?.slice(0, 60) || c.card.personality?.slice(0, 60) || t(lang, 'gallery.noDesc')}</span>
                 {c.card.tags?.length > 0 && (
                   <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
                 )}
               </div>
+              <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{t(lang, 'gallery.edit')}</button>
               <button className="btn-del" onClick={(e) => { e.stopPropagation(); removeCharacter(c.id) }} title={t(lang, 'gallery.delete')}>×</button>
             </div>
           ))}
         </div>
       )}
+      </div>
 
       <footer className="gallery-footer">
         <span>{t(lang, 'gallery.footer')}</span>
@@ -183,6 +231,96 @@ function Gallery() {
           ))}
         </div>
       )}
+
+      {editingChar && (
+        <CharacterEditor
+          character={editingChar}
+          onSave={(card) => { updateCharacter(editingChar.id, card); setEditingChar(null) }}
+          onClose={() => setEditingChar(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── 角色卡编辑器弹窗 ─────────────────────────────────────
+function CharacterEditor({ character, onSave, onClose }: {
+  character: StoredCharacter
+  onSave: (card: TavernCard) => void
+  onClose: () => void
+}) {
+  const { lang } = useStore()
+  const [form, setForm] = useState<TavernCard>({ ...character.card })
+  const [tagsInput, setTagsInput] = useState(character.card.tags?.join(', ') || '')
+
+  function updateField<K extends keyof TavernCard>(key: K, value: TavernCard[K]) {
+    setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  function handleSave() {
+    // 解析标签
+    const tags = tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
+    const updated = { ...form, tags }
+    onSave(updated)
+  }
+
+  return (
+    <div className="editor-overlay" onClick={onClose}>
+      <div className="editor-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="editor-header">
+          <h3>{t(lang, 'editor.title')}</h3>
+        </div>
+        <div className="editor-body">
+          {character.builtin && (
+            <p className="editor-builtin-note">{t(lang, 'editor.builtinNote')}</p>
+          )}
+          <div className="editor-field">
+            <label>{t(lang, 'editor.name')}</label>
+            <input value={form.name} onChange={(e) => updateField('name', e.target.value)} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.description')}</label>
+            <textarea value={form.description || ''} onChange={(e) => updateField('description', e.target.value)} rows={3} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.personality')}</label>
+            <textarea value={form.personality || ''} onChange={(e) => updateField('personality', e.target.value)} rows={2} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.scenario')}</label>
+            <textarea value={form.scenario || ''} onChange={(e) => updateField('scenario', e.target.value)} rows={2} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.firstMes')}</label>
+            <textarea value={form.first_mes || ''} onChange={(e) => updateField('first_mes', e.target.value)} rows={4} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.mesExample')}</label>
+            <textarea value={form.mes_example || ''} onChange={(e) => updateField('mes_example', e.target.value)} rows={3} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.systemPrompt')}</label>
+            <textarea value={form.system_prompt || ''} onChange={(e) => updateField('system_prompt', e.target.value)} rows={3} />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.tags')}</label>
+            <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="fantasy, adventure, magic" />
+          </div>
+          <div className="editor-field">
+            <label>{t(lang, 'editor.contentRating')}</label>
+            <select value={form.contentRating || 'unknown'} onChange={(e) => updateField('contentRating', e.target.value as any)}>
+              <option value="unknown">Unknown</option>
+              <option value="safe">Safe</option>
+              <option value="suggestive">Suggestive</option>
+              <option value="adult">Adult (18+)</option>
+            </select>
+          </div>
+        </div>
+        <div className="editor-footer">
+          <button className="btn-editor-cancel" onClick={onClose}>{t(lang, 'editor.cancel')}</button>
+          <button className="btn-editor-save" onClick={handleSave}>{t(lang, 'editor.save')}</button>
+        </div>
+      </div>
     </div>
   )
 }

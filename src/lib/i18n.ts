@@ -53,6 +53,12 @@ const dict: Record<string, { zh: string; en: string }> = {
   'landing.feat2': { zh: 'BYOK 自带 Key<br/>DeepSeek / Kimi / OpenAI / 本地', en: 'BYOK — bring your key<br/>DeepSeek / Kimi / OpenAI / local' },
   'landing.feat3': { zh: '手机电脑通用<br/>可添加到主屏幕', en: 'Works on phone & desktop<br/>Add to home screen' },
   'landing.feat4': { zh: '数据存本地<br/>刷新不丢失', en: 'Data stored locally<br/>Survives refresh' },
+  // ── 零摩擦落地页 ──
+  'landing.title2': { zh: '选一个角色，立即开聊', en: 'Pick a character and start chatting' },
+  'landing.subtitle2': { zh: '20 个精选角色 · 浏览器本地推理 · 零配置', en: '20 curated characters · Local AI · Zero setup' },
+  'landing.browseCatalog': { zh: '或导入你自己的角色卡', en: 'Or import your own character card' },
+  'catalog.builtin': { zh: '内置', en: 'Built-in' },
+  'catalog.free': { zh: '免费', en: 'Free' },
   'toast.imported': { zh: '✓ 已导入 {n} 张角色卡', en: '✓ Imported {n} card(s)' },
 
   // ── 聊天 ──
@@ -112,6 +118,22 @@ const dict: Record<string, { zh: string; en: string }> = {
     en: 'Your browser does not support WebGPU, so the free demo cannot run. Use Chrome / Edge 113+, or configure a BYOK endpoint.',
   },
   'webllm.loading': { zh: '正在准备本地模型：', en: 'Preparing local model: ' },
+
+  // ── 角色卡编辑器 ──
+  'editor.title': { zh: '编辑角色卡', en: 'Edit character card' },
+  'editor.name': { zh: '名称', en: 'Name' },
+  'editor.description': { zh: '背景描述', en: 'Description' },
+  'editor.personality': { zh: '性格', en: 'Personality' },
+  'editor.scenario': { zh: '场景', en: 'Scenario' },
+  'editor.firstMes': { zh: '开场白', en: 'First message' },
+  'editor.mesExample': { zh: '对话示例', en: 'Example dialogue' },
+  'editor.systemPrompt': { zh: '系统提示词', en: 'System prompt' },
+  'editor.tags': { zh: '标签（逗号分隔）', en: 'Tags (comma separated)' },
+  'editor.contentRating': { zh: '内容分级', en: 'Content rating' },
+  'editor.save': { zh: '保存', en: 'Save' },
+  'editor.cancel': { zh: '取消', en: 'Cancel' },
+  'editor.builtinNote': { zh: '这是内置角色，保存后将创建你的个人副本', en: 'This is a built-in character. Saving will create your personal copy.' },
+  'gallery.edit': { zh: '编辑', en: 'Edit' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {

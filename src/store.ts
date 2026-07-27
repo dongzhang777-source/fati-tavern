@@ -8,6 +8,7 @@ import { detectSelfHarm } from './lib/safety'
 import { detectLang, saveLang, t, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
 import { WEBLLM_BASE, streamWebLLM, webllmSupported, setWebllmProgressHandler } from './lib/webllm'
+import { BUILTIN_CHARACTERS } from './lib/catalog'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -52,6 +53,7 @@ interface State {
   init: () => Promise<void>
   importCard: (card: TavernCard, file?: File) => Promise<void>
   removeCharacter: (id: string) => Promise<void>
+  updateCharacter: (id: string, card: TavernCard) => Promise<void>
   openCharacter: (id: string) => Promise<void>
   backToGallery: () => void
 
@@ -75,7 +77,8 @@ function loadEndpoint(): EndpointConfig {
     const raw = localStorage.getItem(LS_KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
-  return { baseUrl: 'https://api.deepseek.com/v1', apiKey: '', model: 'deepseek-chat' }
+  // 默认 WebLLM 浏览器本地推理，零配置即可聊天
+  return { baseUrl: 'webllm', apiKey: '', model: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC' }
 }
 
 function saveEndpoint(cfg: EndpointConfig) {
@@ -98,7 +101,17 @@ export const useStore = create<State>((set, get) => ({
   endpoint: loadEndpoint(),
 
   init: async () => {
-    const characters = await dbGetCharacters()
+    // 加载用户导入的角色（IndexedDB）
+    const userChars = await dbGetCharacters()
+    // 加载内置角色目录（不写 IndexedDB，标记 builtin: true）
+    const builtinChars: StoredCharacter[] = BUILTIN_CHARACTERS.map((c) => ({
+      id: c._id,
+      card: c,
+      createdAt: 0, // 内置角色时间戳为 0，排在用户角色后面
+      builtin: true,
+    }))
+    // 合并：用户角色在前，内置角色在后
+    const characters = [...userChars, ...builtinChars]
     set({ characters })
   },
 
@@ -118,12 +131,50 @@ export const useStore = create<State>((set, get) => ({
   },
 
   removeCharacter: async (id) => {
+    // 内置角色只从内存移除，不写 IndexedDB
+    if (id.startsWith('builtin-')) {
+      set((s) => ({
+        characters: s.characters.filter((c) => c.id !== id),
+        activeCharId: s.activeCharId === id ? null : s.activeCharId,
+        view: s.activeCharId === id ? 'gallery' : s.view,
+      }))
+      return
+    }
     await dbDeleteCharacter(id)
     set((s) => ({
       characters: s.characters.filter((c) => c.id !== id),
       activeCharId: s.activeCharId === id ? null : s.activeCharId,
       view: s.activeCharId === id ? 'gallery' : s.view,
     }))
+  },
+
+  updateCharacter: async (id, card) => {
+    const existing = get().characters.find((c) => c.id === id)
+    if (!existing) return
+
+    if (existing.builtin) {
+      // 内置角色：创建用户副本
+      const newId = genId()
+      const stored: StoredCharacter = {
+        id: newId,
+        card,
+        avatarUrl: existing.avatarUrl,
+        createdAt: Date.now(),
+        // 不设置 builtin 标记，成为用户角色
+      }
+      await dbPutCharacter(stored)
+      set((s) => ({
+        characters: [stored, ...s.characters], // 添加到列表顶部
+      }))
+      trackOnce('character_edit')
+    } else {
+      // 用户角色：直接更新
+      const updated = { ...existing, card }
+      await dbPutCharacter(updated)
+      set((s) => ({
+        characters: s.characters.map((c) => c.id === id ? updated : c),
+      }))
+    }
   },
 
   openCharacter: async (id) => {
