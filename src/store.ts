@@ -4,6 +4,8 @@ import { cardToSystemPrompt, bookToContext, applyMacros } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
 import { trimMessages } from './lib/context'
+import { detectSelfHarm } from './lib/safety'
+import { detectLang, saveLang, t, type Lang } from './lib/i18n'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -35,6 +37,10 @@ interface State {
   // 聊天状态
   streaming: boolean
   error: string | null
+  safetyNotice: boolean // 自伤关键词命中后显示危机资源提示
+
+  // 语言
+  lang: Lang
 
   // 端点配置
   endpoint: EndpointConfig
@@ -55,6 +61,8 @@ interface State {
   stopStreaming: () => void
   clearChat: () => void
   setEndpoint: (cfg: Partial<EndpointConfig>) => void
+  setLang: (lang: Lang) => void
+  dismissSafetyNotice: () => void
 }
 
 const LS_KEY = 'tavern-endpoint'
@@ -81,6 +89,8 @@ export const useStore = create<State>((set, get) => ({
   activeConvId: null,
   streaming: false,
   error: null,
+  safetyNotice: false,
+  lang: detectLang(),
   endpoint: loadEndpoint(),
 
   init: async () => {
@@ -125,7 +135,7 @@ export const useStore = create<State>((set, get) => ({
   backToGallery: () => set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] }),
 
   newConversation: async () => {
-    const { activeCharId, characters } = get()
+    const { activeCharId, characters, lang } = get()
     if (!activeCharId) return
     const char = characters.find((c) => c.id === activeCharId)
     // 开场白替换 {{char}}/{{user}} 宏后再展示
@@ -133,7 +143,7 @@ export const useStore = create<State>((set, get) => ({
     const conv: StoredConversation = {
       id: genId(),
       characterId: activeCharId,
-      title: `新对话`,
+      title: t(lang, 'chat.newConvTitle'),
       messages: firstMsg ? [{ role: 'assistant', content: firstMsg, ts: Date.now() }] : [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -173,14 +183,19 @@ export const useStore = create<State>((set, get) => ({
   },
 
   sendMessage: (text) => {
-    const { endpoint, characters, activeCharId, conversations, activeConvId } = get()
+    const { endpoint, characters, activeCharId, conversations, activeConvId, lang } = get()
     const char = characters.find((c) => c.id === activeCharId)
     const conv = conversations.find((c) => c.id === activeConvId)
     if (!char || !conv) return
 
     if (!endpoint.baseUrl) {
-      set({ error: '请先在设置中配置 API 端点' })
+      set({ error: t(lang, 'error.noEndpoint') })
       return
+    }
+
+    // 自伤/自杀意念兜底：本地关键词识别，命中弹危机资源提示（不阻断消息）
+    if (detectSelfHarm(text)) {
+      set({ safetyNotice: true })
     }
 
     const userMsg: ChatMessage = { role: 'user', content: text, ts: Date.now() }
@@ -188,7 +203,8 @@ export const useStore = create<State>((set, get) => ({
 
     // 更新会话消息
     const updatedConv = { ...conv, messages: updatedMessages, updatedAt: Date.now() }
-    if (conv.title === '新对话' && text.length > 0) {
+    // 默认标题（两种语言）都视为未命名，首条消息自动命名
+    if ((conv.title === '新对话' || conv.title === 'New chat') && text.length > 0) {
       updatedConv.title = text.slice(0, 20) + (text.length > 20 ? '…' : '')
     }
     set((s) => ({
@@ -240,7 +256,7 @@ export const useStore = create<State>((set, get) => ({
       if (e.name === 'AbortError') {
         set({ streaming: false })
       } else {
-        set({ streaming: false, error: e.message || '请求失败' })
+        set({ streaming: false, error: e.message || t(get().lang, 'error.request') })
       }
       const final = get().conversations.find((c) => c.id === conv.id)
       if (final) dbPutConversation(final)
@@ -280,4 +296,11 @@ export const useStore = create<State>((set, get) => ({
     saveEndpoint(next)
     return { endpoint: next }
   }),
+
+  setLang: (lang) => {
+    saveLang(lang)
+    set({ lang })
+  },
+
+  dismissSafetyNotice: () => set({ safetyNotice: false }),
 }))

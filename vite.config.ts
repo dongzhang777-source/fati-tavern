@@ -10,7 +10,7 @@ export default defineConfig({
       manifest: {
         name: 'FATI Tavern',
         short_name: 'Tavern',
-        description: '拖一张角色卡进来，和 TA 聊天',
+        description: '肥猫酒馆 · Drop a character card in and chat',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
         display: 'standalone',

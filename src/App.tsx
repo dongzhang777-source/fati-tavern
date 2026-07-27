@@ -2,13 +2,16 @@ import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat } from './lib/api'
+import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import './App.css'
 
 export default function App() {
   const store = useStore()
-  const { view } = store
+  const { view, lang } = store
 
   useEffect(() => { store.init() }, [])
+  // 中文=肥猫酒馆，其他语言=FATI Tavern
+  useEffect(() => { document.title = docTitle(lang) }, [lang])
 
   return (
     <div className="app">
@@ -24,7 +27,7 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, openCharacter } = useStore()
+  const { characters, importCard, removeCharacter, openCharacter, lang } = useStore()
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -48,17 +51,17 @@ function Gallery() {
           try {
             json = JSON.parse(text)
           } catch {
-            throw new Error('JSON 解析失败')
+            throw new Error(t(lang, 'import.jsonFail'))
           }
           const card = parseCharacterJson(json)
-          if (!card) throw new Error('无法识别的角色卡格式')
+          if (!card) throw new Error(t(lang, 'import.unknownFormat'))
           await importCard(card, file)
           ok++
         } else {
-          throw new Error('仅支持 .png / .json 文件')
+          throw new Error(t(lang, 'import.unsupported'))
         }
       } catch (e: any) {
-        fails.push({ name: file.name, reason: e?.message || '导入失败' })
+        fails.push({ name: file.name, reason: localizeError(lang, e?.message || t(lang, 'import.fail')) })
       }
     }
     setImportResult({ ok, fails })
@@ -74,12 +77,12 @@ function Gallery() {
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
     >
-      {dragOver && <div className="drop-overlay">松开导入角色卡（PNG / JSON）</div>}
+      {dragOver && <div className="drop-overlay">{t(lang, 'gallery.dropOverlay')}</div>}
 
       <header className="gallery-header">
-        <h1>🍺 FATI Tavern</h1>
+        <h1><img className="brand-logo" src="/logo.svg" alt="" />{brandName(lang)}</h1>
         <div className="gallery-actions">
-          <button className="btn-import" onClick={() => fileRef.current?.click()}>+ 导入角色卡</button>
+          <button className="btn-import" onClick={() => fileRef.current?.click()}>{t(lang, 'gallery.import')}</button>
           <button className="btn-icon" onClick={() => setShowSettings(!showSettings)}>⚙</button>
         </div>
       </header>
@@ -94,8 +97,8 @@ function Gallery() {
       {characters.length === 0 ? (
         <div className="landing">
           <div className="landing-hero">
-            <h2>拖一张角色卡进来，和 TA 聊天</h2>
-            <p className="landing-sub">支持 SillyTavern 角色卡（PNG / JSON），3 分钟开始你的第一次对话</p>
+            <h2>{t(lang, 'landing.title')}</h2>
+            <p className="landing-sub">{t(lang, 'landing.sub')}</p>
           </div>
 
           <div className="landing-demo">
@@ -103,7 +106,7 @@ function Gallery() {
               <span className="demo-num">1</span>
               <div className="demo-card">
                 <span className="demo-icon">🃏</span>
-                <span>拖入角色卡</span>
+                <span>{t(lang, 'landing.step1')}</span>
               </div>
             </div>
             <span className="demo-arrow">→</span>
@@ -111,7 +114,7 @@ function Gallery() {
               <span className="demo-num">2</span>
               <div className="demo-card">
                 <span className="demo-icon">⚙️</span>
-                <span>填入你的 API Key</span>
+                <span>{t(lang, 'landing.step2')}</span>
               </div>
             </div>
             <span className="demo-arrow">→</span>
@@ -119,26 +122,26 @@ function Gallery() {
               <span className="demo-num">3</span>
               <div className="demo-card">
                 <span className="demo-icon">💬</span>
-                <span>开始聊天</span>
+                <span>{t(lang, 'landing.step3')}</span>
               </div>
             </div>
           </div>
 
           <div className="landing-cta">
-            <button className="btn-import big" onClick={() => fileRef.current?.click()}>导入第一张角色卡</button>
-            <span className="landing-hint">或者直接把文件拖到页面任意位置</span>
+            <button className="btn-import big" onClick={() => fileRef.current?.click()}>{t(lang, 'landing.cta')}</button>
+            <span className="landing-hint">{t(lang, 'landing.ctaHint')}</span>
           </div>
 
           <div className="landing-privacy">
-            <h3>🔒 隐私承诺</h3>
-            <p>你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有数据上传，没有账号注册。关闭页面后一切仍在本地。</p>
+            <h3>{t(lang, 'landing.privacyTitle')}</h3>
+            <p>{t(lang, 'landing.privacyBody')}</p>
           </div>
 
           <div className="landing-features">
-            <div className="feature"><span>🚀</span><p>纯前端 PWA<br/>零安装零注册</p></div>
-            <div className="feature"><span>🔑</span><p>BYOK 自带 Key<br/>DeepSeek / Kimi / OpenAI / 本地</p></div>
-            <div className="feature"><span>📱</span><p>手机电脑通用<br/>可添加到主屏幕</p></div>
-            <div className="feature"><span>💾</span><p>数据存本地<br/>刷新不丢失</p></div>
+            <div className="feature"><span>🚀</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat1') }} /></div>
+            <div className="feature"><span>🔑</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat2') }} /></div>
+            <div className="feature"><span>📱</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat3') }} /></div>
+            <div className="feature"><span>💾</span><p dangerouslySetInnerHTML={{ __html: t(lang, 'landing.feat4') }} /></div>
           </div>
         </div>
       ) : (
@@ -153,24 +156,24 @@ function Gallery() {
               </div>
               <div className="card-info">
                 <strong className="card-name">{c.card.name}</strong>
-                <span className="card-desc">{c.card.description?.slice(0, 60) || c.card.personality?.slice(0, 60) || '暂无描述'}</span>
+                <span className="card-desc">{c.card.description?.slice(0, 60) || c.card.personality?.slice(0, 60) || t(lang, 'gallery.noDesc')}</span>
                 {c.card.tags?.length > 0 && (
                   <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
                 )}
               </div>
-              <button className="btn-del" onClick={(e) => { e.stopPropagation(); removeCharacter(c.id) }} title="删除">×</button>
+              <button className="btn-del" onClick={(e) => { e.stopPropagation(); removeCharacter(c.id) }} title={t(lang, 'gallery.delete')}>×</button>
             </div>
           ))}
         </div>
       )}
 
       <footer className="gallery-footer">
-        <span>BYOK · 你的 Key 和聊天记录不离开你的设备</span>
+        <span>{t(lang, 'gallery.footer')}</span>
       </footer>
 
       {importResult && (
         <div className={`import-toast ${importResult.fails.length > 0 ? 'has-fail' : ''}`} onClick={() => setImportResult(null)}>
-          {importResult.ok > 0 && <p>✓ 已导入 {importResult.ok} 张角色卡</p>}
+          {importResult.ok > 0 && <p>{t(lang, 'toast.imported', { n: importResult.ok })}</p>}
           {importResult.fails.map((f) => (
             <p key={f.name} className="fail-line">✗ {f.name}：{f.reason}</p>
           ))}
@@ -186,6 +189,7 @@ function ChatView() {
     characters, activeCharId, conversations, activeConvId,
     streaming, error, sendMessage, stopStreaming, clearChat,
     newConversation, selectConversation, deleteConversation, backToGallery,
+    lang, safetyNotice, dismissSafetyNotice,
   } = useStore()
 
   const [input, setInput] = useState('')
@@ -215,8 +219,8 @@ function ChatView() {
       {showConvList && (
         <aside className="conv-sidebar">
           <div className="conv-header">
-            <h3>对话</h3>
-            <button onClick={() => newConversation()}>+ 新对话</button>
+            <h3>{t(lang, 'chat.convHeader')}</h3>
+            <button onClick={() => newConversation()}>{t(lang, 'chat.newConv')}</button>
           </div>
           <ul className="conv-list">
             {conversations.map((c) => (
@@ -232,14 +236,18 @@ function ChatView() {
       {/* 主聊天区 */}
       <main className="chat-main">
         <header className="chat-header">
-          <button className="btn-back" onClick={backToGallery}>← 角色库</button>
+          <button className="btn-back" onClick={backToGallery}>{t(lang, 'chat.back')}</button>
           <div className="chat-title">
             {char.avatarUrl && <img className="header-avatar" src={char.avatarUrl} alt="" />}
-            <strong>{char.card.name}</strong>
+            <div className="chat-title-text">
+              <strong>{char.card.name}</strong>
+              {/* AI 身份披露——州级陪聊法规底线要求，常驻不可关闭 */}
+              <span className="ai-disclosure">{t(lang, 'chat.aiDisclosure')}</span>
+            </div>
           </div>
           <div className="chat-actions">
-            <button onClick={() => setShowConvList(!showConvList)} title="对话列表">☰</button>
-            <button onClick={clearChat} title="清空">🗑</button>
+            <button onClick={() => setShowConvList(!showConvList)} title={t(lang, 'chat.convList')}>☰</button>
+            <button onClick={clearChat} title={t(lang, 'chat.clear')}>🗑</button>
           </div>
         </header>
 
@@ -247,11 +255,19 @@ function ChatView() {
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               <div className="msg-content">{m.content || (streaming && i === messages.length - 1 ? '…' : '')}</div>
-              {m.ts && <span className="msg-time">{new Date(m.ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>}
+              {m.ts && <span className="msg-time">{new Date(m.ts).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
             </div>
           ))}
           <div ref={chatEndRef} />
         </div>
+
+        {/* 自伤关键词命中后的危机资源提示（非阻断、可关闭） */}
+        {safetyNotice && (
+          <div className="crisis-bar">
+            <span>💛 {t(lang, 'chat.crisis')}</span>
+            <button onClick={dismissSafetyNotice}>{t(lang, 'chat.crisisDismiss')}</button>
+          </div>
+        )}
 
         {error && <div className="error-bar">⚠ {error}</div>}
 
@@ -260,13 +276,13 @@ function ChatView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder={`对 ${char.card.name} 说点什么…`}
+            placeholder={t(lang, 'chat.placeholder', { name: char.card.name })}
             disabled={streaming}
             autoFocus
           />
           {streaming
-            ? <button className="btn-stop" onClick={stopStreaming}>■ 停止</button>
-            : <button className="btn-send" onClick={handleSend} disabled={!input.trim()}>发送</button>
+            ? <button className="btn-stop" onClick={stopStreaming}>{t(lang, 'chat.stop')}</button>
+            : <button className="btn-send" onClick={handleSend} disabled={!input.trim()}>{t(lang, 'chat.send')}</button>
           }
         </footer>
       </main>
@@ -316,7 +332,7 @@ function ConvItem({ conv, active, onSelect, onDelete }: {
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint } = useStore()
+  const { endpoint, setEndpoint, lang, setLang } = useStore()
   const [models, setModels] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
@@ -333,10 +349,10 @@ function SettingsPanel() {
       const list = await fetchModels(endpoint)
       setModels(list)
       setStatus('ok')
-      setStatusMsg(`连接成功，发现 ${list.length} 个模型`)
+      setStatusMsg(t(lang, 'settings.testOk', { n: list.length }))
     } catch (e: any) {
       setStatus('error')
-      setStatusMsg(e.message || '连接失败')
+      setStatusMsg(e.message || t(lang, 'settings.testFail'))
       setModels([])
     }
   }
@@ -348,16 +364,25 @@ function SettingsPanel() {
     try {
       await testChat(endpoint)
       setChatStatus('ok')
-      setChatMsg('聊天链路正常，模型有回复')
+      setChatMsg(t(lang, 'settings.chatOk'))
     } catch (e: any) {
       setChatStatus('error')
-      setChatMsg(e.message || '测试失败')
+      setChatMsg(e.message || t(lang, 'settings.chatFail'))
     }
   }
 
   return (
     <div className="settings-panel">
-      <h3>API 端点</h3>
+      <div className="settings-head">
+        <h3>{t(lang, 'settings.title')}</h3>
+        <div className="lang-toggle" title={t(lang, 'settings.lang')}>
+          {(['zh', 'en'] as Lang[]).map((l) => (
+            <button key={l} className={lang === l ? 'active' : ''} onClick={() => setLang(l)}>
+              {l === 'zh' ? '中文' : 'EN'}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="presets">
         {PRESETS.map((p) => (
           <button
@@ -367,19 +392,16 @@ function SettingsPanel() {
           >{p.label}</button>
         ))}
       </div>
-      <label>Base URL
+      <label>{t(lang, 'settings.baseUrl')}
         <input value={endpoint.baseUrl} onChange={(e) => setEndpoint({ baseUrl: e.target.value })} placeholder="https://api.deepseek.com/v1" />
       </label>
       {isLocalEndpoint && (
-        <p className="cors-hint">
-          ⚠ 本地端点需开启 CORS 才能被网页访问：LM Studio 在 Server 设置中打开
-          「Enable CORS」；Ollama 启动前设置环境变量 <code>OLLAMA_ORIGINS=*</code>。
-        </p>
+        <p className="cors-hint">{t(lang, 'settings.corsHint')}</p>
       )}
-      <label>API Key（只存本地，不离开你的设备）
+      <label>{t(lang, 'settings.apiKey')}
         <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
       </label>
-      <label>模型
+      <label>{t(lang, 'settings.model')}
         {models.length > 0 ? (
           <select value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })}>
             {!models.includes(endpoint.model) && <option value={endpoint.model}>{endpoint.model}</option>}
@@ -390,14 +412,14 @@ function SettingsPanel() {
         )}
       </label>
       <div className="param-row">
-        <label>温度（0–2）
+        <label>{t(lang, 'settings.temp')}
           <input
             type="number" min="0" max="2" step="0.1"
             value={endpoint.temperature ?? 0.8}
             onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) setEndpoint({ temperature: v }) }}
           />
         </label>
-        <label>最大回复 tokens
+        <label>{t(lang, 'settings.maxTokens')}
           <input
             type="number" min="128" max="8192" step="128"
             value={endpoint.maxTokens ?? 2048}
@@ -407,13 +429,13 @@ function SettingsPanel() {
       </div>
       <div className="test-row">
         <button className="btn-test" onClick={handleTest} disabled={status === 'loading' || !endpoint.baseUrl}>
-          {status === 'loading' ? '测试中…' : '测试连接 & 拉取模型'}
+          {status === 'loading' ? t(lang, 'settings.testing') : t(lang, 'settings.test')}
         </button>
         {statusMsg && <span className={`test-msg ${status}`}>{statusMsg}</span>}
       </div>
       <div className="test-row">
         <button className="btn-test" onClick={handleTestChat} disabled={chatStatus === 'loading' || !endpoint.baseUrl || !endpoint.model}>
-          {chatStatus === 'loading' ? '发送中…' : '发送测试消息'}
+          {chatStatus === 'loading' ? t(lang, 'settings.sending') : t(lang, 'settings.sendTest')}
         </button>
         {chatMsg && <span className={`test-msg ${chatStatus}`}>{chatMsg}</span>}
       </div>
