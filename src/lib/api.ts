@@ -22,7 +22,7 @@ export interface WebLLMModelCard {
   name: string        // 展示名
   desc: string        // 一句话说明
   tier: 'phone' | 'balanced' | 'high'
-  sizeMB: number      // 下载体积（估算）
+  sizeGB: number      // 下载体积（GB，估算）
   recommended?: boolean
 }
 
@@ -32,7 +32,7 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     name: 'Qwen3 0.6B',
     desc: '最轻量，手机/旧设备可跑，基础对话够用',
     tier: 'phone',
-    sizeMB: 450,
+    sizeGB: 0.5,
     recommended: true,
   },
   {
@@ -40,14 +40,14 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     name: 'Qwen3 1.7B',
     desc: '轻量本地档，响应快、占资源少',
     tier: 'phone',
-    sizeMB: 1100,
+    sizeGB: 1.1,
   },
   {
     id: 'Qwen3-4B-q4f16_1-MLC',
     name: 'Qwen3 4B',
     desc: '质量与速度均衡，普通电脑/平板推荐',
     tier: 'balanced',
-    sizeMB: 2600,
+    sizeGB: 2.6,
     recommended: true,
   },
   {
@@ -55,7 +55,7 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     name: 'Qwen3 8B',
     desc: '效果最好，但更慢更占内存，适合高性能设备',
     tier: 'high',
-    sizeMB: 5000,
+    sizeGB: 5.0,
     recommended: true,
   },
 ]

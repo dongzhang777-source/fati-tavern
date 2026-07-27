@@ -16,6 +16,26 @@ export function webllmSupported(): boolean {
   return typeof navigator !== 'undefined' && 'gpu' in navigator
 }
 
+/**
+ * 是否 iOS 设备（iPhone / iPad / iPod）。
+ * 真机验证：1.7B 跑得稳，但 4B / 8B 在 iOS Safari 的
+ * WebGPU 标签页内存上限下会 OOM 整页闪退（GPU 进程崩溃，JS 捕获不到）。
+ * 故 iOS 上仅开放 0.6B / 1.7B 两档。
+ */
+export function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+/** iOS 上允许运行的模型 id（内存受限，只放开最小两档） */
+const IOS_ALLOWED = new Set(['Qwen3-0.6B-q4f16_1-MLC', 'Qwen3-1.7B-q4f16_1-MLC'])
+
+export function iosModelBlocked(modelId: string): { blocked: boolean; reason?: string } {
+  if (!isIOS()) return { blocked: false }
+  if (IOS_ALLOWED.has(modelId)) return { blocked: false }
+  return { blocked: true, reason: 'iOS 设备内存有限，建议改用 1.7B 及以下档位' }
+}
+
 // 模型下载/编译进度回调（由 store 注册，用于 UI 展示）
 export interface WebLLMProgress {
   text: string

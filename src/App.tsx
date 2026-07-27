@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
-import { webllmSupported, loadWebLLMModel, loadedWebLLMModel } from './lib/webllm'
+import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, iosModelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import type { StoredCharacter } from './lib/db'
 import './App.css'
@@ -551,10 +551,12 @@ function WebLLMModelPicker({
           const isDownloading = downloading === m.id
           const isLoaded = loadedWebLLMModel() === m.id
           const isCurrent = endpoint.model === m.id
+          const iosBlock = iosModelBlocked(m.id)
+          const disabled = !supported || iosBlock.blocked
           return (
             <div
               key={m.id}
-              className={`webllm-card tier-${m.tier} ${isCurrent ? 'active' : ''}`}
+              className={`webllm-card tier-${m.tier} ${isCurrent ? 'active' : ''} ${iosBlock.blocked ? 'ios-locked' : ''}`}
             >
               <div className="webllm-card-head">
                 <span className="webllm-card-name">{m.name}</span>
@@ -562,7 +564,10 @@ function WebLLMModelPicker({
                 {m.tier === deviceTier && <span className="webllm-badge auto">适合你的设备</span>}
               </div>
               <div className="webllm-card-desc">{m.desc}</div>
-              <div className="webllm-card-size">约 {m.sizeMB} MB</div>
+              <div className="webllm-card-size">约 {m.sizeGB} GB</div>
+              {iosBlock.blocked && (
+                <div className="webllm-ios-locked">🚫 {iosBlock.reason}</div>
+              )}
 
               {isDownloading ? (
                 <div className="webllm-progress-wrap">
@@ -578,7 +583,7 @@ function WebLLMModelPicker({
                 <button
                   className="webllm-btn ready"
                   onClick={() => setEndpoint({ model: m.id })}
-                  disabled={isCurrent}
+                  disabled={isCurrent || iosBlock.blocked}
                 >
                   {isCurrent ? '✓ 使用中' : '使用'}
                 </button>
@@ -586,7 +591,7 @@ function WebLLMModelPicker({
                 <button
                   className="webllm-btn"
                   onClick={() => handleDownload(m.id)}
-                  disabled={!supported}
+                  disabled={disabled}
                 >
                   下载并启用
                 </button>
