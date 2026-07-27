@@ -1,0 +1,15 @@
+#!/bin/sh
+# fati-tavern 仓库级防护：强制提交邮箱为 dongzhang777-source 的 noreply 地址。
+# 原因：Vercel team 只认 dongzhang777-source 这个 GitHub 身份；
+# 若用 aiatwork@users.noreply.github.com 提交，部署会被拦（"not a member of the team"）。
+# 本 hook 在邮箱不符时自动修正并拒绝本次提交，避免再次踩坑。
+REQUIRED="292045917+dongzhang777-source@users.noreply.github.com"
+CURRENT=$(git config user.email 2>/dev/null)
+if [ "$CURRENT" != "$REQUIRED" ]; then
+  echo "❌ 提交邮箱不是部署可用身份: $CURRENT"
+  echo "   fati-tavern 必须用: $REQUIRED"
+  echo "   已自动修正为正确邮箱，请重新运行 git commit"
+  git config user.email "$REQUIRED"
+  exit 1
+fi
+exit 0
