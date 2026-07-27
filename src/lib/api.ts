@@ -7,6 +7,8 @@ export interface EndpointConfig {
   baseUrl: string
   apiKey: string
   model: string
+  temperature?: number // 默认 0.8
+  maxTokens?: number   // 默认 2048——角色扮演常需长回复
 }
 
 export const PRESETS: { label: string; baseUrl: string; hint: string }[] = [
@@ -41,8 +43,8 @@ export async function streamChat(
       model: endpoint.model,
       messages,
       stream: true,
-      temperature: 0.8,
-      max_tokens: 1024,
+      temperature: endpoint.temperature ?? 0.8,
+      max_tokens: endpoint.maxTokens ?? 2048,
     }),
     signal,
   })
@@ -92,4 +94,35 @@ export async function fetchModels(endpoint: EndpointConfig): Promise<string[]> {
   const data = await res.json()
   const list = Array.isArray(data?.data) ? data.data : []
   return list.filter((m: any) => m?.id).map((m: any) => String(m.id))
+}
+
+/**
+ * 发送一条真实测试消息（非流式），验证 /chat/completions 全链路。
+ * /models 通了不代表聊天接口能用——这才是产品信任的验证点。
+ */
+export async function testChat(endpoint: EndpointConfig): Promise<string> {
+  const url = `${endpoint.baseUrl.replace(/\/$/, '')}/chat/completions`
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (endpoint.apiKey && endpoint.apiKey !== 'not-needed') {
+    headers['Authorization'] = `Bearer ${endpoint.apiKey}`
+  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: endpoint.model,
+      messages: [{ role: 'user', content: 'Hi' }],
+      stream: false,
+      max_tokens: 8,
+    }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+  }
+  const data = await res.json()
+  if (data.error) throw new Error(data.error.message || '模型返回错误')
+  const text = data.choices?.[0]?.message?.content
+  if (typeof text !== 'string') throw new Error('响应格式异常')
+  return text
 }

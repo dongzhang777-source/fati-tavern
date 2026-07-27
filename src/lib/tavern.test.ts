@@ -5,6 +5,7 @@ import { gzipSync, deflateSync } from 'node:zlib'
 import {
   parseCharacterJson, parseLorebookJson, parsePngCard,
   applyMacros, cardToSystemPrompt, bookToContext, detectImportKind,
+  detectCardLanguage,
 } from './tavern'
 
 // ─── 测试用 PNG 构造工具 ──────────────────────────────────
@@ -149,6 +150,29 @@ describe('applyMacros', () => {
     const sys = cardToSystemPrompt(card)
     expect(sys).not.toMatch(/\{\{\s*(char|user)\s*\}\}/i)
     expect(sys).toContain('Alice meets User')
+  })
+})
+
+// ─── 语言检测与 prompt 模板 ───────────────────────────────
+
+describe('detectCardLanguage / cardToSystemPrompt 模板', () => {
+  it('英文卡识别为 en，获得英文脚手架', () => {
+    const card = parseCharacterJson(CARD_V2)!
+    expect(detectCardLanguage(card)).toBe('en')
+    const sys = cardToSystemPrompt(card)
+    expect(sys).toContain('Your name is Alice')
+    expect(sys).not.toContain('你的名字是')
+  })
+
+  it('中文卡识别为 zh，获得中文脚手架', () => {
+    const card = parseCharacterJson({ name: '灵儿', description: '来自蜀山的小仙女，性格活泼', first_mes: '你来啦！' })!
+    expect(detectCardLanguage(card)).toBe('zh')
+    expect(cardToSystemPrompt(card)).toContain('你的名字是灵儿')
+  })
+
+  it('mes_example 纳入 prompt', () => {
+    const card = parseCharacterJson({ name: '灵儿', description: '蜀山小仙女', mes_example: '<START>示例对话内容' })!
+    expect(cardToSystemPrompt(card)).toContain('示例对话内容')
   })
 })
 

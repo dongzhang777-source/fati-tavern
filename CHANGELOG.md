@@ -2,6 +2,22 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.3.0] - 2026-07-26
+
+Sprint T2「对话质量与稳定性」（见 `docs/IMPROVEMENT-PLAN.md`）。
+
+### Fixed
+- 流式竞态：assistant 占位消息带 id，回调按 id 定位写入；流式中清空对话/删除会话自动中断请求，不再串写消息（Hy3 审查发现）
+- `renameConversation` 改为先构造对象再分别写状态和库，不再依赖 set 同步性
+
+### Added
+- 上下文窗口管理：超预算时"保头保尾截中段"（移植主 FATI 策略简化版），长对话不再撞 token 上限
+- system prompt 按卡片语言自动选择中/英模板（CJK 占比启发式），英文卡不再被套中文脚手架
+- `mes_example`（对话示例）纳入 system prompt，提升角色扮演风格还原度
+- 设置面板开放生成参数：温度、最大回复 tokens（默认 2048，长开场白不再截断）
+- 「发送测试消息」按钮：真实走一次 `/chat/completions` 验证聊天链路（`/models` 通了≠聊天可用）
+- 本地端点（LM Studio / Ollama）CORS 配置提示 + 用户指南 FAQ
+
 ## [0.2.0] - 2026-07-26
 
 Sprint T1「导入兼容率战役」（见 `docs/IMPROVEMENT-PLAN.md`）。

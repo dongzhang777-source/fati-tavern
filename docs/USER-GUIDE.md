@@ -87,7 +87,14 @@ A: API Key 无效或过期，请在设置中检查。
 A: 模型名称不正确。点击「测试连接 & 拉取模型」获取可用模型列表。
 
 **Q: 导入 PNG 没有反应？**
-A: 确认是 SillyTavern 格式的角色卡 PNG（内含 tEXt chara chunk）。普通图片不支持。
+A: v0.2.0 起导入失败会弹出具体原因提示。确认是 SillyTavern 格式的角色卡 PNG（内含 chara/ccv3 数据块），gzip 压缩卡已支持。普通图片不支持。
+
+**Q: 选了 LM Studio / Ollama 预设但连不上？**
+A: 本地端点需要开启 CORS 才能被网页访问：
+- **LM Studio**：在 Server 设置中打开「Enable CORS」再启动服务；
+- **Ollama**：启动前设置环境变量 `OLLAMA_ORIGINS=*`（macOS/Linux：`launchctl setenv OLLAMA_ORIGINS "*"` 或 `OLLAMA_ORIGINS=* ollama serve`）。
+
+配置完成后可用设置面板的「发送测试消息」验证聊天链路是否真正可用。
 
 **Q: 换手机/电脑后数据还在吗？**
 A: 不在。数据只存本地浏览器，不支持云同步。角色卡文件可以重新拖入导入。

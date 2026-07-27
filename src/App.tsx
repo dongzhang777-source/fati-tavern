@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard } from './lib/tavern'
-import { PRESETS, fetchModels } from './lib/api'
+import { PRESETS, fetchModels, testChat } from './lib/api'
 import './App.css'
 
 export default function App() {
@@ -320,6 +320,11 @@ function SettingsPanel() {
   const [models, setModels] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
+  const [chatStatus, setChatStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
+  const [chatMsg, setChatMsg] = useState('')
+
+  // 本地端点需要用户自行开启 CORS，否则从 HTTPS 页面必然连不上
+  const isLocalEndpoint = /localhost|127\.0\.0\.1/.test(endpoint.baseUrl)
 
   async function handleTest() {
     setStatus('loading')
@@ -333,6 +338,20 @@ function SettingsPanel() {
       setStatus('error')
       setStatusMsg(e.message || '连接失败')
       setModels([])
+    }
+  }
+
+  // /models 通了不代表聊天可用——真实走一次 /chat/completions
+  async function handleTestChat() {
+    setChatStatus('loading')
+    setChatMsg('')
+    try {
+      await testChat(endpoint)
+      setChatStatus('ok')
+      setChatMsg('聊天链路正常，模型有回复')
+    } catch (e: any) {
+      setChatStatus('error')
+      setChatMsg(e.message || '测试失败')
     }
   }
 
@@ -351,6 +370,12 @@ function SettingsPanel() {
       <label>Base URL
         <input value={endpoint.baseUrl} onChange={(e) => setEndpoint({ baseUrl: e.target.value })} placeholder="https://api.deepseek.com/v1" />
       </label>
+      {isLocalEndpoint && (
+        <p className="cors-hint">
+          ⚠ 本地端点需开启 CORS 才能被网页访问：LM Studio 在 Server 设置中打开
+          「Enable CORS」；Ollama 启动前设置环境变量 <code>OLLAMA_ORIGINS=*</code>。
+        </p>
+      )}
       <label>API Key（只存本地，不离开你的设备）
         <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
       </label>
@@ -364,11 +389,33 @@ function SettingsPanel() {
           <input value={endpoint.model} onChange={(e) => setEndpoint({ model: e.target.value })} placeholder="deepseek-chat" />
         )}
       </label>
+      <div className="param-row">
+        <label>温度（0–2）
+          <input
+            type="number" min="0" max="2" step="0.1"
+            value={endpoint.temperature ?? 0.8}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) setEndpoint({ temperature: v }) }}
+          />
+        </label>
+        <label>最大回复 tokens
+          <input
+            type="number" min="128" max="8192" step="128"
+            value={endpoint.maxTokens ?? 2048}
+            onChange={(e) => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v)) setEndpoint({ maxTokens: v }) }}
+          />
+        </label>
+      </div>
       <div className="test-row">
         <button className="btn-test" onClick={handleTest} disabled={status === 'loading' || !endpoint.baseUrl}>
           {status === 'loading' ? '测试中…' : '测试连接 & 拉取模型'}
         </button>
         {statusMsg && <span className={`test-msg ${status}`}>{statusMsg}</span>}
+      </div>
+      <div className="test-row">
+        <button className="btn-test" onClick={handleTestChat} disabled={chatStatus === 'loading' || !endpoint.baseUrl || !endpoint.model}>
+          {chatStatus === 'loading' ? '发送中…' : '发送测试消息'}
+        </button>
+        {chatMsg && <span className={`test-msg ${chatStatus}`}>{chatMsg}</span>}
       </div>
     </div>
   )

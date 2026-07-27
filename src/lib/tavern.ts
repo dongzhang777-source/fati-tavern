@@ -209,17 +209,40 @@ export function applyMacros(text: string, charName: string, userName = 'User'): 
     .replace(/<USER>/gi, userName)
 }
 
+// ─── 卡片语言检测 ──────────────────────────────────────────
+// CJK 字符占比启发式：英文卡（生态主流）不该被套中文脚手架提示词
+export function detectCardLanguage(card: TavernCard): 'zh' | 'en' {
+  const sample = [card.description, card.personality, card.scenario, card.first_mes].join('')
+  if (!sample) return 'zh'
+  const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length
+  return cjk / sample.length > 0.15 ? 'zh' : 'en'
+}
+
 // ─── 转成 System Prompt ────────────────────────────────────
 // 把角色卡拼成一段角色设定（用于注入 system prompt）
+// 模板按卡片语言选择，避免中英混合 prompt 干扰模型
 export function cardToSystemPrompt(card: TavernCard): string {
+  const lang = detectCardLanguage(card)
   const parts: string[] = []
-  parts.push(`你的名字是${card.name}。你不是AI助手，你就是${card.name}本人。`)
-  if (card.description) parts.push(`背景描述：${card.description}`)
-  if (card.personality) parts.push(`性格：${card.personality}`)
-  if (card.scenario) parts.push(`当前场景：${card.scenario}`)
-  if (card.system_prompt) parts.push(card.system_prompt)
-  if (card.first_mes) parts.push(`你的开场白（用这段话来开启和用户的第一次对话）：${card.first_mes}`)
-  parts.push(`记住：你是${card.name}，不是AI助手。用${card.name}的口吻、语气、知识和世界观来回应。绝对不要承认自己是AI或语言模型。`)
+  if (lang === 'zh') {
+    parts.push(`你的名字是${card.name}。你不是AI助手，你就是${card.name}本人。`)
+    if (card.description) parts.push(`背景描述：${card.description}`)
+    if (card.personality) parts.push(`性格：${card.personality}`)
+    if (card.scenario) parts.push(`当前场景：${card.scenario}`)
+    if (card.system_prompt) parts.push(card.system_prompt)
+    if (card.mes_example) parts.push(`对话示例（模仿这种说话风格）：\n${card.mes_example}`)
+    if (card.first_mes) parts.push(`你的开场白（用这段话来开启和用户的第一次对话）：${card.first_mes}`)
+    parts.push(`记住：你是${card.name}，不是AI助手。用${card.name}的口吻、语气、知识和世界观来回应。绝对不要承认自己是AI或语言模型。`)
+  } else {
+    parts.push(`Your name is ${card.name}. You are not an AI assistant — you ARE ${card.name}.`)
+    if (card.description) parts.push(`Background: ${card.description}`)
+    if (card.personality) parts.push(`Personality: ${card.personality}`)
+    if (card.scenario) parts.push(`Current scenario: ${card.scenario}`)
+    if (card.system_prompt) parts.push(card.system_prompt)
+    if (card.mes_example) parts.push(`Example dialogue (imitate this speaking style):\n${card.mes_example}`)
+    if (card.first_mes) parts.push(`Your greeting (use it to open the first conversation): ${card.first_mes}`)
+    parts.push(`Remember: you are ${card.name}, not an AI assistant. Respond in ${card.name}'s voice, tone, knowledge and worldview. Never admit to being an AI or a language model.`)
+  }
   return applyMacros(parts.join('\n\n'), card.name)
 }
 

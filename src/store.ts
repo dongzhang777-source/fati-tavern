@@ -3,6 +3,7 @@ import type { TavernCard } from './lib/tavern'
 import { cardToSystemPrompt, bookToContext, applyMacros } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
+import { trimMessages } from './lib/context'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -11,6 +12,7 @@ import {
 } from './lib/db'
 
 export interface ChatMessage {
+  id?: string // 流式占位消息按 id 定位，避免按位置盲写
   role: 'user' | 'assistant' | 'system'
   content: string
   ts?: number
@@ -143,6 +145,12 @@ export const useStore = create<State>((set, get) => ({
   selectConversation: (id) => set({ activeConvId: id, error: null }),
 
   deleteConversation: async (id) => {
+    // 正在流式输出的会话被删除时先中断请求
+    const s0 = get()
+    if (s0.streaming && s0.activeConvId === id) {
+      abortController?.abort()
+      set({ streaming: false })
+    }
     await dbDeleteConversation(id)
     set((s) => {
       const convs = s.conversations.filter((c) => c.id !== id)
@@ -154,11 +162,14 @@ export const useStore = create<State>((set, get) => ({
   },
 
   renameConversation: (id, title) => {
-    set((s) => ({
-      conversations: s.conversations.map((c) => c.id === id ? { ...c, title } : c),
-    }))
+    // 先构造好对象，再分别写状态和库——不依赖 set 的同步性
     const conv = get().conversations.find((c) => c.id === id)
-    if (conv) dbPutConversation(conv)
+    if (!conv) return
+    const renamed = { ...conv, title }
+    set((s) => ({
+      conversations: s.conversations.map((c) => c.id === id ? renamed : c),
+    }))
+    dbPutConversation(renamed)
   },
 
   sendMessage: (text) => {
@@ -195,14 +206,17 @@ export const useStore = create<State>((set, get) => ({
 
     const apiMessages = [
       { role: 'system', content: sys },
-      ...updatedMessages.filter((m) => m.role !== 'system').map((m) => ({ role: m.role, content: m.content })),
+      // 超预算时保头保尾截中段，长对话不再撞 token 上限
+      ...trimMessages(updatedMessages).filter((m) => m.role !== 'system').map((m) => ({ role: m.role, content: m.content })),
     ]
 
     abortController = new AbortController()
     let assistantText = ''
 
-    // 追加空 assistant 消息
-    const withAssistant = [...updatedMessages, { role: 'assistant' as const, content: '', ts: Date.now() }]
+    // 追加带 id 的空 assistant 占位消息——流式回调按 id 定位，
+    // 用户清空/切换会话后不会串写到别的消息上
+    const placeholderId = genId()
+    const withAssistant = [...updatedMessages, { id: placeholderId, role: 'assistant' as const, content: '', ts: Date.now() }]
     set((s) => ({
       conversations: s.conversations.map((c) => c.id === conv.id ? { ...c, messages: withAssistant } : c),
     }))
@@ -212,9 +226,10 @@ export const useStore = create<State>((set, get) => ({
       set((s) => ({
         conversations: s.conversations.map((c) => {
           if (c.id !== conv.id) return c
-          const msgs = [...c.messages]
-          msgs[msgs.length - 1] = { role: 'assistant', content: assistantText, ts: Date.now() }
-          return { ...c, messages: msgs }
+          return {
+            ...c,
+            messages: c.messages.map((m) => m.id === placeholderId ? { ...m, content: assistantText, ts: Date.now() } : m),
+          }
         }),
       }))
     }).then(() => {
@@ -238,9 +253,14 @@ export const useStore = create<State>((set, get) => ({
   },
 
   clearChat: () => {
-    const { conversations, activeConvId, characters, activeCharId } = get()
+    const { conversations, activeConvId, characters, activeCharId, streaming } = get()
     const conv = conversations.find((c) => c.id === activeConvId)
     if (!conv) return
+    // 流式中清空先中断请求，避免旧回复继续写入
+    if (streaming) {
+      abortController?.abort()
+      set({ streaming: false })
+    }
     const char = characters.find((c) => c.id === activeCharId)
     const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name) : undefined
     const cleared: StoredConversation = {
