@@ -79,7 +79,7 @@ function loadEndpoint(): EndpointConfig {
   } catch { /* ignore */ }
   // 默认 WebLLM 浏览器本地推理，零配置即可聊天
   // 移动端默认 0.6B 避免内存不足闪退
-  const model = isMobile() ? WEBLLM_MODEL_MOBILE : 'Qwen3-1.7B-q4f16_1-MLC'
+  const model = isMobile() ? WEBLLM_MODEL_MOBILE : 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
   return { baseUrl: 'webllm', apiKey: 'not-needed', model }
 }
 

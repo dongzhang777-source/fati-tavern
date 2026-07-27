@@ -9,10 +9,10 @@ import { ThinkTagFilter } from './think-filter'
 
 /** 特殊 baseUrl 标记，store 据此分流到 WebLLM 而非 fetch */
 export const WEBLLM_BASE = 'webllm'
-/** 演示档模型：中英双语、900MB 级，是“能跑的最小可用角色扮演”档位 */
-export const WEBLLM_MODEL = 'Qwen3-1.7B-q4f16_1-MLC'
-/** 移动端默认模型：内存受限设备使用更小档位避免 OOM 闪退 */
-export const WEBLLM_MODEL_MOBILE = 'Qwen3-0.6B-q4f16_1-MLC'
+/** 演示档模型：中英双语、稳定可靠的本地推理档位 */
+export const WEBLLM_MODEL = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+/** 移动端默认模型：与桌面端相同（1.5B 已足够轻量） */
+export const WEBLLM_MODEL_MOBILE = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
 
 export function webllmSupported(): boolean {
   return typeof navigator !== 'undefined' && 'gpu' in navigator
@@ -41,10 +41,10 @@ export function isIOS(): boolean {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
-/** iOS 上允许运行的模型 id（内存受限，只放开最小两档） */
-const IOS_ALLOWED = new Set(['Qwen3-0.6B-q4f16_1-MLC', 'Qwen3-1.7B-q4f16_1-MLC'])
+/** iOS 上允许运行的模型 id（内存受限，只放开小档位） */
+const IOS_ALLOWED = new Set(['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'])
 /** 移动端通用允许档位（低内存 Android 同样受限） */
-const MOBILE_ALLOWED = new Set(['Qwen3-0.6B-q4f16_1-MLC', 'Qwen3-1.7B-q4f16_1-MLC'])
+const MOBILE_ALLOWED = new Set(['Qwen2.5-1.5B-Instruct-q4f16_1-MLC', 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'])
 
 export function iosModelBlocked(modelId: string): { blocked: boolean; reason?: string } {
   // iOS 严格限制
