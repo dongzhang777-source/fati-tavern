@@ -516,8 +516,8 @@ export const useStore = create<State>((set, get) => ({
         lang: detectCardLanguage(char.card),
       }
       let options: string[]
-      if (useWebllm) {
-        // 免 Key 档降级：小模型 JSON 不可靠，单条纯文本建议
+      if (useWebllm && isMobile()) {
+        // 仅移动端降级单条（热预算 + 小模型 JSON 不可靠）；桌面 WebLLM 照常 3 选项
         const text = await collectChat(endpoint, buildSingleSuggestionPrompt(ctx), impAbort.signal)
         options = text ? [text] : []
       } else {

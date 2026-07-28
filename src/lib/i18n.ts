@@ -116,7 +116,6 @@ const dict: Record<string, { zh: string; en: string }> = {
   'imp.refine': { zh: '润色我的话', en: 'Polish my draft' },
   'imp.refining': { zh: '润色中…', en: 'Polishing…' },
   'imp.regen': { zh: '换一批', en: 'Regenerate' },
-  'imp.costHint': { zh: '每次生成消耗一次模型调用，仅在你点击时发生', en: 'Each generation uses one model call, only when you click' },
   'imp.expandLow': { zh: '稳妥', en: 'Safe' },
   'imp.expandHigh': { zh: '大胆', en: 'Bold' },
   'imp.expandLabel': { zh: '拓展度', en: 'Expansion' },

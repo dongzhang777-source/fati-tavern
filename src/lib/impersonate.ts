@@ -7,7 +7,8 @@
  *    绝不复用聊天的角色 system prompt——否则模型会继续以角色口吻替对面发言；
  * 2. 生成结果只供填入输入框，不写入聊天记录；用户点发送后才成为正式 user 消息。
  *
- * WebLLM 免 Key 档降级：小模型输出 3 选项 JSON 不可靠，走单条建议纯文本 prompt。
+ * 单条降级仅限移动端 WebLLM（省热预算 + 小模型 JSON 不可靠）；
+ * 桌面 WebLLM 硬件充足，与 BYOK 一样出 3 选项（parseSuggestions 自带回退单条容错）。
  */
 import type { TavernCard } from './tavern'
 import type { EndpointConfig } from './api'
@@ -104,6 +105,7 @@ ${transcript(ctx)}
 - 以${me}的身份，写出接下来对${char}说的 3 种不同回复
 - 3 个回复要有明显差异：语气不同（认真/俏皮/简短）或策略不同（直接回应/反问/推进剧情）
 - 每个回复 1-3 句
+- 【重要】不要重复或改写对话里任何一方已经说过的句子，必须推进对话而不是复述
 - ${expansionHint(ctx.expansion, ctx.lang)}
 - 只写${me}要说的话
 
@@ -118,6 +120,7 @@ Requirements:
 - Write 3 different replies that ${me} says next to ${char}
 - Make them clearly distinct: different tone (serious / playful / brief) or strategy (respond directly / ask back / push the plot)
 - 1-3 sentences each
+- IMPORTANT: never repeat or paraphrase any line already said in the conversation (by either side) — move the dialogue forward, do not restate it
 - ${expansionHint(ctx.expansion, ctx.lang)}
 - Only write what ${me} says
 
@@ -129,7 +132,7 @@ Output format (strict JSON, nothing else):
   ]
 }
 
-// ─── 单条建议（WebLLM 免 Key 档降级：纯文本、短输出）──────────
+// ─── 单条建议（WebLLM 移动端降级：纯文本、短输出）──────────
 export function buildSingleSuggestionPrompt(ctx: ImpersonateContext): PromptMessage[] {
   const me = userLabel(ctx.persona)
   const char = ctx.card.name
@@ -140,6 +143,7 @@ ${personaBlock(ctx)}
 ${transcript(ctx)}
 
 以${me}的身份写出接下来对${char}说的一句回复（1-2 句）。${expansionHint(ctx.expansion, ctx.lang)}
+不要重复对话里任何一方已经说过的句子，要推进对话。
 只输出这句话本身，不要任何前缀、引号或解释。`
     : `The other character (context only): ${cardSummary(ctx)}
 ${personaBlock(ctx)}
@@ -147,6 +151,7 @@ Recent conversation:
 ${transcript(ctx)}
 
 Write one reply (1-2 sentences) that ${me} says next to ${char}. ${expansionHint(ctx.expansion, ctx.lang)}
+Never repeat any line already said in the conversation (by either side) — move the dialogue forward.
 Output only the reply itself — no prefix, quotes or explanation.`
   return [
     { role: 'system', content: ghostwriterSystem(ctx) },
@@ -166,7 +171,7 @@ ${transcript(ctx)}
 ${me}写了一个粗略草稿：
 ${draft}
 
-请保持原意，以${me}的身份把它扩写成一段更自然、贴合当前对话的话（1-3 句）。只输出最终文本，不要解释。`
+请保持原意，以${me}的身份把它扩写成一段更自然、贴合当前对话的话（1-3 句）。不要重复对话里已说过的句子。只输出最终文本，不要解释。`
     : `The other character (context only): ${cardSummary(ctx)}
 ${personaBlock(ctx)}
 Recent conversation:
@@ -175,7 +180,7 @@ ${transcript(ctx)}
 ${me} wrote a rough draft:
 ${draft}
 
-Keep the original intent and rewrite it, in ${me}'s voice, into a more natural reply that fits the conversation (1-3 sentences). Output only the final text, no explanation.`
+Keep the original intent and rewrite it, in ${me}'s voice, into a more natural reply that fits the conversation (1-3 sentences). Do not repeat lines already said in the conversation. Output only the final text, no explanation.`
   return [
     { role: 'system', content: ghostwriterSystem(ctx) },
     { role: 'user', content: user },

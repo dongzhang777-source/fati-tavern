@@ -79,6 +79,15 @@ describe('角色边界', () => {
     const p = buildRefinePrompt(ctx(), '我有点担心你')
     expect(p[1].content).toContain('我有点担心你')
   })
+
+  it('三条路径均带防重复指令（实际反馈：建议不断复述双方台词）', () => {
+    expect(buildSuggestionsPrompt(ctx())[1].content).toContain('不要重复')
+    expect(buildSingleSuggestionPrompt(ctx())[1].content).toContain('不要重复')
+    expect(buildRefinePrompt(ctx(), '嗯')[1].content).toContain('不要重复')
+    expect(buildSuggestionsPrompt(ctx({ lang: 'en' }))[1].content).toContain('never repeat')
+    expect(buildSingleSuggestionPrompt(ctx({ lang: 'en' }))[1].content).toContain('Never repeat')
+    expect(buildRefinePrompt(ctx({ lang: 'en' }), 'hmm')[1].content).toContain('Do not repeat')
+  })
 })
 
 // ─── 拓展度措辞 ────────────────────────────────────────────

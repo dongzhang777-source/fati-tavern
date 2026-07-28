@@ -475,7 +475,6 @@ function ChatView() {
                 {impRefining ? t(lang, 'imp.refining') : `✨ ${t(lang, 'imp.refine')}`}
               </button>
             </div>
-            <div className="imp-cost-hint">{t(lang, 'imp.costHint')}</div>
           </div>
         )}
 
