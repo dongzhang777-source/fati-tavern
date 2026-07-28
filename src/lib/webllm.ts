@@ -11,8 +11,8 @@ import { ThinkTagFilter } from './think-filter'
 export const WEBLLM_BASE = 'webllm'
 /** 演示档模型：中英双语、稳定可靠的本地推理档位 */
 export const WEBLLM_MODEL = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
-/** 移动端默认模型：与桌面端相同（1.5B 已足够轻量） */
-export const WEBLLM_MODEL_MOBILE = 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+/** 移动端默认模型：iOS 用 0.5B（唯一安全档），其他移动端用 1.5B */
+export const WEBLLM_MODEL_MOBILE = 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC'
 
 export function webllmSupported(): boolean {
   return typeof navigator !== 'undefined' && 'gpu' in navigator
@@ -61,7 +61,10 @@ const MODEL_MEM_RANK: Record<string, number> = {
 
 /** 各平台允许的最大内存等级 */
 function maxAllowedRank(): number {
-  if (isIOS()) return 2 // iOS 只允许 ≤1.5B
+  // iOS Safari 单页内存硬限制约 1.5GB，
+  // 1.5B 模型加载能过但推理时 KV-cache 增长会突破上限→白屏，
+  // 故 iOS 只安全开放 0.5B
+  if (isIOS()) return 1
   if (isMobile()) {
     const mem = (navigator as any).deviceMemory || 4
     if (mem <= 4) return 2   // ≤4GB: ≤1.5B
@@ -80,7 +83,7 @@ export function modelBlocked(modelId: string): { blocked: boolean; reason?: stri
 
   // 生成友好提示
   if (isIOS()) {
-    return { blocked: true, reason: 'iOS 设备内存受限，该模型会导致闪退' }
+    return { blocked: true, reason: 'iOS 内存受限，该模型会导致白屏崩溃，请用 0.5B' }
   }
   return { blocked: true, reason: '该设备内存不足，运行此模型可能闪退' }
 }
