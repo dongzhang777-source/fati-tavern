@@ -108,6 +108,20 @@ const dict: Record<string, { zh: string; en: string }> = {
   'persona.desc': { zh: '我在故事里扮演谁（可选，角色会据此回应你）', en: 'Who I play in the story (optional — characters respond accordingly)' },
   'persona.descPlaceholder': { zh: '例：一名初入酒馆的年轻冒险者，话不多但重情义', en: 'e.g. A young adventurer new to the tavern, quiet but loyal' },
 
+  // ── 嘴替（帮我接话）──
+  'imp.entry': { zh: '帮我接话', en: 'Help me reply' },
+  'imp.close': { zh: '收起', en: 'Close' },
+  'imp.loading': { zh: '正在想…', en: 'Thinking…' },
+  'imp.empty': { zh: '没有生成建议，再试一次？', en: 'No suggestions — try again?' },
+  'imp.refine': { zh: '润色我的话', en: 'Polish my draft' },
+  'imp.refining': { zh: '润色中…', en: 'Polishing…' },
+  'imp.regen': { zh: '换一批', en: 'Regenerate' },
+  'imp.costHint': { zh: '每次生成消耗一次模型调用，仅在你点击时发生', en: 'Each generation uses one model call, only when you click' },
+  'imp.expandLow': { zh: '稳妥', en: 'Safe' },
+  'imp.expandHigh': { zh: '大胆', en: 'Bold' },
+  'imp.expandLabel': { zh: '拓展度', en: 'Expansion' },
+  'imp.fail': { zh: '接话生成失败', en: 'Failed to generate reply' },
+
   // ── 导入错误 ──
   'import.jsonFail': { zh: 'JSON 解析失败', en: 'Failed to parse JSON' },
   'import.unknownFormat': { zh: '无法识别的角色卡格式', en: 'Unrecognized card format' },

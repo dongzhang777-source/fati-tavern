@@ -197,6 +197,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn-send:disabled { opacity: 0.4; cursor: default; }
 .btn-stop { background: var(--surface2); color: var(--text); border: 1px solid rgba(255,255,255,0.15); padding: 10px 16px; border-radius: var(--radius); cursor: pointer; }
 
+/* ── 嘴替（帮我接话）── */
+.btn-imp { background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; font-size: 1rem; flex-shrink: 0; }
+.btn-imp.active { border-color: var(--accent); background: rgba(233,69,96,0.12); }
+.btn-imp:disabled { opacity: 0.4; cursor: default; }
+.imp-drawer { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.02); }
+.imp-status { color: var(--muted); font-size: 0.8rem; padding: 6px 0; background: none; border: none; text-align: left; }
+.imp-retry { cursor: pointer; color: var(--accent); }
+.imp-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.imp-card { flex: 1; min-width: 140px; max-width: 320px; text-align: left; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 10px 12px; color: var(--text); font-size: 0.82rem; line-height: 1.5; cursor: pointer; transition: border-color 0.15s; }
+.imp-card:hover { border-color: var(--accent); }
+.imp-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.imp-slider { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); }
+.imp-slider input[type="range"] { width: 90px; accent-color: var(--accent); }
+.imp-btn { background: var(--surface2); border: 1px solid rgba(255,255,255,0.12); color: var(--text); border-radius: 6px; padding: 5px 10px; font-size: 0.75rem; cursor: pointer; }
+.imp-btn:hover:not(:disabled) { border-color: var(--accent); }
+.imp-btn:disabled { opacity: 0.4; cursor: default; }
+.imp-cost-hint { font-size: 0.68rem; color: var(--muted); opacity: 0.7; }
+
 /* ─── 角色卡编辑按钮 ─── */
 .btn-edit { background: var(--surface2); border: 1px solid rgba(255,255,255,0.1); color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; position: absolute; top: 8px; right: 32px; }
 *:hover > .btn-edit { opacity: 1; }
@@ -240,6 +258,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .input-bar input { padding: 10px 12px; font-size: 16px; min-width: 0; }
   .btn-send { padding: 10px 14px; flex-shrink: 0; }
   .btn-stop { padding: 10px 12px; flex-shrink: 0; }
+  .btn-imp { padding: 10px; }
+  .imp-drawer { padding: 8px 10px; }
+  .imp-card { min-width: 200px; flex: 0 0 auto; }
   .btn-back { font-size: 0.78rem; flex-shrink: 0; }
   .chat-actions button { font-size: 0.9rem; }
   .error-bar { font-size: 0.75rem; padding: 6px 10px; word-break: break-word; }

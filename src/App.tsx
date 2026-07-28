@@ -4,6 +4,7 @@ import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
+import { trackOnce } from './lib/analytics'
 import type { StoredCharacter } from './lib/db'
 import './App.css'
 
@@ -333,10 +334,13 @@ function ChatView() {
     streaming, error, sendMessage, stopStreaming, clearChat,
     newConversation, selectConversation, deleteConversation, backToGallery,
     lang, safetyNotice, dismissSafetyNotice, webllmProgress,
+    impSuggestions, impLoading, impRefining, impExpansion,
+    fetchImpersonate, refineImpersonate, setImpExpansion, clearImpersonate,
   } = useStore()
 
   const [input, setInput] = useState('')
   const [showConvList, setShowConvList] = useState(false)
+  const [impOpen, setImpOpen] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const char = characters.find((c) => c.id === activeCharId)
@@ -352,6 +356,30 @@ function ChatView() {
     if (!text || streaming) return
     setInput('')
     sendMessage(text)
+  }
+
+  // 嘴替入口：开 = 立即生成一批建议（仅此时调用模型）；关 = 中断并清空
+  function toggleImpersonate() {
+    if (impOpen) {
+      setImpOpen(false)
+      clearImpersonate()
+    } else {
+      setImpOpen(true)
+      fetchImpersonate()
+    }
+  }
+
+  // 点候选卡 = 只填入输入框（覆盖草稿），绝不自动发送
+  function pickSuggestion(text: string) {
+    setInput(text)
+    trackOnce('impersonate_used') // 漏斗对照：使用者 vs 非使用者的 second_round 转化
+  }
+
+  async function handleRefine() {
+    const draft = input.trim()
+    if (!draft || impRefining) return
+    const refined = await refineImpersonate(draft)
+    if (refined) setInput(refined)
   }
 
   if (!char) return null
@@ -419,7 +447,45 @@ function ChatView() {
 
         {error && <div className="error-bar">⚠ {error}</div>}
 
+        {/* 嘴替抽屉：建议只供填入输入框，不入聊天记录 */}
+        {impOpen && (
+          <div className="imp-drawer">
+            {impLoading ? (
+              <div className="imp-status">⏳ {t(lang, 'imp.loading')}</div>
+            ) : impSuggestions.length > 0 ? (
+              <div className="imp-cards">
+                {impSuggestions.map((s, i) => (
+                  <button key={i} className="imp-card" onClick={() => pickSuggestion(s)}>{s}</button>
+                ))}
+              </div>
+            ) : (
+              <button className="imp-status imp-retry" onClick={fetchImpersonate}>{t(lang, 'imp.empty')}</button>
+            )}
+            <div className="imp-controls">
+              <span className="imp-slider" title={t(lang, 'imp.expandLabel')}>
+                <span>{t(lang, 'imp.expandLow')}</span>
+                <input
+                  type="range" min="0" max="1" step="0.1" value={impExpansion}
+                  onChange={(e) => setImpExpansion(parseFloat(e.target.value))}
+                />
+                <span>{t(lang, 'imp.expandHigh')}</span>
+              </span>
+              <button className="imp-btn" onClick={fetchImpersonate} disabled={impLoading || streaming}>↻ {t(lang, 'imp.regen')}</button>
+              <button className="imp-btn" onClick={handleRefine} disabled={!input.trim() || impRefining || streaming}>
+                {impRefining ? t(lang, 'imp.refining') : `✨ ${t(lang, 'imp.refine')}`}
+              </button>
+            </div>
+            <div className="imp-cost-hint">{t(lang, 'imp.costHint')}</div>
+          </div>
+        )}
+
         <footer className="input-bar">
+          <button
+            className={`btn-imp ${impOpen ? 'active' : ''}`}
+            onClick={toggleImpersonate}
+            disabled={streaming}
+            title={impOpen ? t(lang, 'imp.close') : t(lang, 'imp.entry')}
+          >💡</button>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

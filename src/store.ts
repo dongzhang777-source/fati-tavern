@@ -3,6 +3,7 @@ import type { TavernCard } from './lib/tavern'
 import { cardToSystemPrompt, bookToContext, applyMacros, detectCardLanguage, personaLine } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
+import { buildSuggestionsPrompt, buildSingleSuggestionPrompt, buildRefinePrompt, parseSuggestions, collectChat } from './lib/impersonate'
 import { trimMessages } from './lib/context'
 import { detectSelfHarm } from './lib/safety'
 import { detectLang, saveLang, t, type Lang } from './lib/i18n'
@@ -55,6 +56,12 @@ interface State {
   // 用户 persona（我在故事里扮演谁）
   persona: UserPersona
 
+  // 嘴替（帮我接话）：建议只供填入输入框，不入聊天记录
+  impSuggestions: string[]
+  impLoading: boolean
+  impRefining: boolean
+  impExpansion: number // 拓展度 0-1：低=顺着剧情，高=大胆推进
+
   // 端点配置
   endpoint: EndpointConfig
 
@@ -78,6 +85,12 @@ interface State {
   setLang: (lang: Lang) => void
   setPersona: (p: Partial<UserPersona>) => void
   dismissSafetyNotice: () => void
+
+  // 嘴替 actions（仅用户点击触发，无任何自动/预生成路径）
+  fetchImpersonate: () => Promise<void>
+  refineImpersonate: (draft: string) => Promise<string>
+  setImpExpansion: (v: number) => void
+  clearImpersonate: () => void
 }
 
 const LS_KEY = 'tavern-endpoint'
@@ -121,7 +134,19 @@ export function personaUserName(p: UserPersona): string {
   return p.name.trim() || 'User'
 }
 
+const LS_IMP_EXPANSION_KEY = 'tavern-imp-expansion'
+
+function loadImpExpansion(): number {
+  try {
+    const v = parseFloat(localStorage.getItem(LS_IMP_EXPANSION_KEY) || '')
+    if (!Number.isNaN(v) && v >= 0 && v <= 1) return v
+  } catch { /* ignore */ }
+  return 0.3
+}
+
 let abortController: AbortController | null = null
+// 嘴替独立 abort：不与聊天流式互相干扰
+let impAbort: AbortController | null = null
 
 export const useStore = create<State>((set, get) => ({
   view: 'gallery',
@@ -136,6 +161,10 @@ export const useStore = create<State>((set, get) => ({
   lang: detectLang(),
   endpoint: loadEndpoint(),
   persona: loadPersona(),
+  impSuggestions: [],
+  impLoading: false,
+  impRefining: false,
+  impExpansion: loadImpExpansion(),
 
   init: async () => {
     // 加载用户导入的角色（IndexedDB）
@@ -225,11 +254,15 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
-  backToGallery: () => set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] }),
+  backToGallery: () => {
+    get().clearImpersonate()
+    set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] })
+  },
 
   newConversation: async () => {
     const { activeCharId, characters, lang, persona } = get()
     if (!activeCharId) return
+    get().clearImpersonate() // 新会话：旧建议已不属于新上下文
     const char = characters.find((c) => c.id === activeCharId)
     // 开场白替换 {{char}}/{{user}} 宏后再展示
     const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name, personaUserName(persona)) : undefined
@@ -245,11 +278,15 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ conversations: [conv, ...s.conversations], activeConvId: conv.id, error: null }))
   },
 
-  selectConversation: (id) => set({ activeConvId: id, error: null }),
+  selectConversation: (id) => {
+    get().clearImpersonate() // 切会话：旧建议已不属于新上下文
+    set({ activeConvId: id, error: null })
+  },
 
   deleteConversation: async (id) => {
     // 正在流式输出的会话被删除时先中断请求
     const s0 = get()
+    if (s0.activeConvId === id) get().clearImpersonate()
     if (s0.streaming && s0.activeConvId === id) {
       abortController?.abort()
       set({ streaming: false })
@@ -437,4 +474,113 @@ export const useStore = create<State>((set, get) => ({
   }),
 
   dismissSafetyNotice: () => set({ safetyNotice: false }),
+
+  // ─── 嘴替（帮我接话）──────────────────────────────────
+
+  fetchImpersonate: async () => {
+    const { endpoint, characters, activeCharId, conversations, activeConvId, lang, persona, impExpansion, streaming, impLoading } = get()
+    // WebLLM 单引擎不能并发； BYOK 也保持一致行为
+    if (streaming || impLoading) return
+    const char = characters.find((c) => c.id === activeCharId)
+    const conv = conversations.find((c) => c.id === activeConvId)
+    if (!char || !conv) return
+    if (!endpoint.baseUrl) {
+      set({ error: t(lang, 'error.noEndpoint') })
+      return
+    }
+    const useWebllm = endpoint.baseUrl === WEBLLM_BASE
+    if (useWebllm) {
+      if (!webllmSupported()) {
+        set({ error: t(lang, 'webllm.unsupported') })
+        return
+      }
+      const block = modelBlocked(endpoint.model || '')
+      if (block.blocked) {
+        set({ error: block.reason || t(lang, 'webllm.unsupported') })
+        return
+      }
+      setWebllmProgressHandler((p) => {
+        set({ webllmProgress: p.done ? null : p.text })
+      })
+    }
+
+    impAbort?.abort()
+    impAbort = new AbortController()
+    set({ impLoading: true, impSuggestions: [], error: null })
+    try {
+      const ctx = {
+        card: char.card,
+        persona,
+        recent: conv.messages.map((m) => ({ role: m.role, content: m.content })),
+        expansion: impExpansion,
+        lang: detectCardLanguage(char.card),
+      }
+      let options: string[]
+      if (useWebllm) {
+        // 免 Key 档降级：小模型 JSON 不可靠，单条纯文本建议
+        const text = await collectChat(endpoint, buildSingleSuggestionPrompt(ctx), impAbort.signal)
+        options = text ? [text] : []
+      } else {
+        const raw = await collectChat(endpoint, buildSuggestionsPrompt(ctx), impAbort.signal)
+        options = parseSuggestions(raw)
+      }
+      set({ impSuggestions: options, impLoading: false, webllmProgress: null })
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        set({ impLoading: false, webllmProgress: null })
+      } else {
+        set({ impLoading: false, webllmProgress: null, error: `${t(get().lang, 'imp.fail')}: ${e.message || t(get().lang, 'error.request')}` })
+      }
+    }
+  },
+
+  refineImpersonate: async (draft) => {
+    const { endpoint, characters, activeCharId, conversations, activeConvId, lang, persona, impExpansion, streaming, impRefining } = get()
+    if (streaming || impRefining || !draft.trim()) return ''
+    const char = characters.find((c) => c.id === activeCharId)
+    const conv = conversations.find((c) => c.id === activeConvId)
+    if (!char || !conv) return ''
+    if (!endpoint.baseUrl) {
+      set({ error: t(lang, 'error.noEndpoint') })
+      return ''
+    }
+    if (endpoint.baseUrl === WEBLLM_BASE && !webllmSupported()) {
+      set({ error: t(lang, 'webllm.unsupported') })
+      return ''
+    }
+
+    impAbort?.abort()
+    impAbort = new AbortController()
+    set({ impRefining: true, error: null })
+    try {
+      const ctx = {
+        card: char.card,
+        persona,
+        recent: conv.messages.map((m) => ({ role: m.role, content: m.content })),
+        expansion: impExpansion,
+        lang: detectCardLanguage(char.card),
+      }
+      const refined = await collectChat(endpoint, buildRefinePrompt(ctx, draft), impAbort.signal)
+      set({ impRefining: false })
+      return refined
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        set({ error: `${t(get().lang, 'imp.fail')}: ${e.message || t(get().lang, 'error.request')}` })
+      }
+      set({ impRefining: false })
+      return ''
+    }
+  },
+
+  setImpExpansion: (v) => {
+    const clamped = Math.min(1, Math.max(0, v))
+    try { localStorage.setItem(LS_IMP_EXPANSION_KEY, String(clamped)) } catch { /* ignore */ }
+    set({ impExpansion: clamped })
+  },
+
+  clearImpersonate: () => {
+    impAbort?.abort()
+    impAbort = null
+    set({ impSuggestions: [], impLoading: false, impRefining: false })
+  },
 }))
