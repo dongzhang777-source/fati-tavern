@@ -135,6 +135,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .cors-hint { font-size: 0.72rem; color: #e6b566; background: rgba(230,181,102,0.08); border: 1px solid rgba(230,181,102,0.25); border-radius: 6px; padding: 8px 10px; line-height: 1.5; }
 .cors-hint code { background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 3px; }
 
+/* ── 用户 persona ── */
+.persona-section { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+.persona-section h4 { font-size: 0.85rem; color: var(--muted); }
+.persona-section textarea { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.85rem; outline: none; resize: vertical; font-family: inherit; }
+.persona-section textarea:focus { border-color: var(--accent); }
+
 /* ── 模型选择器 ── */
 .tier-hint { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
 .model-picker-wrap { display: flex; flex-direction: column; gap: 4px; }

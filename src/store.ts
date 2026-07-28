@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { TavernCard } from './lib/tavern'
-import { cardToSystemPrompt, bookToContext, applyMacros } from './lib/tavern'
+import { cardToSystemPrompt, bookToContext, applyMacros, detectCardLanguage, personaLine } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
 import { trimMessages } from './lib/context'
@@ -25,6 +25,12 @@ export interface ChatMessage {
 
 export type View = 'gallery' | 'chat'
 
+// 用户 persona（全局单个）：名字填 {{user}} 宏，描述拼入 system prompt
+export interface UserPersona {
+  name: string
+  description: string
+}
+
 interface State {
   // 视图
   view: View
@@ -45,6 +51,9 @@ interface State {
 
   // 语言
   lang: Lang
+
+  // 用户 persona（我在故事里扮演谁）
+  persona: UserPersona
 
   // 端点配置
   endpoint: EndpointConfig
@@ -67,6 +76,7 @@ interface State {
   clearChat: () => void
   setEndpoint: (cfg: Partial<EndpointConfig>) => void
   setLang: (lang: Lang) => void
+  setPersona: (p: Partial<UserPersona>) => void
   dismissSafetyNotice: () => void
 }
 
@@ -89,6 +99,28 @@ function saveEndpoint(cfg: EndpointConfig) {
   localStorage.setItem(LS_KEY, JSON.stringify(cfg))
 }
 
+const LS_PERSONA_KEY = 'tavern-persona'
+
+function loadPersona(): UserPersona {
+  try {
+    const raw = localStorage.getItem(LS_PERSONA_KEY)
+    if (raw) {
+      const p = JSON.parse(raw)
+      return { name: typeof p.name === 'string' ? p.name : '', description: typeof p.description === 'string' ? p.description : '' }
+    }
+  } catch { /* ignore */ }
+  return { name: '', description: '' }
+}
+
+function savePersona(p: UserPersona) {
+  localStorage.setItem(LS_PERSONA_KEY, JSON.stringify(p))
+}
+
+// {{user}} 宏的实际替换值：persona 名字为空时回退 'User'
+export function personaUserName(p: UserPersona): string {
+  return p.name.trim() || 'User'
+}
+
 let abortController: AbortController | null = null
 
 export const useStore = create<State>((set, get) => ({
@@ -103,6 +135,7 @@ export const useStore = create<State>((set, get) => ({
   webllmProgress: null,
   lang: detectLang(),
   endpoint: loadEndpoint(),
+  persona: loadPersona(),
 
   init: async () => {
     // 加载用户导入的角色（IndexedDB）
@@ -195,11 +228,11 @@ export const useStore = create<State>((set, get) => ({
   backToGallery: () => set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] }),
 
   newConversation: async () => {
-    const { activeCharId, characters, lang } = get()
+    const { activeCharId, characters, lang, persona } = get()
     if (!activeCharId) return
     const char = characters.find((c) => c.id === activeCharId)
     // 开场白替换 {{char}}/{{user}} 宏后再展示
-    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name) : undefined
+    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name, personaUserName(persona)) : undefined
     const conv: StoredConversation = {
       id: genId(),
       characterId: activeCharId,
@@ -243,7 +276,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   sendMessage: (text) => {
-    const { endpoint, characters, activeCharId, conversations, activeConvId, lang } = get()
+    const { endpoint, characters, activeCharId, conversations, activeConvId, lang, persona } = get()
     const char = characters.find((c) => c.id === activeCharId)
     const conv = conversations.find((c) => c.id === activeConvId)
     if (!char || !conv) return
@@ -294,12 +327,15 @@ export const useStore = create<State>((set, get) => ({
       error: null,
     }))
 
-    // 构建 system prompt
-    let sys = cardToSystemPrompt(char.card)
+    // 构建 system prompt（persona 名字填 {{user}}，扮演描述拼尾部）
+    const userName = personaUserName(persona)
+    let sys = cardToSystemPrompt(char.card, userName)
     if (char.card.character_book) {
-      const ctx = bookToContext(char.card.character_book, char.card.name)
+      const ctx = bookToContext(char.card.character_book, char.card.name, userName)
       if (ctx) sys = ctx + '\n\n' + sys
     }
+    const pLine = personaLine(persona.description, detectCardLanguage(char.card))
+    if (pLine) sys = sys + '\n\n' + pLine
 
     const apiMessages = [
       { role: 'system', content: sys },
@@ -361,7 +397,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   clearChat: () => {
-    const { conversations, activeConvId, characters, activeCharId, streaming } = get()
+    const { conversations, activeConvId, characters, activeCharId, streaming, persona } = get()
     const conv = conversations.find((c) => c.id === activeConvId)
     if (!conv) return
     // 流式中清空先中断请求，避免旧回复继续写入
@@ -370,7 +406,7 @@ export const useStore = create<State>((set, get) => ({
       set({ streaming: false })
     }
     const char = characters.find((c) => c.id === activeCharId)
-    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name) : undefined
+    const firstMsg = char?.card.first_mes ? applyMacros(char.card.first_mes, char.card.name, personaUserName(persona)) : undefined
     const cleared: StoredConversation = {
       ...conv,
       messages: firstMsg ? [{ role: 'assistant', content: firstMsg, ts: Date.now() }] : [],
@@ -393,6 +429,12 @@ export const useStore = create<State>((set, get) => ({
     saveLang(lang)
     set({ lang })
   },
+
+  setPersona: (p) => set((s) => {
+    const next = { ...s.persona, ...p }
+    savePersona(next)
+    return { persona: next }
+  }),
 
   dismissSafetyNotice: () => set({ safetyNotice: false }),
 }))

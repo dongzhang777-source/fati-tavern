@@ -101,6 +101,13 @@ const dict: Record<string, { zh: string; en: string }> = {
     en: '⚠ Local endpoints need CORS enabled: turn on "Enable CORS" in LM Studio server settings; for Ollama set OLLAMA_ORIGINS=* before starting.',
   },
 
+  // ── 用户 persona ──
+  'persona.title': { zh: '我的扮演', en: 'My persona' },
+  'persona.name': { zh: '我的名字（替换卡片里的 {{user}}）', en: 'My name (replaces {{user}} in cards)' },
+  'persona.namePlaceholder': { zh: '留空则为 User', en: 'Defaults to "User"' },
+  'persona.desc': { zh: '我在故事里扮演谁（可选，角色会据此回应你）', en: 'Who I play in the story (optional — characters respond accordingly)' },
+  'persona.descPlaceholder': { zh: '例：一名初入酒馆的年轻冒险者，话不多但重情义', en: 'e.g. A young adventurer new to the tavern, quiet but loyal' },
+
   // ── 导入错误 ──
   'import.jsonFail': { zh: 'JSON 解析失败', en: 'Failed to parse JSON' },
   'import.unknownFormat': { zh: '无法识别的角色卡格式', en: 'Unrecognized card format' },

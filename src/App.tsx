@@ -610,7 +610,7 @@ function WebLLMModelPicker({
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint, lang, setLang } = useStore()
+  const { endpoint, setEndpoint, lang, setLang, persona, setPersona } = useStore()
   const [models, setModels] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
@@ -752,6 +752,25 @@ function SettingsPanel() {
             type="number" min="128" max="8192" step="128"
             value={endpoint.maxTokens ?? 2048}
             onChange={(e) => { const v = parseInt(e.target.value, 10); if (!Number.isNaN(v)) setEndpoint({ maxTokens: v }) }}
+          />
+        </label>
+      </div>
+      {/* ── 用户 persona：名字填 {{user}} 宏，描述告诉角色“我扮演谁” ── */}
+      <div className="persona-section">
+        <h4>{t(lang, 'persona.title')}</h4>
+        <label>{t(lang, 'persona.name')}
+          <input
+            value={persona.name}
+            onChange={(e) => setPersona({ name: e.target.value })}
+            placeholder={t(lang, 'persona.namePlaceholder')}
+          />
+        </label>
+        <label>{t(lang, 'persona.desc')}
+          <textarea
+            value={persona.description}
+            onChange={(e) => setPersona({ description: e.target.value })}
+            placeholder={t(lang, 'persona.descPlaceholder')}
+            rows={2}
           />
         </label>
       </div>

@@ -5,7 +5,7 @@ import { gzipSync, deflateSync } from 'node:zlib'
 import {
   parseCharacterJson, parseLorebookJson, parsePngCard,
   applyMacros, cardToSystemPrompt, bookToContext, detectImportKind,
-  detectCardLanguage,
+  detectCardLanguage, personaLine,
 } from './tavern'
 
 // ─── 测试用 PNG 构造工具 ──────────────────────────────────
@@ -169,6 +169,28 @@ describe('applyMacros', () => {
     const sys = cardToSystemPrompt(card)
     expect(sys).not.toMatch(/\{\{\s*(char|user)\s*\}\}/i)
     expect(sys).toContain('Alice meets User')
+  })
+
+  it('cardToSystemPrompt 传入 persona 名字后 {{user}} 替换为该名字', () => {
+    const card = parseCharacterJson(CARD_V2)!
+    const sys = cardToSystemPrompt(card, '旅人')
+    expect(sys).not.toMatch(/\{\{\s*(char|user)\s*\}\}/i)
+    expect(sys).toContain('Alice meets 旅人')
+    expect(sys).not.toContain('Alice meets User')
+  })
+})
+
+// ─── 用户扮演身份行 ─────────────────────────────────────
+
+describe('personaLine', () => {
+  it('描述非空时按语言生成扮演身份行', () => {
+    expect(personaLine('一名年轻冒险者', 'zh')).toBe('用户扮演的身份：一名年轻冒险者')
+    expect(personaLine('a young adventurer', 'en')).toBe('The user is roleplaying as: a young adventurer')
+  })
+
+  it('描述为空或纯空白时返回空串（不拼入 prompt）', () => {
+    expect(personaLine('', 'zh')).toBe('')
+    expect(personaLine('   ', 'en')).toBe('')
   })
 })
 

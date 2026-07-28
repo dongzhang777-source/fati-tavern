@@ -212,7 +212,7 @@ export function detectImportKind(fileName: string, json: any): ImportKind {
 // ─── 宏替换 ────────────────────────────────────────────────
 // SillyTavern 卡片文本里普遍使用 {{char}} / {{user}} 占位符
 // （及更早的 <BOT> / <USER>），发给模型前必须替换掉
-// userName 暂用默认值，将来接入用户 persona 设置
+// userName 由用户 persona 设置提供（store 透传），未设置时回退 'User'
 export function applyMacros(text: string, charName: string, userName = 'User'): string {
   return text
     .replace(/\{\{\s*char\s*\}\}/gi, charName)
@@ -233,7 +233,7 @@ export function detectCardLanguage(card: TavernCard): 'zh' | 'en' {
 // ─── 转成 System Prompt ────────────────────────────────────
 // 把角色卡拼成一段角色设定（用于注入 system prompt）
 // 模板按卡片语言选择，避免中英混合 prompt 干扰模型
-export function cardToSystemPrompt(card: TavernCard): string {
+export function cardToSystemPrompt(card: TavernCard, userName = 'User'): string {
   const lang = detectCardLanguage(card)
   const parts: string[] = []
   if (lang === 'zh') {
@@ -255,13 +255,13 @@ export function cardToSystemPrompt(card: TavernCard): string {
     if (card.first_mes) parts.push(`Your greeting (use it to open the first conversation): ${card.first_mes}`)
     parts.push(`Remember: you are ${card.name}, not an AI assistant. Respond in ${card.name}'s voice, tone, knowledge and worldview. Never admit to being an AI or a language model.`)
   }
-  return applyMacros(parts.join('\n\n'), card.name)
+  return applyMacros(parts.join('\n\n'), card.name, userName)
 }
 
 // ─── 世界书内容拼接（用于上下文注入前缀）─────────────────
 // MVP：把所有 enabled 的 entry 按 insertion_order 拼起来
 // 后续 RAG 阶段可改为按对话内容触发 keys 检索
-export function bookToContext(book: TavernBook, charName?: string): string {
+export function bookToContext(book: TavernBook, charName?: string, userName = 'User'): string {
   const enabled = book.entries
     .filter((e) => e.enabled)
     .sort((a, b) => a.insertion_order - b.insertion_order)
@@ -271,5 +271,13 @@ export function bookToContext(book: TavernBook, charName?: string): string {
     return head + e.content
   })
   const text = `【世界观设定】\n${blocks.join('\n\n')}`
-  return charName ? applyMacros(text, charName) : text
+  return charName ? applyMacros(text, charName, userName) : text
+}
+
+// ─── 用户扮演身份行（拼入聊天 system prompt 尾部）────────────
+// persona.description 非空时，告诉模型「用户扮演谁」，让角色回应更贴合对手戏
+export function personaLine(description: string, lang: 'zh' | 'en'): string {
+  const d = description.trim()
+  if (!d) return ''
+  return lang === 'zh' ? `用户扮演的身份：${d}` : `The user is roleplaying as: ${d}`
 }
