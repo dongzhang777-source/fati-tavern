@@ -6,6 +6,11 @@ import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } fro
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
 import type { StoredCharacter } from './lib/db'
+import { useP2PStore } from './store/slices/p2p'
+import { loadRelayUrl, saveRelayUrl } from './store/slices/p2p'
+import { P2PInvitePanel } from './components/p2p/P2PInvitePanel'
+import { P2PJoinPanel } from './components/p2p/P2PJoinPanel'
+import { P2PChatPanel } from './components/p2p/P2PChatPanel'
 import './App.css'
 
 export default function App() {
@@ -84,11 +89,16 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang } = useStore()
+  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, activeCharId } = useStore()
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [editingChar, setEditingChar] = useState<StoredCharacter | null>(null)
+  const [showP2P, setShowP2P] = useState(false)
+  const [p2pMode, setP2PMode] = useState<'invite' | 'join'>('join')
+  const p2pState = useP2PStore(s => s.p2pState)
+  const p2pMembers = useP2PStore(s => s.p2pMembers)
+  const disconnectP2P = useP2PStore(s => s.disconnectP2P)
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -146,8 +156,34 @@ function Gallery() {
         <div className="gallery-actions">
           <button className="btn-import" onClick={() => fileRef.current?.click()}>{t(lang, 'gallery.import')}</button>
           <button className="btn-icon" onClick={() => setShowSettings(!showSettings)}>⚙</button>
+          <button className="btn-icon" onClick={() => setShowP2P(v => !v)} title={t(lang, 'p2pTitle')}>👥</button>
         </div>
       </header>
+
+      {showP2P && (
+        <div className="p2p-panel">
+          <h3>{t(lang, 'p2pTitle')}</h3>
+          {p2pState === 'idle' || p2pState === 'disconnected' ? (
+            <>
+              <div className="chat-tabs">
+                <button className={`chat-tab ${p2pMode === 'join' ? 'active' : ''}`} onClick={() => setP2PMode('join')}>{t(lang, 'p2pJoinRoom')}</button>
+                <button className={`chat-tab ${p2pMode === 'invite' ? 'active' : ''}`} onClick={() => setP2PMode('invite')}>{t(lang, 'p2pCreateInvite')}</button>
+              </div>
+              {p2pMode === 'join' ? <P2PJoinPanel /> : <P2PInvitePanel />}
+            </>
+          ) : (
+            <div className="p2p-panel">
+              <p>{t(lang, 'p2pJoined')} · {t(lang, 'p2pMembers')}: {p2pMembers.length + 1}</p>
+              <button className="btn-p2p" disabled={characters.length === 0} onClick={() => {
+                useP2PStore.getState().setP2PChatTab('group')
+                const id = activeCharId || characters[0]?.id
+                if (id) { openCharacter(id); setShowP2P(false) }
+              }}>{t(lang, 'p2pEnterChat')}</button>
+              <button className="btn-p2p" onClick={disconnectP2P}>{t(lang, 'p2pDisconnect')}</button>
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         ref={fileRef} type="file" accept=".png,.json" multiple hidden
@@ -341,6 +377,11 @@ function ChatView() {
   const [input, setInput] = useState('')
   const [showConvList, setShowConvList] = useState(false)
   const [impOpen, setImpOpen] = useState(false)
+  const p2pTab = useP2PStore(s => s.p2pChatTab)
+  const setP2PChatTab = useP2PStore(s => s.setP2PChatTab)
+  const p2pActive = useP2PStore(s => s.p2pState !== 'idle')
+  const p2pSafetyNotice = useP2PStore(s => s.p2pSafetyNotice)
+  const dismissP2PSafetyNotice = useP2PStore(s => s.dismissP2PSafetyNotice)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const char = characters.find((c) => c.id === activeCharId)
@@ -420,8 +461,26 @@ function ChatView() {
             <button onClick={() => setShowConvList(!showConvList)} title={t(lang, 'chat.convList')}>☰</button>
             <button onClick={clearChat} title={t(lang, 'chat.clear')}>🗑</button>
           </div>
+          {p2pActive && (
+            <div className="chat-tabs">
+              <button className={`chat-tab ${p2pTab === 'solo' ? 'active' : ''}`} onClick={() => setP2PChatTab('solo')}>{t(lang, 'p2pTabSolo')}</button>
+              <button className={`chat-tab ${p2pTab === 'group' ? 'active' : ''}`} onClick={() => setP2PChatTab('group')}>{t(lang, 'p2pTabGroup')}</button>
+            </div>
+          )}
         </header>
 
+        {/* 自伤关键词命中后的危机资源提示（非阻断、可关闭，单聊/群聊均可见） */}
+        {(safetyNotice || p2pSafetyNotice) && (
+          <div className="crisis-bar">
+            <span>💛 {t(lang, 'chat.crisis')}</span>
+            <button onClick={() => { dismissSafetyNotice(); dismissP2PSafetyNotice() }}>{t(lang, 'chat.crisisDismiss')}</button>
+          </div>
+        )}
+
+        {p2pActive && p2pTab === 'group' ? (
+          <P2PChatPanel />
+        ) : (
+        <>
         <div className="messages">
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
@@ -431,14 +490,6 @@ function ChatView() {
           ))}
           <div ref={chatEndRef} />
         </div>
-
-        {/* 自伤关键词命中后的危机资源提示（非阻断、可关闭） */}
-        {safetyNotice && (
-          <div className="crisis-bar">
-            <span>💛 {t(lang, 'chat.crisis')}</span>
-            <button onClick={dismissSafetyNotice}>{t(lang, 'chat.crisisDismiss')}</button>
-          </div>
-        )}
 
         {/* WebLLM 模型下载/编译进度 */}
         {webllmProgress !== null && (
@@ -499,6 +550,8 @@ function ChatView() {
             : <button className="btn-send" onClick={handleSend} disabled={!input.trim()}>{t(lang, 'chat.send')}</button>
           }
         </footer>
+        </>
+        )}
       </main>
     </div>
   )
@@ -682,6 +735,7 @@ function SettingsPanel() {
   const [statusMsg, setStatusMsg] = useState('')
   const [chatStatus, setChatStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [chatMsg, setChatMsg] = useState('')
+  const [relayUrl, setRelayUrl] = useState(loadRelayUrl())
 
   // 本地端点需要用户自行开启 CORS，否则从 HTTPS 页面必然连不上
   const isLocalEndpoint = /localhost|127\.0\.0\.1/.test(endpoint.baseUrl)
@@ -821,6 +875,16 @@ function SettingsPanel() {
           />
         </label>
       </div>
+      <label>{t(lang, 'p2pRelayLabel')}
+        <input
+          type="text"
+          value={relayUrl}
+          placeholder="ws://127.0.0.1:8081"
+          onChange={e => setRelayUrl(e.target.value)}
+          onBlur={() => saveRelayUrl(relayUrl)}
+        />
+      </label>
+      <p className="p2p-hint">{t(lang, 'p2pRelayHint')}</p>
       {/* ── 用户 persona：名字填 {{user}} 宏，描述告诉角色“我扮演谁” ── */}
       <div className="persona-section">
         <h4>{t(lang, 'persona.title')}</h4>

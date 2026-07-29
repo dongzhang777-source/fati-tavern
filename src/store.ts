@@ -584,3 +584,5 @@ export const useStore = create<State>((set, get) => ({
     set({ impSuggestions: [], impLoading: false, impRefining: false })
   },
 }))
+
+export { useP2PStore, loadRelayUrl, saveRelayUrl } from './store/slices/p2p'
