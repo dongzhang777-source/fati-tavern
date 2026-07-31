@@ -1,0 +1,46 @@
+#!/bin/sh
+# pre-push 门禁（AGENTS.md「提交约定」+ 多方协作 SOP 铁律 3 的机械闸门）：
+# 1) 待推 commit 作者必须为 dongzhang777-source（Vercel team 只认该身份；
+#    aiatwork 身份推送会被部署拦截）。
+# 2) 工作区必须干净（有未提交改动 = 有遗漏文件，拒绝推送）。
+# 逃生通道：git push --no-verify（仅用户手动操作时使用）。
+# 本目录为 hooksPath（core.hooksPath=.githooks），文件放进来自动生效。
+REQUIRED_EMAIL="292045917+dongzhang777-source@users.noreply.github.com"
+
+# ── 检查 1：工作区干净（防漏文件）────────────────────────────
+DIRTY=$(git status --porcelain)
+if [ -n "$DIRTY" ]; then
+  echo "❌ pre-push: 工作区有未提交改动，拒绝推送（可能有遗漏文件）"
+  echo "$DIRTY" | head -20
+  echo "   → 先 git add + git commit 清干净，或 git push --no-verify 强行推"
+  exit 1
+fi
+
+# ── 检查 2：待推 commit 作者身份（防错身份上线）──────────────
+BAD=""
+while read local_ref local_sha remote_ref remote_sha; do
+  # 删除远程分支（local_sha 全零）跳过
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    RANGE="$local_sha"
+  else
+    RANGE="$remote_sha..$local_sha"
+  fi
+  # 本次推送引入的所有 commit，逐个查作者邮箱
+  WRONG=$(git log --format='%h %an <%ae> %s' "$RANGE" 2>/dev/null \
+    | grep -v "<$REQUIRED_EMAIL>" || true)
+  if [ -n "$WRONG" ]; then
+    BAD="$BAD$WRONG
+"
+  fi
+done
+
+if [ -n "$BAD" ]; then
+  echo "❌ pre-push: 以下待推 commit 作者不是部署身份 $REQUIRED_EMAIL，拒绝推送："
+  echo "$BAD"
+  echo "   → 用 git rebase -i / git commit --amend --author 修正后重推，"
+  echo "     或 git push --no-verify 强行推（仅用户手动操作）"
+  exit 1
+fi
+
+exit 0
