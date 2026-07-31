@@ -6,3 +6,6 @@ dist
 .env.*
 !.env.example
 .env*
+
+# Qoder 工具本地配置（审查产物，不入库）
+.qoder/
