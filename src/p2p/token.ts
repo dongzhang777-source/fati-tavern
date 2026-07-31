@@ -71,6 +71,8 @@ export function trustedRelayHosts(): string[] {
 export function isValidRelayUrl(url: string): boolean {
   try {
     if (!url.startsWith('ws://') && !url.startsWith('wss://')) return false
+    // P0-2: 严格 URL 格式验证，防止畸形 URL 绕过（与 fati 桌面端对齐）
+    new URL(url.replace(/^ws/, 'http'))
     return true
   } catch {
     return false
@@ -87,6 +89,7 @@ export function extractRelayUrlFromToken(token: string): string | null {
     const p2pIdx = payload.ep.lastIndexOf('/p2p/')
     const relayUrl = p2pIdx !== -1 ? payload.ep.slice(0, p2pIdx) : payload.ep
     if (!isValidRelayUrl(relayUrl)) {
+      console.warn(`[token] relay URL 未通过安全验证，已拒绝: ${relayUrl}`)
       return null
     }
     return relayUrl
@@ -166,6 +169,11 @@ export async function verifyInvite(token: string): Promise<VerifyResult> {
 }
 
 // ─── keypair 持久化（IndexedDB 不可导出 CryptoKey / localStorage 降级）──
+// ⚠️ SECURITY NOTE (P1-6): localStorage 降级路径将 JWK 私钥以明文存储在浏览器存储中，
+// 可被同页面的任何 JavaScript（包括 XSS 攻击）通过 `localStorage.getItem()` 读取。
+// 这是已知的安全妥协：IndexedDB 中的 CryptoKey 标记为 extractable: false，无法被 JS 读取，
+// 但 localStorage 无此保护。仅当 IndexedDB 不可用时（极少数浏览器/隐私模式）才走此路径。
+// 未来改进方向：对 JWK 做 crypto.subtle.encrypt + 派生密钥后再存入 localStorage。
 const LS_KEYPAIR_KEY = 'tavern-p2p-keypair'
 
 function openKeyPairDB(): Promise<IDBDatabase> {
@@ -237,6 +245,8 @@ export async function loadOrCreateKeyPair(): Promise<KeyPair> {
     if (saved) return keyPair
   } catch { /* ignore and fallback */ }
 
+  // ⚠️ SECURITY (P1-6): 此处将 JWK 私钥明文写入 localStorage，仅作为 IndexedDB 不可用时的降级。
+  // 可被同页面 XSS 读取。见上方 SECURITY NOTE。
   const kp = await generateKeyPair()
   try { localStorage.setItem(LS_KEYPAIR_KEY, JSON.stringify(kp)) } catch { /* ignore */ }
   return kp

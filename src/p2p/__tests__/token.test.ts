@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   generateKeyPair, createInvite, verifyInvite,
-  extractRelayUrlFromToken, loadOrCreateKeyPair,
+  extractRelayUrlFromToken, loadOrCreateKeyPair, isValidRelayUrl,
 } from '../token'
 
 // node 环境无 localStorage，用内存实现打桩
@@ -60,5 +60,21 @@ describe('token 票据', () => {
     const kp2 = await loadOrCreateKeyPair()
     expect(kp2.publicKey).toBe(kp1.publicKey)
     expect(mem.has('tavern-p2p-keypair')).toBe(true)
+  })
+})
+
+describe('isValidRelayUrl 严格验证', () => {
+  it('合法 ws/wss URL 通过', () => {
+    expect(isValidRelayUrl('ws://127.0.0.1:8081')).toBe(true)
+    expect(isValidRelayUrl('wss://relay.example.com')).toBe(true)
+    expect(isValidRelayUrl('ws://localhost:3000/p2p/room')).toBe(true)
+  })
+
+  it('畸形 URL 拒绝', () => {
+    expect(isValidRelayUrl('ws://')).toBe(false)
+    expect(isValidRelayUrl('ws://[invalid')).toBe(false)
+    expect(isValidRelayUrl('not-a-url')).toBe(false)
+    expect(isValidRelayUrl('http://example.com')).toBe(false)
+    expect(isValidRelayUrl('')).toBe(false)
   })
 })

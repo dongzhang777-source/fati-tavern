@@ -43,7 +43,8 @@ describe('client 连接与状态机', () => {
     expect(got.some(m => m.kind === 'welcome')).toBe(true)
   })
 
-  it('在未收到 group_key 前调用 sendChat，Socket 上不会发出 encrypted: false 的明文 chat 帧', async () => {
+  // N-B1 / QNEW-3: sendChat 回退明文，与桌面端协议一致
+  it('在未收到 group_key 前调用 sendChat，消息排队等待，连接后以明文发出', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     h.sendChat('早发的消息')
     await flush()
@@ -51,24 +52,11 @@ describe('client 连接与状态机', () => {
     ws.open()
     ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
     await flush()
+    // 连接建立后，排队的消息以明文 body 发出
     const plainChats = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')
-    expect(plainChats.length).toBe(0) // 阻断明文泄露
-
-    // 收到 group_key 握手后加密发出
-    const server = await generateEcdhKeyPair()
-    const groupKey = await generateGroupKey()
-    ws.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
-    await flush()
-    await flush()
-    const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
-    const enc = await encryptGroupKeyForPeer(server.privateKey, reply.pub, groupKey)
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
-    await flush(); await flush(); await flush()
-
-    const encryptedChats = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')
-    expect(encryptedChats.length).toBe(1)
-    expect(encryptedChats[0].encrypted).toBe(true)
-    expect(encryptedChats[0].body).toBeUndefined()
+    expect(plainChats.length).toBe(1)
+    expect(plainChats[0].body).toBe('早发的消息')
+    expect(plainChats[0].encrypted).toBeUndefined()
   })
 
   it('断线指数退避重连 1/2/4/8/16s，5 次后发 _max_retries', async () => {
@@ -99,7 +87,8 @@ describe('client 连接与状态机', () => {
 })
 
 describe('client E2E 状态机', () => {
-  it('ecdh_pub → 回公钥 → group_key 解密 → chat 自动加解密', async () => {
+  // N-B1 修正：加密 + body 明文并存
+  it('ecdh_pub → 回公钥 → group_key 解密 → chat 加密 + body 并存', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     const got: P2PMessage[] = []
     h.onMessage(m => got.push(m))
@@ -123,17 +112,19 @@ describe('client E2E 状态机', () => {
     await flush(); await flush(); await flush()
     expect(h.isEncrypted()).toBe(true)
 
-    // 出向 chat 加密
+    // 出向 chat：加密 + body 明文并存（N-B1 修正）
     h.sendChat('加密消息')
     await flush(); await flush(); await flush()
     const sent = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')[0]
+    expect(sent.body).toBe('加密消息')
     expect(sent.encrypted).toBe(true)
-    expect(sent.body).toBeUndefined()
+    expect(sent.data).toBeTruthy()
+    expect(sent.iv).toBeTruthy()
 
-    // 入向 chat 解密
+    // 入向 chat 仍兼容旧版加密帧解密
     const inc = await encryptMessage(groupKey, '来自桌面端')
     ws.receive({ kind: 'chat', id: 'm_1_x', ts: 1, encrypted: true, data: inc.data, iv: inc.iv, from: 'peer_srv' })
-    await flush()
+    await flush(); await flush(); await flush()
     const chat = got.find(m => m.kind === 'chat' && (m as { body?: string }).body === '来自桌面端')
     expect(chat).toBeTruthy()
   })
@@ -154,7 +145,8 @@ describe('client E2E 状态机', () => {
     expect(h.isEncrypted()).toBe(false)
   })
 
-  it('requestCompute 返回请求 id 且发出明文帧', async () => {
+  // N-B1: requestCompute 回退明文，与桌面端协议一致
+  it('requestCompute 连接后直接发送明文帧', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
@@ -162,7 +154,101 @@ describe('client E2E 状态机', () => {
     await flush()
     const id = h.requestCompute('写一首诗')
     expect(id).toMatch(/^c_\d+_[0-9a-f]{8}$/)
-    const frame = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'compute_request')
-    expect(frame).toEqual({ kind: 'compute_request', id, ts: frame.ts, body: '写一首诗' })
+    // 明文 compute_request 直接发出
+    const frames = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'compute_request')
+    expect(frames.length).toBe(1)
+    expect(frames[0].body).toBe('写一首诗')
+    expect(frames[0].encrypted).toBeUndefined()
+  })
+
+  it('requestCompute 在有 groupKey 时发送加密 + body 并存帧（N-B1 修正）', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await flush()
+
+    // 建立 E2E
+    const server = await generateEcdhKeyPair()
+    const groupKey = await generateGroupKey()
+    ws.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
+    await flush(); await flush()
+    const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
+    const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
+    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    await flush(); await flush(); await flush()
+
+    const id = h.requestCompute('写一首诗')
+    await flush(); await flush()
+    const frame = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'compute_request').pop()
+    expect(frame).toBeTruthy()
+    expect(frame.body).toBe('写一首诗')
+    expect(frame.id).toBe(id)
+    expect(frame.encrypted).toBe(true)
+    expect(frame.data).toBeTruthy()
+    expect(frame.iv).toBeTruthy()
+  })
+
+  it('requestCompute 排队后在连接建立时自动明文发出', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await flush()
+
+    // 先排队（未连接时）
+    // 模拟未连接状态：先 disconnect 再创建新客户端
+    h.disconnect()
+    const h2 = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    h2.requestCompute('排队的请求')
+    await flush()
+    const ws2 = FakeWS.instances[1]
+    // 未 open 前不应有帧
+    expect(ws2.sent.filter(s => JSON.parse(s).kind === 'compute_request').length).toBe(0)
+    // open + welcome 后自动 flush
+    ws2.open()
+    ws2.receive({ kind: 'welcome', peerId: 'p2', peers: [] })
+    await flush()
+    const frames = ws2.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'compute_request')
+    expect(frames.length).toBe(1)
+    expect(frames[0].body).toBe('排队的请求')
+    expect(frames[0].encrypted).toBeUndefined()
+    h2.disconnect()
+  })
+})
+
+describe('client 安全边界', () => {
+  it('超大消息触发连接关闭', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await flush()
+
+    // 模拟超大消息
+    const bigData = 'x'.repeat(256 * 1024 + 1)
+    let closeCalled = false
+    const origClose = ws.close.bind(ws)
+    ws.close = (code?: number, reason?: string) => { closeCalled = true; origClose() }
+    ws.onmessage?.({ data: bigData })
+    expect(closeCalled).toBe(true)
+    h.disconnect()
+  })
+
+  it('JSON.parse 失败不中断连接', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await flush()
+
+    // 发送非法 JSON
+    ws.onmessage?.({ data: '{invalid json' })
+    // 连接不应关闭
+    expect(h.getState()).toBe('joined')
+    // 后续消息仍能处理
+    ws.receive({ kind: 'chat', id: 'm_after', from: 'other', body: 'hello' })
+    await flush()
+    h.disconnect()
   })
 })

@@ -3,6 +3,7 @@ import { createP2PClient } from '../../p2p/client'
 import type { P2PClientHandle, P2PMessage, ClientState } from '../../p2p/client'
 import { loadOrCreateKeyPair, createInvite, verifyInvite, extractRelayUrlFromToken } from '../../p2p/token'
 import { detectSelfHarm } from '../../lib/safety'
+import { detectLang, t } from '../../lib/i18n'
 
 export interface P2PMember { id: string; isCompute: boolean }
 export interface P2PChatMsg { id: string; from: string; body: string; ts: number; encrypted: boolean; mine: boolean }
@@ -33,7 +34,9 @@ interface P2PState {
   p2pComputes: P2PCompute[]
   p2pStreamingComputeId: string | null
   p2pSafetyNotice: boolean
+  p2pQueueWarning: string | null
   dismissP2PSafetyNotice: () => void
+  dismissP2PQueueWarning: () => void
   createInviteToken: (relayUrl?: string) => Promise<string>
   joinWithToken: (token: string, relayUrl?: string) => Promise<void>
   disconnectP2P: () => void
@@ -56,7 +59,9 @@ export const useP2PStore = create<P2PState>((set, get) => ({
   p2pComputes: [],
   p2pStreamingComputeId: null,
   p2pSafetyNotice: false,
+  p2pQueueWarning: null,
   dismissP2PSafetyNotice: () => set({ p2pSafetyNotice: false }),
+  dismissP2PQueueWarning: () => set({ p2pQueueWarning: null }),
   p2pChatTab: 'solo',
   setP2PChatTab: (tab) => set({ p2pChatTab: tab }),
 
@@ -69,17 +74,17 @@ export const useP2PStore = create<P2PState>((set, get) => ({
   },
 
   joinWithToken: async (token, relayUrl) => {
-    const t = token.trim()
-    const r = await verifyInvite(t)
+    const trimmed = token.trim()
+    const r = await verifyInvite(trimmed)
     if (!r.ok) { set({ p2pError: r.reason || 'invalid_token' }); return }
-    const url = relayUrl || extractRelayUrlFromToken(t)
+    const url = relayUrl || extractRelayUrlFromToken(trimmed)
     if (!url) { set({ p2pError: 'invalid_relay' }); return }
     get().disconnectP2P()
     set({
-      p2pError: null, p2pToken: t, p2pState: 'connecting', p2pEncrypted: false,
+      p2pError: null, p2pToken: trimmed, p2pState: 'connecting', p2pEncrypted: false,
       p2pPeerId: null, p2pMembers: [], p2pMessages: [],
     })
-    client = createP2PClient(t, url)
+    client = createP2PClient(trimmed, url)
     unsub = client.onMessage(m => get()._handleP2PMessage(m))
   },
 
@@ -95,6 +100,8 @@ export const useP2PStore = create<P2PState>((set, get) => ({
     if (detectSelfHarm(body)) {
       set({ p2pSafetyNotice: true })
     }
+    // N-B1 修正: sendChat 加密 + body 明文并存，加密失败时 .catch() 降级为明文
+    // QNEW-1: encryptMessage 的 .catch() 已在 client 层处理，失败时自动降级
     client.sendChat(body)
     const me = get().p2pPeerId || 'me'
     set(s => ({
@@ -131,6 +138,16 @@ export const useP2PStore = create<P2PState>((set, get) => ({
       case '_e2e_ready':
         set({ p2pEncrypted: true })
         return
+      case '_queue_overflow': {
+        // N-C5: 硬编码中文收进 i18n dict
+        const lang = detectLang()
+        const queue = String(msg.queue || '')
+        const key = queue === 'chat' ? 'p2pQueueOverflowChat'
+          : queue === 'compute' ? 'p2pQueueOverflowCompute'
+          : 'p2pQueueOverflowDefault'
+        set({ p2pQueueWarning: t(lang, key) })
+        return
+      }
       case '_max_retries':
         set({ p2pError: 'reconnect_failed' })
         return
@@ -153,7 +170,9 @@ export const useP2PStore = create<P2PState>((set, get) => ({
         set(s => ({ p2pMembers: s.p2pMembers.filter(m => m.id !== msg.from) }))
         return
       case 'chat': {
-        const body = typeof msg.body === 'string' ? msg.body : '[无法解密的消息]'
+        // N-C5: 硬编码中文收进 i18n dict
+        const lang = detectLang()
+        const body = typeof msg.body === 'string' ? msg.body : t(lang, 'p2pUndecryptable')
         if (detectSelfHarm(body)) {
           set({ p2pSafetyNotice: true })
         }
@@ -183,6 +202,17 @@ export const useP2PStore = create<P2PState>((set, get) => ({
             p2pStreamingComputeId: done && s.p2pStreamingComputeId === reqId ? null : s.p2pStreamingComputeId,
           }
         })
+        return
+      }
+      // QNEW-2: 算力请求超时处理
+      case '_compute_timeout': {
+        const lang = detectLang()
+        const id = String(msg.id || '')
+        set(s => ({
+          p2pComputes: s.p2pComputes.map(c => c.id === id ? { ...c, done: true, cancelled: true } : c),
+          p2pStreamingComputeId: s.p2pStreamingComputeId === id ? null : s.p2pStreamingComputeId,
+          p2pQueueWarning: t(lang, 'p2pComputeTimeout'),
+        }))
         return
       }
     }

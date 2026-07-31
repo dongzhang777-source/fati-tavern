@@ -46,6 +46,9 @@ export function P2PChatPanel() {
           </button>
         </div>
       )}
+      {!encrypted && (
+        <p className="p2p-hint p2p-warn">{t(lang, 'p2pPlaintextWarn')}</p>
+      )}
       <P2PMemberList />
       <div className="messages">
         {messages.map(m => (

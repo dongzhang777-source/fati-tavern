@@ -197,7 +197,8 @@ const dict: Record<string, { zh: string; en: string }> = {
   p2pReconnect: { zh: '重新连接', en: 'Reconnect' },
   p2pE2E: { zh: '端到端加密', en: 'End-to-end encrypted' },
   p2pPlaintext: { zh: '未加密（房间无算力端）', en: 'Not encrypted (no compute node)' },
-  p2pSelfHostWarn: { zh: '自建房无算力端、消息不加密，建议加入桌面端 FATI 创建的房间', en: 'Self-hosted rooms have no compute node and no encryption; join a room created by desktop FATI instead' },
+  p2pSelfHostWarn: { zh: '⚠️ 自建房无算力端、所有消息明文经 relay，建议加入桌面端 FATI 创建的房间', en: '⚠️ Self-hosted rooms have no compute node — all messages are plaintext via relay. Join a room created by desktop FATI instead' },
+  p2pPlaintextWarn: { zh: '⚠️ 当前房间未加密，消息明文经 relay 可见，请勿发送敏感内容', en: '⚠️ This room is unencrypted — messages are visible to relay. Do not send sensitive content' },
   p2pMixedContentWarn: { zh: 'https 页面无法连接 ws:// 地址，请使用局域网开发服务或 wss://', en: 'https pages cannot connect to ws://; use LAN dev server or wss://' },
   p2pUnsupported: { zh: '当前浏览器不支持所需加密能力（需 Safari 17+ / Chrome 113+）', en: 'Browser lacks required crypto support (Safari 17+ / Chrome 113+)' },
   p2pRoomId: { zh: '房间', en: 'Room' },
@@ -209,6 +210,12 @@ const dict: Record<string, { zh: string; en: string }> = {
     zh: '⚠️ 算力明文',
     en: '⚠️ Compute Plaintext',
   },
+  p2pQueueOverflowChat: { zh: '发送队列已满，已丢弃最旧的聊天消息', en: 'Send queue full, oldest chat message dropped' },
+  p2pQueueOverflowCompute: { zh: '发送队列已满，已丢弃最旧的算力消息', en: 'Send queue full, oldest compute message dropped' },
+  p2pQueueOverflowDefault: { zh: '发送队列已满，已丢弃最旧的消息', en: 'Send queue full, oldest message dropped' },
+  p2pUndecryptable: { zh: '[无法解密的消息]', en: '[Undecryptable message]' },
+  p2pEncFail: { zh: '消息加密失败，未发送', en: 'Message encryption failed, not sent' },
+  p2pComputeTimeout: { zh: '算力请求超时（30s），已取消', en: 'Compute request timed out (30s), cancelled' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {
