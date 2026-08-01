@@ -367,11 +367,12 @@ export const useStore = create<State>((set, get) => ({
     // 构建 system prompt（persona 名字填 {{user}}，扮演描述拼尾部）
     const userName = personaUserName(persona)
     let sys = cardToSystemPrompt(char.card, userName)
+    const cardLang = detectCardLanguage(char.card)
     if (char.card.character_book) {
-      const ctx = bookToContext(char.card.character_book, char.card.name, userName)
+      const ctx = bookToContext(char.card.character_book, char.card.name, userName, cardLang)
       if (ctx) sys = ctx + '\n\n' + sys
     }
-    const pLine = personaLine(persona.description, detectCardLanguage(char.card))
+    const pLine = personaLine(persona.description, cardLang)
     if (pLine) sys = sys + '\n\n' + pLine
 
     const apiMessages = [

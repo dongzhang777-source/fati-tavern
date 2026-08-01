@@ -224,10 +224,14 @@ export function applyMacros(text: string, charName: string, userName = 'User'): 
 // ─── 卡片语言检测 ──────────────────────────────────────────
 // CJK 字符占比启发式：英文卡（生态主流）不该被套中文脚手架提示词
 export function detectCardLanguage(card: TavernCard): 'zh' | 'en' {
-  const sample = [card.description, card.personality, card.scenario, card.first_mes].join('')
+  // 采样所有文本密集字段（system_prompt / mes_example 常含大量单一语言文本）
+  const sample = [card.description, card.personality, card.scenario, card.first_mes, card.system_prompt, card.mes_example].join('')
   if (!sample) return 'zh'
-  const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length
-  return cjk / sample.length > 0.15 ? 'zh' : 'en'
+  // CJK 统一表意 + 中文标点 + 全角字符，避免漏计中文标点导致占比偏低
+  const cjk = (sample.match(/[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]/g) || []).length
+  // 去除空白和纯 ASCII 标点后的有效字符数，避免格式字符稀释比例
+  const effective = sample.replace(/[\s\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]/g, '').length
+  return effective > 0 && cjk / effective > 0.15 ? 'zh' : 'en'
 }
 
 // ─── 转成 System Prompt ────────────────────────────────────
@@ -245,6 +249,7 @@ export function cardToSystemPrompt(card: TavernCard, userName = 'User'): string 
     if (card.mes_example) parts.push(`对话示例（模仿这种说话风格）：\n${card.mes_example}`)
     if (card.first_mes) parts.push(`你的开场白（用这段话来开启和用户的第一次对话）：${card.first_mes}`)
     parts.push(`记住：你是${card.name}，不是AI助手。用${card.name}的口吻、语气、知识和世界观来回应。绝对不要承认自己是AI或语言模型。`)
+    parts.push(`始终使用中文回复。`)
   } else {
     parts.push(`Your name is ${card.name}. You are not an AI assistant — you ARE ${card.name}.`)
     if (card.description) parts.push(`Background: ${card.description}`)
@@ -254,6 +259,7 @@ export function cardToSystemPrompt(card: TavernCard, userName = 'User'): string 
     if (card.mes_example) parts.push(`Example dialogue (imitate this speaking style):\n${card.mes_example}`)
     if (card.first_mes) parts.push(`Your greeting (use it to open the first conversation): ${card.first_mes}`)
     parts.push(`Remember: you are ${card.name}, not an AI assistant. Respond in ${card.name}'s voice, tone, knowledge and worldview. Never admit to being an AI or a language model.`)
+    parts.push(`Always respond in English.`)
   }
   return applyMacros(parts.join('\n\n'), card.name, userName)
 }
@@ -261,7 +267,7 @@ export function cardToSystemPrompt(card: TavernCard, userName = 'User'): string 
 // ─── 世界书内容拼接（用于上下文注入前缀）─────────────────
 // MVP：把所有 enabled 的 entry 按 insertion_order 拼起来
 // 后续 RAG 阶段可改为按对话内容触发 keys 检索
-export function bookToContext(book: TavernBook, charName?: string, userName = 'User'): string {
+export function bookToContext(book: TavernBook, charName?: string, userName = 'User', lang: 'zh' | 'en' = 'zh'): string {
   const enabled = book.entries
     .filter((e) => e.enabled)
     .sort((a, b) => a.insertion_order - b.insertion_order)
@@ -270,7 +276,9 @@ export function bookToContext(book: TavernBook, charName?: string, userName = 'U
     const head = e.keys.length ? `[${e.keys.join(' / ')}]\n` : ''
     return head + e.content
   })
-  const text = `【世界观设定】\n${blocks.join('\n\n')}`
+  // 按卡片语言选择标题，避免中英混合 prompt 干扰模型
+  const header = lang === 'zh' ? '【世界观设定】' : '[World Lore]'
+  const text = `${header}\n${blocks.join('\n\n')}`
   return charName ? applyMacros(text, charName, userName) : text
 }
 

@@ -59,7 +59,11 @@ function transcript(ctx: ImpersonateContext): string {
 // 角色卡语境摘要：只作对手戏参考，绝不作为身份指令
 function cardSummary(ctx: ImpersonateContext): string {
   const c = ctx.card
-  const bits = [c.description, c.personality, c.scenario].filter(Boolean).join(' / ').slice(0, CARD_SLICE)
+  const raw = [c.description, c.personality, c.scenario].filter(Boolean).join(' / ').slice(0, CARD_SLICE)
+  // 替换 {{char}}/{{user}} 宏为实际名字，避免小模型被角色设定指令劫持
+  const bits = raw
+    .replace(/\{\{\s*char\s*\}\}/gi, c.name)
+    .replace(/\{\{\s*user\s*\}\}/gi, userLabel(ctx.persona))
   return bits ? `${c.name} — ${bits}` : c.name
 }
 
