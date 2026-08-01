@@ -17,11 +17,18 @@ if [ -n "$DIRTY" ]; then
 fi
 
 # ── 检查 2：待推 commit 作者身份（防错身份上线）──────────────
+# 用 fetch 后的 origin/<branch> 作为 base（remote_sha 是 push 前的旧 ref 值，
+# 可能指向已经合入远程的历史提交，导致误报已在线上的坏身份 commit）。
 BAD=""
 while read local_ref local_sha remote_ref remote_sha; do
   # 删除远程分支（local_sha 全零）跳过
   [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
-  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+  # 从 remote_ref 提取分支名，用 fetch 后的 origin/<branch> 做 base
+  branch="${remote_ref#refs/heads/}"
+  origin_ref="refs/remotes/origin/$branch"
+  if git rev-parse --verify "$origin_ref" >/dev/null 2>&1; then
+    RANGE="$origin_ref..$local_sha"
+  elif [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
     RANGE="$local_sha"
   else
     RANGE="$remote_sha..$local_sha"
