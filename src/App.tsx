@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
-import { parseCharacterJson, parsePngCard, type TavernCard } from './lib/tavern'
+import { parseCharacterJson, parsePngCard, passesContentFilter, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
@@ -89,7 +89,7 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, activeCharId } = useStore()
+  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, activeCharId, safeMode } = useStore()
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -105,6 +105,8 @@ function Gallery() {
   // 区分内置角色和用户导入角色
   const userChars = characters.filter((c) => !c.builtin)
   const showCatalog = userChars.length === 0 // 没导入过卡 → 显示内置目录
+  // 安全模式：隐藏 adult 卡（内置卡均为 all，不受影响）
+  const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode)
 
   // 每个文件独立解析，成功/失败都必须给用户可见反馈
   async function handleFiles(files: FileList | File[]) {
@@ -201,7 +203,7 @@ function Gallery() {
           </div>
 
           <div className="card-grid">
-            {characters.filter((c) => c.builtin).map((c) => (
+            {characters.filter((c) => c.builtin && passesSafeMode(c)).map((c) => (
               <div key={c.id} className="char-card" onClick={() => openCharacter(c.id)}>
                 <div className="card-avatar">
                   <span className="avatar-placeholder">{c.card.name[0]}</span>
@@ -229,7 +231,7 @@ function Gallery() {
         </div>
       ) : (
         <div className="card-grid">
-          {characters.map((c) => (
+          {characters.filter(passesSafeMode).map((c) => (
             <div key={c.id} className="char-card" onClick={() => openCharacter(c.id)}>
               <div className="card-avatar">
                 {c.avatarUrl
@@ -729,7 +731,7 @@ function WebLLMModelPicker({
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint, lang, setLang, persona, setPersona } = useStore()
+  const { endpoint, setEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode } = useStore()
   const [models, setModels] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
@@ -789,12 +791,19 @@ function SettingsPanel() {
       <div className="settings-head">
         <h3>{t(lang, 'settings.title')}</h3>
         <div className="lang-toggle" title={t(lang, 'settings.lang')}>
-          {(['zh', 'en'] as Lang[]).map((l) => (
+          {(['zh', 'en', 'ja', 'ko'] as Lang[]).map((l) => (
             <button key={l} className={lang === l ? 'active' : ''} onClick={() => setLang(l)}>
-              {l === 'zh' ? '中文' : 'EN'}
+              {l === 'zh' ? '中文' : l === 'en' ? 'EN' : l === 'ja' ? '日本' : '한국'}
             </button>
           ))}
         </div>
+      </div>
+      <div className="safe-mode-row">
+        <label className="safe-mode-label">
+          <input type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} />
+          <span>{t(lang, 'settings.safeMode')}</span>
+        </label>
+        <span className="safe-mode-hint">{t(lang, 'settings.safeModeDesc')}</span>
       </div>
       <div className="presets">
         {PRESETS.map((p) => (

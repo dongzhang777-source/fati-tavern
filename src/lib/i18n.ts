@@ -205,6 +205,8 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'editor.cancel': { zh: '取消', en: 'Cancel', ja: 'キャンセル', ko: '취소' },
   'editor.builtinNote': { zh: '这是内置角色，保存后将创建你的个人副本', en: 'This is a built-in character. Saving will create your personal copy.', ja: 'これは内蔵キャラクターです。保存するとあなた用のコピーが作成されます。', ko: '이것은 내장 캐릭터입니다. 저장하면 개인용 사본이 만들어집니다.' },
   'gallery.edit': { zh: '编辑', en: 'Edit', ja: '編集', ko: '편집' },
+  'settings.safeMode': { zh: '安全模式', en: 'Safe mode', ja: 'セーフモード', ko: '세이프 모드' },
+  'settings.safeModeDesc': { zh: '开启后隐藏标记为 18+ 的角色卡', en: 'Hide character cards marked as 18+ when enabled', ja: '有効にすると18+とマークされたカードを非表示にします', ko: '활성화하면 18+로 표시된 카드를 숨깁니다' },
 
   // ── P2P 群聊 ──
   p2pTitle: { zh: 'P2P 群聊', en: 'P2P Group Chat', ja: 'P2Pグループチャット', ko: 'P2P 그룹 채팅' },

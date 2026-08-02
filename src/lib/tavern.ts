@@ -289,3 +289,14 @@ export function personaLine(description: string, lang: 'zh' | 'en'): string {
   if (!d) return ''
   return lang === 'zh' ? `用户扮演的身份：${d}` : `The user is roleplaying as: ${d}`
 }
+
+// ─── 安全模式过滤（Phase: fati 嫁接）─────────────────────────
+// safeMode=false → 全部可见；safeMode=true → 隐藏 adult
+// 与 fati passesContentFilter 语义对齐（suggestive/unknown/all 始终可见）
+export function passesContentFilter(
+  rating: TavernCard['contentRating'] | undefined,
+  safeMode: boolean,
+): boolean {
+  if (!safeMode) return true
+  return rating !== 'adult'
+}

@@ -47,6 +47,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .lang-toggle { display: flex; gap: 4px; }
 .lang-toggle button { background: var(--bg); border: 1px solid rgba(255,255,255,0.12); color: var(--muted); padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 0.72rem; }
 .lang-toggle button.active { border-color: var(--accent); color: var(--accent); }
+.safe-mode-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.safe-mode-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text); }
+.safe-mode-label input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+.safe-mode-hint { font-size: 0.72rem; color: var(--muted); padding-left: 23px; }
 
 /* ─── 画廊 ─── */
 .gallery { height: 100%; display: flex; flex-direction: column; padding: 24px 32px 0; position: relative; overflow: hidden; }

@@ -53,6 +53,9 @@ interface State {
   // 语言
   lang: Lang
 
+  // 安全模式（隐藏 adult 卡）
+  safeMode: boolean
+
   // 用户 persona（我在故事里扮演谁）
   persona: UserPersona
 
@@ -83,6 +86,7 @@ interface State {
   clearChat: () => void
   setEndpoint: (cfg: Partial<EndpointConfig>) => void
   setLang: (lang: Lang) => void
+  setSafeMode: (v: boolean) => void
   setPersona: (p: Partial<UserPersona>) => void
   dismissSafetyNotice: () => void
 
@@ -113,6 +117,18 @@ function saveEndpoint(cfg: EndpointConfig) {
 }
 
 const LS_PERSONA_KEY = 'tavern-persona'
+
+const LS_SAFE_MODE_KEY = 'tavern-safe-mode'
+
+function loadSafeMode(): boolean {
+  try {
+    return localStorage.getItem(LS_SAFE_MODE_KEY) === '1'
+  } catch { return false }
+}
+
+function saveSafeMode(v: boolean) {
+  try { localStorage.setItem(LS_SAFE_MODE_KEY, v ? '1' : '0') } catch { /* ignore */ }
+}
 
 function loadPersona(): UserPersona {
   try {
@@ -159,6 +175,7 @@ export const useStore = create<State>((set, get) => ({
   safetyNotice: false,
   webllmProgress: null,
   lang: detectLang(),
+  safeMode: loadSafeMode(),
   endpoint: loadEndpoint(),
   persona: loadPersona(),
   impSuggestions: [],
@@ -466,6 +483,11 @@ export const useStore = create<State>((set, get) => ({
   setLang: (lang) => {
     saveLang(lang)
     set({ lang })
+  },
+
+  setSafeMode: (v) => {
+    saveSafeMode(v)
+    set({ safeMode: v })
   },
 
   setPersona: (p) => set((s) => {
