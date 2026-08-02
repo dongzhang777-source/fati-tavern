@@ -101,8 +101,7 @@ describe('client E2E 状态机', () => {
     const server = await generateEcdhKeyPair()
     const groupKey = await generateGroupKey()
     ws.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
-    await flush()
-    await flush() // 额外 flush 确保 generateEcdhKeyPair 完成
+    await new Promise(r => setTimeout(r, 20))
     const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
     expect(reply?.pub).toBeTruthy()
     await importEcdhPublicKey(reply.pub) // 公钥格式合法（SPKI base64）

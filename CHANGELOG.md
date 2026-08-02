@@ -2,7 +2,20 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased] - P2P 群聊
+## [0.11.0] - 2026-08-02
+
+世界书导入 + 剧情模式——导入的世界书既能注入聊天，也能一键进入沉浸式互动剧情（打通主 FATI 未落地的最后一公里）。
+
+### Added
+- **独立世界书导入**：拖入世界书 JSON 自动识别（`detectImportKind` 分流），导入成功 toast 区分角色卡/世界书计数
+- **世界书库管理**：画廊内世界书面板——全局激活（★）、删除（级联清剧情）、绑定到指定角色（内置角色自动转副本并迁移会话）
+- **聊天世界书注入**：优先级「角色绑定书 > 卡自带 character_book > 全局激活书」，6000 字符注入预算按 insertion_order 截断；聊天头部 📖 按钮查看/切换当前生效书
+- **剧情模式**：世界书一键浓缩成剧情世界（纯前端规则，不调模型）→ Director-lite 续写「场景 + 2-4 选项」→ IndexedDB 断点续玩；JSON 解析三级降级链（合法 JSON / 剥代码块围栏 / 整段当正文）
+- **WebLLM 剧情降级档**：移动端及桌面 0.5B/1.5B/1.7B 小模型强制纯续写模式（无选项按钮，自由输入推进），避免小模型 JSON 输出不稳定
+- 新增 `src/lib/story.ts`（Director-lite prompt + 解析）、`src/store/slices/lore.ts` / `story.ts`（独立 slice）、`src/components/LorebookPanel.tsx` / `StoryView.tsx`；IndexedDB 升 v2（lorebooks / stories store，旧数据无损）
+- 单测 +19（bookToPremise 浓缩器、注入预算截断、剧情 prompt 与解析降级链），全套 116 通过
+
+## [0.10.0] - P2P 群聊
 
 ### Added
 - **P2P 群聊**：手机/浏览器通过邀请票据加入桌面 FATI 创建的 P2P 房间，实时群聊；有算力端的房间自动启用端到端加密（Ed25519 签名 + ECDH P-256 密钥交换 + AES-256-GCM）
