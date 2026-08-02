@@ -23,6 +23,10 @@ BAD=""
 while read local_ref local_sha remote_ref remote_sha; do
   # 删除远程分支（local_sha 全零）跳过
   [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+  # tag 推送跳过：tag 指向的提交随同一次分支推送已被检查；不跳过的话
+  # 新 tag（remote_sha 全零）会落入 RANGE="$local_sha" 分支，把整个历史
+  # 都当作待推提交，误报早在线上的旧身份 commit
+  case "$remote_ref" in refs/tags/*) continue ;; esac
   # 从 remote_ref 提取分支名，用 fetch 后的 origin/<branch> 做 base
   branch="${remote_ref#refs/heads/}"
   origin_ref="refs/remotes/origin/$branch"
