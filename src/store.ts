@@ -16,6 +16,8 @@ import {
   genId, extractAvatar,
   type StoredCharacter, type StoredConversation,
 } from './lib/db'
+import { useLoreStore } from './store/slices/lore'
+import { useStoryStore } from './store/slices/story'
 
 export interface ChatMessage {
   id?: string // 流式占位消息按 id 定位，避免按位置盲写
@@ -24,7 +26,7 @@ export interface ChatMessage {
   ts?: number
 }
 
-export type View = 'gallery' | 'chat'
+export type View = 'gallery' | 'chat' | 'story'
 
 // 用户 persona（全局单个）：名字填 {{user}} 宏，描述拼入 system prompt
 export interface UserPersona {
@@ -75,6 +77,10 @@ interface State {
   updateCharacter: (id: string, card: TavernCard) => Promise<void>
   openCharacter: (id: string) => Promise<void>
   backToGallery: () => void
+  enterStoryView: () => void
+
+  // 世界书绑定（角色 ↔ 世界书）
+  bindLorebookToCharacter: (charId: string, lorebookId: string | null) => Promise<void>
 
   newConversation: () => Promise<void>
   selectConversation: (id: string) => void
@@ -196,6 +202,9 @@ export const useStore = create<State>((set, get) => ({
     // 合并：用户角色在前，内置角色在后
     const characters = [...userChars, ...builtinChars]
     set({ characters })
+    // 世界书 + 剧情（独立 slice）
+    void useLoreStore.getState().initLore()
+    void useStoryStore.getState().initStories()
   },
 
   importCard: async (card, file) => {
@@ -274,6 +283,41 @@ export const useStore = create<State>((set, get) => ({
   backToGallery: () => {
     get().clearImpersonate()
     set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] })
+  },
+
+  enterStoryView: () => {
+    get().clearImpersonate()
+    set({ view: 'story' })
+  },
+
+  // 绑定/解绑世界书到角色。内置角色先转用户副本再绑定（与编辑一致），
+  // 并把该角色的会话迁移到副本，保证聊天不中断。
+  bindLorebookToCharacter: async (charId, lorebookId) => {
+    const existing = get().characters.find((c) => c.id === charId)
+    if (!existing) return
+
+    if (existing.builtin) {
+      const newId = genId()
+      const stored: StoredCharacter = {
+        id: newId, card: existing.card, avatarUrl: existing.avatarUrl,
+        createdAt: Date.now(), boundLorebookId: lorebookId ?? undefined,
+      }
+      await dbPutCharacter(stored)
+      // 会话迁移：内置角色的历史会话归到副本名下（chat 连续性）
+      const convs = await dbGetConversations(charId)
+      const moved = convs.map((c) => ({ ...c, characterId: newId }))
+      for (const c of moved) await dbPutConversation(c)
+      set((s) => ({
+        characters: [stored, ...s.characters],
+        activeCharId: s.activeCharId === charId ? newId : s.activeCharId,
+        conversations: s.activeCharId === charId ? moved : s.conversations,
+      }))
+      trackOnce('character_edit')
+      return
+    }
+    const updated: StoredCharacter = { ...existing, boundLorebookId: lorebookId ?? undefined }
+    await dbPutCharacter(updated)
+    set((s) => ({ characters: s.characters.map((c) => c.id === charId ? updated : c) }))
   },
 
   newConversation: async () => {
@@ -385,8 +429,19 @@ export const useStore = create<State>((set, get) => ({
     const userName = personaUserName(persona)
     let sys = cardToSystemPrompt(char.card, userName)
     const cardLang = detectCardLanguage(char.card)
-    if (char.card.character_book) {
-      const ctx = bookToContext(char.card.character_book, char.card.name, userName, cardLang)
+    // 世界书注入优先级：角色绑定书 > 卡自带 character_book > 全局激活书
+    // （尊重用户显式绑定；卡作者捆绑的世界书次之；全局激活兜底）
+    const lore = useLoreStore.getState()
+    const boundBook = char.boundLorebookId
+      ? lore.lorebooks.find((l) => l.id === char.boundLorebookId)?.book
+      : undefined
+    const activeBook = !boundBook && lore.activeLorebookId
+      ? lore.lorebooks.find((l) => l.id === lore.activeLorebookId)?.book
+      : undefined
+    const effectiveBook = boundBook ?? char.card.character_book ?? activeBook
+    if (effectiveBook) {
+      // 6000 字符注入预算：超长的书按 insertion_order 截断，避免撑爆上下文
+      const ctx = bookToContext(effectiveBook, char.card.name, userName, cardLang, 6000)
       if (ctx) sys = ctx + '\n\n' + sys
     }
     const pLine = personaLine(persona.description, cardLang)

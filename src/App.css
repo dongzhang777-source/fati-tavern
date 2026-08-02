@@ -176,7 +176,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .conv-rename { background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font-size: 0.8rem; padding: 3px 6px; width: 100%; outline: none; }
 
 .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-.chat-header { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; }
+.chat-header { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; position: relative; }
 .btn-back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.82rem; }
 .btn-back:hover { color: var(--text); }
 .chat-title { flex: 1; display: flex; align-items: center; gap: 8px; }
@@ -338,3 +338,77 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 @media (max-width: 600px) {
   .webllm-cards { grid-template-columns: 1fr; }
 }
+
+/* ─── 世界书面板（画廊内）─── */
+.lore-panel { margin-top: 28px; }
+.lore-title { font-size: 1rem; font-weight: 500; margin-bottom: 4px; }
+.lore-hint { font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+.lore-list { display: flex; flex-direction: column; gap: 8px; }
+.lore-item { background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 10px 14px; }
+.lore-item.active { border-color: rgba(233,69,96,0.5); }
+.lore-item-main { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; }
+.lore-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lore-item-name { font-size: 0.9rem; }
+.lore-badge-active { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: 0.6rem; font-weight: 600; color: #fff; background: var(--accent); border-radius: 4px; vertical-align: 2px; }
+.lore-item-meta { font-size: 0.7rem; color: var(--muted); }
+.lore-item-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.btn-story { background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); color: var(--text); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; white-space: nowrap; }
+.btn-story:hover { border-color: var(--accent); color: var(--accent); }
+.btn-activate { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); padding: 2px 4px; }
+.btn-activate.on { color: #ffc94d; }
+.lore-del { opacity: 1 !important; }
+.lore-item-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+.lore-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+.lore-bind { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; flex-wrap: wrap; }
+.lore-bind select { background: var(--bg); border: 1px solid rgba(255,255,255,0.15); color: var(--text); border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; max-width: 200px; }
+.lore-bound-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.lore-bound-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(233,69,96,0.12); border: 1px solid rgba(233,69,96,0.3); color: var(--text); border-radius: 999px; padding: 2px 10px; font-size: 0.72rem; }
+.lore-bound-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; padding: 0; }
+.lore-bound-chip button:hover { color: var(--accent); }
+
+/* ─── 剧情视图 ─── */
+.story-view { height: 100%; display: flex; flex-direction: column; }
+.story-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: var(--surface); flex-shrink: 0; }
+.story-title { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
+.story-title strong { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.story-meta { font-size: 0.68rem; color: var(--muted); }
+.story-scroll { flex: 1; overflow-y: auto; padding: 20px clamp(16px, 8vw, 120px); display: flex; flex-direction: column; gap: 18px; }
+.story-premise { background: var(--surface); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 14px 16px; font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+.story-premise-label { font-size: 0.68rem; color: var(--accent); margin-bottom: 6px; letter-spacing: 1px; }
+.story-scene { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; }
+.story-scene.streaming { border: 1px solid rgba(233,69,96,0.25); }
+.story-scene-no { display: block; font-size: 0.66rem; color: var(--accent); letter-spacing: 1px; margin-bottom: 8px; }
+.story-scene-text { font-size: 0.92rem; line-height: 1.8; white-space: pre-wrap; }
+.story-cursor { animation: storyBlink 1s step-end infinite; color: var(--accent); }
+@keyframes storyBlink { 50% { opacity: 0; } }
+.story-thinking { font-size: 0.8rem; color: var(--muted); padding: 6px 0; }
+.story-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.story-choice { background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); color: var(--text); border-radius: 8px; padding: 9px 14px; cursor: pointer; font-size: 0.85rem; text-align: left; line-height: 1.4; }
+.story-choice:hover { border-color: var(--accent); color: var(--accent); }
+.story-error { font-size: 0.78rem; color: #e57373; background: rgba(229,115,115,0.08); border: 1px solid rgba(229,115,115,0.25); border-radius: 6px; padding: 8px 12px; }
+.story-input-row { display: flex; gap: 8px; }
+.story-input-row input { flex: 1; background: var(--bg); border: 1px solid rgba(255,255,255,0.15); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 0.88rem; }
+.btn-story-send { background: var(--accent); border: none; color: #fff; border-radius: 8px; padding: 10px 18px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+.btn-story-send:disabled { opacity: 0.4; cursor: default; }
+.btn-story-stop { align-self: center; background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--muted); border-radius: 8px; padding: 8px 20px; cursor: pointer; font-size: 0.8rem; }
+.btn-story-stop:hover { color: var(--accent); border-color: var(--accent); }
+.story-footer { display: flex; justify-content: space-between; gap: 12px; padding: 8px 20px; font-size: 0.65rem; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
+.story-plain-hint { color: #ffb74d; }
+.story-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--muted); font-size: 0.85rem; text-align: center; padding: 20px; }
+.btn-story-back { background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); color: var(--text); border-radius: 8px; padding: 8px 18px; cursor: pointer; font-size: 0.82rem; }
+
+@media (max-width: 600px) {
+  .lore-item-main { flex-direction: column; align-items: stretch; }
+  .lore-item-actions { justify-content: flex-end; }
+  .story-scroll { padding: 16px 12px; }
+}
+
+/* ─── 聊天头部世界书切换器 ─── */
+.chat-lore-btn { position: relative; }
+.chat-lore-btn.has-book { color: #ffc94d; }
+.chat-lore-picker { position: absolute; top: 100%; right: 8px; z-index: 40; background: var(--surface2); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius); padding: 12px; width: min(90vw, 300px); box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 6px; }
+.chat-lore-picker-label { font-size: 0.72rem; color: var(--muted); }
+.chat-lore-picker-current { font-size: 0.72rem; color: var(--text); opacity: 0.8; margin-bottom: 4px; }
+.chat-lore-option { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text); border-radius: 6px; padding: 7px 10px; cursor: pointer; font-size: 0.78rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.chat-lore-option:hover { border-color: var(--accent); }
+.chat-lore-option.bound { border-color: var(--accent); }

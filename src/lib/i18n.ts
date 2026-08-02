@@ -109,6 +109,10 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
     ko: '힘든 시간을 보내고 있다면, 당신은 혼자가 아닙니다. 자살예방상담전화 109(24시간)로 연락하세요.',
   },
   'chat.crisisDismiss': { zh: '我知道了', en: 'Got it', ja: '了解', ko: '확인' },
+  'chat.loreTitle': { zh: '本聊天的世界书', en: 'Lorebook for this chat', ja: 'このチャットのワールドブック', ko: '이 채팅의 월드북' },
+  'chat.lorePick': { zh: '选择世界书', en: 'Pick a lorebook', ja: 'ワールドブックを選択', ko: '월드북 선택' },
+  'chat.loreCurrent': { zh: '当前：{name}', en: 'Current: {name}', ja: '現在：{name}', ko: '현재: {name}' },
+  'chat.loreNone': { zh: '当前未绑定世界书（卡自带或全局激活的书仍会生效）', en: 'No bound lorebook (card-embedded or globally active books still apply)', ja: 'ワールドブック未紐付け（カード内蔵または全体有効の本は引き続き有効）', ko: '연결된 월드북 없음(카드 내장 또는 전체 활성화 책은 계속 적용)' },
   'error.noEndpoint': { zh: '请先在设置中配置 API 端点', en: 'Please configure an API endpoint in settings first', ja: '先に設定でAPIエンドポイントを構成してください', ko: '먼저 설정에서 API 엔드포인트를 구성하세요' },
   'error.request': { zh: '请求失败', en: 'Request failed', ja: 'リクエスト失敗', ko: '요청 실패' },
 
@@ -161,6 +165,37 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'import.unknownFormat': { zh: '无法识别的角色卡格式', en: 'Unrecognized card format', ja: '認識できないカード形式', ko: '인식할 수 없는 카드 형식' },
   'import.unsupported': { zh: '仅支持 .png / .json 文件', en: 'Only .png / .json files are supported', ja: '.png / .json ファイルのみ対応', ko: '.png / .json 파일만 지원' },
   'import.fail': { zh: '导入失败', en: 'Import failed', ja: 'インポート失敗', ko: '가져오기 실패' },
+
+  // ── 世界书 ──
+  'toast.importedBooks': { zh: '✓ 已导入 {n} 本世界书', en: '✓ Imported {n} lorebook(s)', ja: '✓ {n}冊のワールドブックをインポートしました', ko: '✓ 월드북 {n}권을 가져왔습니다' },
+  'lore.section': { zh: '世界书', en: 'Lorebooks', ja: 'ワールドブック', ko: '월드북' },
+  'lore.hint': { zh: '世界书为聊天提供世界观设定；★ 设为全局激活，或展开绑定到指定角色。点「进入剧情」直接在这个世界里开始互动剧情。', en: 'Lorebooks supply world lore for chats — ★ activates globally, or expand to bind to a character. Hit "Enter story" to play an interactive story in this world.', ja: 'ワールドブックはチャットに世界観を提供します。★で全体有効化、または展開してキャラクターに紐付け。「ストーリーへ」でこの世界のインタラクティブストーリーを開始。', ko: '월드북은 채팅에 세계관 설정을 제공합니다. ★로 전체 활성화하거나 펼쳐서 캐릭터에 연결하세요. "스토리 입장"을 눌러 이 세계에서 인터랙티브 스토리를 시작하세요.' },
+  'lore.untitled': { zh: '未命名世界书', en: 'Untitled lorebook', ja: '無題のワールドブック', ko: '제목 없는 월드북' },
+  'lore.active': { zh: '全局激活', en: 'Active', ja: '全体有効', ko: '전체 활성화' },
+  'lore.entries': { zh: '{n} 条设定', en: '{n} entries', ja: '{n}件の設定', ko: '설정 {n}개' },
+  'lore.bound': { zh: '已绑定 {n} 个角色', en: 'bound to {n} character(s)', ja: '{n}キャラクターに紐付け済み', ko: '캐릭터 {n}명에 연결됨' },
+  'lore.progress': { zh: '剧情已推进 {n} 幕', en: 'story at scene {n}', ja: 'ストーリー{n}幕まで進行', ko: '스토리 {n}막 진행' },
+  'lore.enterStory': { zh: '进入剧情', en: 'Enter story', ja: 'ストーリーへ', ko: '스토리 입장' },
+  'lore.activateHint': { zh: '设为全局激活（所有未绑定世界书的聊天都注入这本书）', en: 'Activate globally (injected into all chats without a bound lorebook)', ja: '全体有効化（ワールドブック未紐付けの全チャットに注入）', ko: '전체 활성화(월드북 미연결 채팅에 모두 주입)' },
+  'lore.deleteConfirm': { zh: '删除这本世界书？相关剧情进度也会一并删除。', en: 'Delete this lorebook? Related story progress will be removed too.', ja: 'このワールドブックを削除しますか？関連するストーリー進行も削除されます。', ko: '이 월드북을 삭제할까요? 관련 스토리 진행도 함께 삭제됩니다.' },
+  'lore.bindChar': { zh: '绑定到角色（该角色聊天时优先用这本书）', en: 'Bind to a character (this book takes priority in their chats)', ja: 'キャラクターに紐付け（そのキャラのチャットでこの本を優先使用）', ko: '캐릭터에 연결(해당 캐릭터 채팅에서 이 책 우선 사용)' },
+  'lore.bindPick': { zh: '选择角色…', en: 'Pick a character…', ja: 'キャラクターを選択…', ko: '캐릭터 선택…' },
+
+  // ── 剧情模式 ──
+  'story.back': { zh: '← 返回', en: '← Back', ja: '← 戻る', ko: '← 뒤로' },
+  'story.backGallery': { zh: '回到角色库', en: 'Back to library', ja: 'ライブラリへ戻る', ko: '라이브러리로 돌아가기' },
+  'story.noActive': { zh: '还没有进行中的剧情。回画廊选一本世界书，点「进入剧情」开始。', en: 'No story in progress. Go back to the library, pick a lorebook and hit "Enter story".', ja: '進行中のストーリーはありません。ライブラリに戻り、ワールドブックを選んで「ストーリーへ」を押してください。', ko: '진행 중인 스토리가 없습니다. 라이브러리로 돌아가 월드북을 고르고 "스토리 입장"을 누르세요.' },
+  'story.sceneCount': { zh: '已推进 {n} 幕', en: '{n} scene(s)', ja: '{n}幕進行済み', ko: '{n}막 진행' },
+  'story.sceneNo': { zh: '第 {n} 幕', en: 'Scene {n}', ja: '第{n}幕', ko: '제{n}막' },
+  'story.restart': { zh: '重新开始这个世界', en: 'Restart this world', ja: 'この世界をリスタート', ko: '이 세계 다시 시작' },
+  'story.restartConfirm': { zh: '清空当前剧情进度，从第一幕重新开始？', en: 'Clear current progress and restart from scene 1?', ja: '現在の進行を消去し、第1幕からやり直しますか？', ko: '현재 진행을 지우고 1막부터 다시 시작할까요?' },
+  'story.premise': { zh: '世界设定', en: 'World setting', ja: '世界設定', ko: '세계 설정' },
+  'story.directing': { zh: '导演正在构思下一幕…', en: 'The director is crafting the next scene…', ja: '監督が次の幕を構想中…', ko: '감독이 다음 장면을 구상 중…' },
+  'story.begin': { zh: '▶ 开始剧情', en: '▶ Begin story', ja: '▶ ストーリー開始', ko: '▶ 스토리 시작' },
+  'story.beginPlaceholder': { zh: '可选：给个开场引子，或直接开始…', en: 'Optional: give an opening hook, or just begin…', ja: '任意：冒頭のきっかけを入力、またはそのまま開始…', ko: '선택: 시작 힌트를 입력하거나 바로 시작…' },
+  'story.inputPlaceholder': { zh: '你想怎么做…', en: 'What do you do…', ja: 'あなたはどうする…', ko: '당신은 무엇을 하나요…' },
+  'story.fail': { zh: '剧情生成失败', en: 'Failed to generate scene', ja: 'シーンの生成に失敗しました', ko: '장면 생성 실패' },
+  'story.plainHint': { zh: '本地小模型剧情档：无选项按钮，用输入框自由推进', en: 'Local small-model story mode: no choice buttons — drive the story via the input box', ja: 'ローカル小型モデルのストーリーモード：選択肢ボタンなし、入力欄で自由に進行', ko: '로컬 소형 모델 스토리 모드: 선택 버튼 없음, 입력창으로 자유롭게 진행' },
 
   // ── 模型选择器 ──
   'model.picker': { zh: '选择模型', en: 'Select model', ja: 'モデルを選択', ko: '모델 선택' },

@@ -267,7 +267,9 @@ export function cardToSystemPrompt(card: TavernCard, userName = 'User'): string 
 // ─── 世界书内容拼接（用于上下文注入前缀）─────────────────
 // MVP：把所有 enabled 的 entry 按 insertion_order 拼起来
 // 后续 RAG 阶段可改为按对话内容触发 keys 检索
-export function bookToContext(book: TavernBook, charName?: string, userName = 'User', lang: 'zh' | 'en' = 'zh'): string {
+// maxChars：注入预算（默认不限）。超预算按 insertion_order 顺序逐条丢弃，
+// 保证头部设定优先保留；至少保留一条（哪怕单条超预算也截断保留）
+export function bookToContext(book: TavernBook, charName?: string, userName = 'User', lang: 'zh' | 'en' = 'zh', maxChars?: number): string {
   const enabled = book.entries
     .filter((e) => e.enabled)
     .sort((a, b) => a.insertion_order - b.insertion_order)
@@ -278,8 +280,51 @@ export function bookToContext(book: TavernBook, charName?: string, userName = 'U
   })
   // 按卡片语言选择标题，避免中英混合 prompt 干扰模型
   const header = lang === 'zh' ? '【世界观设定】' : '[World Lore]'
-  const text = `${header}\n${blocks.join('\n\n')}`
+  let body: string
+  if (maxChars !== undefined && maxChars > 0) {
+    const picked: string[] = []
+    let used = 0
+    for (const b of blocks) {
+      const cost = b.length + 2 // + '\n\n' 分隔
+      if (picked.length === 0 && cost > maxChars) {
+        // 单条就超预算：截断保留（世界观至少有一条进场）
+        picked.push(b.slice(0, maxChars))
+        break
+      }
+      if (used + cost > maxChars) break
+      picked.push(b)
+      used += cost
+    }
+    body = picked.join('\n\n')
+  } else {
+    body = blocks.join('\n\n')
+  }
+  const text = `${header}\n${body}`
   return charName ? applyMacros(text, charName, userName) : text
+}
+
+// ─── 世界书浓缩为剧情世界（lorebook → story premise）─────────
+// 打通「导入的世界书进入剧情」的最后一公里：纯前端规则浓缩，不调模型。
+// title = 书名（缺省用 fallback 名）；premise = 描述 + enabled 条目正文，
+// 按 insertion_order 截断到 maxChars 预算（超长的书只喂设定主干）
+export function bookToPremise(book: TavernBook, fallbackName: string, maxChars = 3000): { title: string; premise: string } {
+  const title = (book.name || '').trim() || fallbackName
+  const enabled = book.entries
+    .filter((e) => e.enabled)
+    .sort((a, b) => a.insertion_order - b.insertion_order)
+  const parts: string[] = []
+  if (book.description?.trim()) parts.push(book.description.trim())
+  let used = 0
+  for (const e of enabled) {
+    const content = e.content.trim()
+    if (!content) continue
+    const cost = content.length + 2
+    if (used + cost > maxChars && parts.length > 0) break
+    if (used + cost > maxChars) { parts.push(content.slice(0, maxChars)); break }
+    parts.push(content)
+    used += cost
+  }
+  return { title, premise: parts.join('\n\n') }
 }
 
 // ─── 用户扮演身份行（拼入聊天 system prompt 尾部）────────────

@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
-import { parseCharacterJson, parsePngCard, passesContentFilter, type TavernCard } from './lib/tavern'
+import { parseCharacterJson, parsePngCard, parseLorebookJson, detectImportKind, passesContentFilter, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
@@ -8,9 +8,12 @@ import { trackOnce } from './lib/analytics'
 import type { StoredCharacter } from './lib/db'
 import { useP2PStore } from './store/slices/p2p'
 import { loadRelayUrl, saveRelayUrl } from './store/slices/p2p'
+import { useLoreStore } from './store/slices/lore'
 import { P2PInvitePanel } from './components/p2p/P2PInvitePanel'
 import { P2PJoinPanel } from './components/p2p/P2PJoinPanel'
 import { P2PChatPanel } from './components/p2p/P2PChatPanel'
+import { LorebookPanel } from './components/LorebookPanel'
+import { StoryView } from './components/StoryView'
 import './App.css'
 
 export default function App() {
@@ -23,7 +26,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {view === 'gallery' ? <Gallery /> : <ChatView />}
+      {view === 'gallery' ? <Gallery /> : view === 'chat' ? <ChatView /> : <StoryView />}
     </div>
   )
 }
@@ -84,12 +87,14 @@ function BrandLogo() {
 
 // ─── 角色库画廊 ───────────────────────────────────────────
 interface ImportResult {
-  ok: number
+  okCards: number
+  okBooks: number
   fails: { name: string; reason: string }[]
 }
 
 function Gallery() {
   const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, activeCharId, safeMode } = useStore()
+  const importLorebook = useLoreStore((s) => s.importLorebook)
   const [dragOver, setDragOver] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -109,8 +114,10 @@ function Gallery() {
   const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode)
 
   // 每个文件独立解析，成功/失败都必须给用户可见反馈
+  // JSON 先用 detectImportKind 分流：角色卡 → 角色库，世界书 → 世界书库
   async function handleFiles(files: FileList | File[]) {
-    let ok = 0
+    let okCards = 0
+    let okBooks = 0
     const fails: { name: string; reason: string }[] = []
     for (const file of Array.from(files)) {
       try {
@@ -118,7 +125,7 @@ function Gallery() {
           const buf = await file.arrayBuffer()
           const card = await parsePngCard(buf)
           await importCard(card, file)
-          ok++
+          okCards++
         } else if (file.name.toLowerCase().endsWith('.json')) {
           const text = await file.text()
           let json: any
@@ -127,10 +134,18 @@ function Gallery() {
           } catch {
             throw new Error(t(lang, 'import.jsonFail'))
           }
-          const card = parseCharacterJson(json)
-          if (!card) throw new Error(t(lang, 'import.unknownFormat'))
-          await importCard(card, file)
-          ok++
+          const kind = detectImportKind(file.name, json)
+          if (kind === 'lorebook') {
+            const book = parseLorebookJson(json)
+            if (!book) throw new Error(t(lang, 'import.unknownFormat'))
+            await importLorebook(book, file.name)
+            okBooks++
+          } else {
+            const card = parseCharacterJson(json)
+            if (!card) throw new Error(t(lang, 'import.unknownFormat'))
+            await importCard(card, file)
+            okCards++
+          }
         } else {
           throw new Error(t(lang, 'import.unsupported'))
         }
@@ -138,7 +153,7 @@ function Gallery() {
         fails.push({ name: file.name, reason: localizeError(lang, e?.message || t(lang, 'import.fail')) })
       }
     }
-    setImportResult({ ok, fails })
+    setImportResult({ okCards, okBooks, fails })
     if (toastTimer.current) clearTimeout(toastTimer.current)
     // 有失败时多停留一会儿让用户看清原因
     toastTimer.current = setTimeout(() => setImportResult(null), fails.length > 0 ? 8000 : 3000)
@@ -256,6 +271,8 @@ function Gallery() {
           ))}
         </div>
       )}
+      {/* 世界书管理区：导入过世界书后才显示（组件内部判空） */}
+      <LorebookPanel />
       </div>
 
       <footer className="gallery-footer">
@@ -265,7 +282,8 @@ function Gallery() {
 
       {importResult && (
         <div className={`import-toast ${importResult.fails.length > 0 ? 'has-fail' : ''}`} onClick={() => setImportResult(null)}>
-          {importResult.ok > 0 && <p>{t(lang, 'toast.imported', { n: importResult.ok })}</p>}
+          {importResult.okCards > 0 && <p>{t(lang, 'toast.imported', { n: importResult.okCards })}</p>}
+          {importResult.okBooks > 0 && <p>{t(lang, 'toast.importedBooks', { n: importResult.okBooks })}</p>}
           {importResult.fails.map((f) => (
             <p key={f.name} className="fail-line">✗ {f.name}：{f.reason}</p>
           ))}
@@ -374,11 +392,15 @@ function ChatView() {
     lang, safetyNotice, dismissSafetyNotice, webllmProgress,
     impSuggestions, impLoading, impRefining, impExpansion,
     fetchImpersonate, refineImpersonate, setImpExpansion, clearImpersonate,
+    bindLorebookToCharacter,
   } = useStore()
+  const lorebooks = useLoreStore(s => s.lorebooks)
+  const activeLorebookId = useLoreStore(s => s.activeLorebookId)
 
   const [input, setInput] = useState('')
   const [showConvList, setShowConvList] = useState(false)
   const [impOpen, setImpOpen] = useState(false)
+  const [showLorePicker, setShowLorePicker] = useState(false)
   const p2pTab = useP2PStore(s => s.p2pChatTab)
   const setP2PChatTab = useP2PStore(s => s.setP2PChatTab)
   const p2pActive = useP2PStore(s => s.p2pState !== 'idle')
@@ -389,6 +411,13 @@ function ChatView() {
   const char = characters.find((c) => c.id === activeCharId)
   const conv = conversations.find((c) => c.id === activeConvId)
   const messages = conv?.messages ?? []
+
+  // 当前生效的世界书（与 sendMessage 注入优先级一致：角色绑定 > 卡自带 > 全局激活）
+  const effectiveBook = char
+    ? (char.boundLorebookId
+        ? lorebooks.find((l) => l.id === char.boundLorebookId)?.book
+        : char.card.character_book ?? (activeLorebookId ? lorebooks.find((l) => l.id === activeLorebookId)?.book : undefined))
+    : undefined
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -460,9 +489,42 @@ function ChatView() {
             </div>
           </div>
           <div className="chat-actions">
+            {lorebooks.length > 0 && (
+              <button
+                className={`chat-lore-btn ${effectiveBook ? 'has-book' : ''}`}
+                onClick={() => setShowLorePicker(!showLorePicker)}
+                title={t(lang, 'chat.loreTitle')}
+              >
+                📖{effectiveBook ? '' : '＋'}
+              </button>
+            )}
             <button onClick={() => setShowConvList(!showConvList)} title={t(lang, 'chat.convList')}>☰</button>
             <button onClick={clearChat} title={t(lang, 'chat.clear')}>🗑</button>
           </div>
+          {showLorePicker && char && (
+            <div className="chat-lore-picker">
+              <p className="chat-lore-picker-label">{t(lang, 'chat.lorePick')}</p>
+              <p className="chat-lore-picker-current">
+                {effectiveBook
+                  ? t(lang, 'chat.loreCurrent', { name: effectiveBook.name || t(lang, 'lore.untitled') })
+                  : t(lang, 'chat.loreNone')}
+              </p>
+              {lorebooks.map((lb) => (
+                <button
+                  key={lb.id}
+                  className={`chat-lore-option ${char.boundLorebookId === lb.id ? 'bound' : ''}`}
+                  onClick={() => {
+                    const bind = char.boundLorebookId === lb.id ? null : lb.id
+                    void bindLorebookToCharacter(char.id, bind)
+                    setShowLorePicker(false)
+                  }}
+                >
+                  {lb.book.name || lb.source || t(lang, 'lore.untitled')}
+                  {char.boundLorebookId === lb.id && <span className="lore-badge-active">{t(lang, 'lore.active')}</span>}
+                </button>
+              ))}
+            </div>
+          )}
           {p2pActive && (
             <div className="chat-tabs">
               <button className={`chat-tab ${p2pTab === 'solo' ? 'active' : ''}`} onClick={() => setP2PChatTab('solo')}>{t(lang, 'p2pTabSolo')}</button>
