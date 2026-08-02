@@ -15,7 +15,14 @@ export function LorebookPanel() {
   const { openStory, stories } = useStoryStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  if (lorebooks.length === 0) return null
+  if (lorebooks.length === 0) {
+    return (
+      <section className="lore-panel">
+        <h3 className="lore-title">📖 {t(lang, 'lore.section')}</h3>
+        <div className="lore-empty">{t(lang, 'lore.empty')}</div>
+      </section>
+    )
+  }
 
   // 绑定下拉里只显示用户角色（内置角色绑定会自动转副本，但列表太杂）
   const userChars = characters.filter((c) => !c.builtin)

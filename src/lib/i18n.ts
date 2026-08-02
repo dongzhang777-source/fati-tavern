@@ -33,11 +33,11 @@ export function docTitle(lang: Lang): string {
 const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> = {
   // ── 画廊 / 落地页 ──
   'gallery.dropOverlay': {
-    zh: '松开导入角色卡（PNG / JSON）', en: 'Drop to import character cards (PNG / JSON)',
-    ja: '離してキャラクターカードをインポート（PNG / JSON）', ko: '놓아서 캐릭터 카드 가져오기 (PNG / JSON)',
+    zh: '松开导入角色卡或世界书（PNG / JSON）', en: 'Drop to import character cards or lorebooks (PNG / JSON)',
+    ja: '離してキャラクターカードまたはワールドブックをインポート（PNG / JSON）', ko: '놓아서 캐릭터 카드 또는 월드북 가져오기 (PNG / JSON)',
   },
   'gallery.import': {
-    zh: '+ 导入角色卡', en: '+ Import card', ja: '+ カードをインポート', ko: '+ 카드 가져오기',
+    zh: '+ 导入角色卡 / 世界书', en: '+ Import card / lorebook', ja: '+ カード／ワールドブックをインポート', ko: '+ 카드/월드북 가져오기',
   },
   'gallery.noDesc': {
     zh: '暂无描述', en: 'No description', ja: '説明なし', ko: '설명 없음',
@@ -64,7 +64,7 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
     en: 'Supports SillyTavern cards (PNG / JSON) — first conversation in 3 minutes',
     ja: 'SillyTavernカード（PNG / JSON）対応 — 3分で最初の会話を', ko: 'SillyTavern 카드(PNG / JSON) 지원 — 3분 만에 첫 대화를',
   },
-  'landing.step1': { zh: '拖入角色卡', en: 'Drop a card', ja: 'カードをドロップ', ko: '카드를 끌어오기' },
+  'landing.step1': { zh: '拖入角色卡 / 世界书', en: 'Drop a card / lorebook', ja: 'カード／ワールドブックをドロップ', ko: '카드/월드북을 끌어오기' },
   'landing.step2': { zh: '填入你的 API Key', en: 'Add your API key', ja: 'APIキーを入力', ko: 'API 키 입력' },
   'landing.step3': { zh: '开始聊天', en: 'Start chatting', ja: 'チャット開始', ko: '채팅 시작' },
   'landing.cta': { zh: '导入第一张角色卡', en: 'Import your first card', ja: '最初のカードをインポート', ko: '첫 카드 가져오기' },
@@ -169,6 +169,12 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   // ── 世界书 ──
   'toast.importedBooks': { zh: '✓ 已导入 {n} 本世界书', en: '✓ Imported {n} lorebook(s)', ja: '✓ {n}冊のワールドブックをインポートしました', ko: '✓ 월드북 {n}권을 가져왔습니다' },
   'lore.section': { zh: '世界书', en: 'Lorebooks', ja: 'ワールドブック', ko: '월드북' },
+  'lore.empty': {
+    zh: '还没有世界书。把世界书 JSON 拖进页面即可导入。激活后聊天自动引用设定，还能一键进入剧情模式。',
+    en: 'No lorebooks yet. Drag a lorebook JSON onto the page to import it. Once active, its lore is woven into chats, and you can dive into story mode with one click.',
+    ja: 'ワールドブックはまだありません。JSONをページにドラッグしてインポートできます。有効化するとチャットに自動で反映され、ワンクリックでストーリーモードに入れます。',
+    ko: '아직 월드북이 없습니다. 월드북 JSON을 페이지로 끌어다 놓으면 가져올 수 있습니다. 활성화하면 채팅에 자동 반영되고, 원클릭으로 스토리 모드에 진입할 수 있습니다.',
+  },
   'lore.hint': { zh: '世界书为聊天提供世界观设定；★ 设为全局激活，或展开绑定到指定角色。点「进入剧情」直接在这个世界里开始互动剧情。', en: 'Lorebooks supply world lore for chats — ★ activates globally, or expand to bind to a character. Hit "Enter story" to play an interactive story in this world.', ja: 'ワールドブックはチャットに世界観を提供します。★で全体有効化、または展開してキャラクターに紐付け。「ストーリーへ」でこの世界のインタラクティブストーリーを開始。', ko: '월드북은 채팅에 세계관 설정을 제공합니다. ★로 전체 활성화하거나 펼쳐서 캐릭터에 연결하세요. "스토리 입장"을 눌러 이 세계에서 인터랙티브 스토리를 시작하세요.' },
   'lore.untitled': { zh: '未命名世界书', en: 'Untitled lorebook', ja: '無題のワールドブック', ko: '제목 없는 월드북' },
   'lore.active': { zh: '全局激活', en: 'Active', ja: '全体有効', ko: '전체 활성화' },
