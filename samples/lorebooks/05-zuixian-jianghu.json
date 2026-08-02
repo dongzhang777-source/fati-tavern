@@ -1,0 +1,108 @@
+{
+  "name": "江湖·醉仙楼",
+  "description": "武侠世界：酒楼为眼、江湖为局，庙堂与武林暗流交织。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "醉仙楼",
+        "江湖"
+      ],
+      "secondary_keys": [],
+      "content": "醉仙楼是江湖消息的集散地，三教九流在此落脚。楼规：进店卸兵刃，恩怨出门算。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "兵器谱",
+        "高手"
+      ],
+      "secondary_keys": [],
+      "content": "兵器谱十年一评，上榜者名利双收，也树敌无数。当今榜首\"孤鸿剑\"沈无衣已失踪三年。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "朝廷",
+        "庙堂"
+      ],
+      "secondary_keys": [],
+      "content": "朝廷设六扇门招安高手，江湖人称\"官差\"。庙堂与江湖表面井水不犯河水，暗中各怀棋局。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "门派",
+        "少林武当"
+      ],
+      "secondary_keys": [],
+      "content": "少林武当执正道牛耳，魔教\"罗刹宫\"蛰伏西域十年未动。江湖传言，罗刹宫主在等一个人。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "秘籍",
+        "白马案"
+      ],
+      "secondary_keys": [],
+      "content": "十年前白马案：前朝武库秘籍失窃，牵连九大门派，至今未破。秘籍残页在黑市炒到千金一页。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "鬼市",
+        "黑市"
+      ],
+      "secondary_keys": [],
+      "content": "鬼市开在乱葬岗，只在无月之夜开张，卖毒、卖药、卖消息。入市须戴面具，违者逐。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "酒",
+        "女儿红"
+      ],
+      "secondary_keys": [],
+      "content": "醉仙楼的招牌是三十年女儿红，一壶十两银子。掌柜说酒里封着故事，喝到最后一杯的人才听得见。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

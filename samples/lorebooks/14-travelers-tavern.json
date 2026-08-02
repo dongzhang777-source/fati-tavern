@@ -1,0 +1,108 @@
+{
+  "name": "旅人酒馆",
+  "description": "奇幻驿站：怪物与旅人同桌，委托与谣言齐飞。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "旅人酒馆",
+        "酒馆"
+      ],
+      "secondary_keys": [],
+      "content": "旅人酒馆开在三条商路的交汇点，人类、精灵、兽人同桌饮酒。店规刻在门梁上：\"进门即是客，出门自负盈亏。\"",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "老板娘",
+        "掌柜"
+      ],
+      "secondary_keys": [],
+      "content": "老板娘玛拉没人知道来历，她调的酒能让人说真话。曾有领主带兵来砸场，第二天全军在门口排队道歉。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "怪物客人",
+        "常客"
+      ],
+      "secondary_keys": [],
+      "content": "常客里有会算账的石像鬼、失恋的狼人、和一位只喝热水的巫妖。他们付账从不含糊——用金币、宝石或秘密。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "委托板",
+        "任务"
+      ],
+      "secondary_keys": [],
+      "content": "委托板钉满任务：护送商队、寻找走失的狮鹫、\"请勿调查三楼\"。报酬越高，委托人的名字越模糊。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "以物易物",
+        "交易"
+      ],
+      "secondary_keys": [],
+      "content": "酒馆角落有以物易物的架子：一枚龙鳞换三晚住宿，一段真话换一杯招牌酒。老板娘亲自估价。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "谣言",
+        "消息"
+      ],
+      "secondary_keys": [],
+      "content": "酒馆的谣言比商队跑得快。最近流传：北方的王陵开了，进去的盗墓贼出来时都成了诗人。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "地下室",
+        "三楼"
+      ],
+      "secondary_keys": [],
+      "content": "酒馆地下室的门从不落锁，但没人下得去——楼梯会自己变长。老板娘说那里存着\"客人们留下的东西\"。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,108 @@
+{
+  "name": "樱丘学园",
+  "description": "日式校园：文化祭、社团与不可说的七大不可思议。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "樱丘学园",
+        "学校"
+      ],
+      "secondary_keys": [],
+      "content": "樱丘学园依山而建，校门口百株樱花。校训刻在石碑上：\"诚实、勇气、以及一点点好奇心。\"",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "文化祭",
+        "学园祭"
+      ],
+      "secondary_keys": [],
+      "content": "文化祭是全年最盛大的活动，各班摆摊、社团公演。后夜祭的篝火晚会上，传说告白必成。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "社团",
+        "活动"
+      ],
+      "secondary_keys": [],
+      "content": "社团大楼三层：一楼体育系、二楼文化系、三楼是\"超自然研究会\"——常年只有三名部员。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "七大不可思议",
+        "怪谈"
+      ],
+      "secondary_keys": [],
+      "content": "学园七大不可思议之首：旧校舍三楼的音乐教室，深夜会自己响起钢琴声，弹的总是同一首曲子。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "二年A班",
+        "班级"
+      ],
+      "secondary_keys": [],
+      "content": "二年A班是出了名的麻烦班级：班长失踪过一周，转学生来了三个，班主任换了两位。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "天台",
+        "学生会"
+      ],
+      "secondary_keys": [],
+      "content": "天台午休时间对学生会长专属开放——这是不成文的规定。据说那里埋着十年前某位学长留下的铁盒。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "升学",
+        "模拟考"
+      ],
+      "secondary_keys": [],
+      "content": "三年级的模拟考决定推荐名额。今年榜单公布前，教务室的电脑被人动过手脚。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

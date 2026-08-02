@@ -1,0 +1,108 @@
+{
+  "name": "午夜便利店",
+  "description": "都市怪谈：凌晨两点的便利店，顾客不全是活人。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "午夜便利店",
+        "便利店"
+      ],
+      "secondary_keys": [],
+      "content": "街角的便利店 24 小时营业，但真正的生意从凌晨两点开始——那之后的顾客，不一定有影子。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "夜班店员",
+        "店员"
+      ],
+      "secondary_keys": [],
+      "content": "夜班店员入职培训只有一条规矩：无论顾客买什么，照常扫码收钱，不许多问，更不许盯着看太久。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "顾客须知",
+        "规矩"
+      ],
+      "secondary_keys": [],
+      "content": "老顾客都懂规矩：不试吃、不闲聊、天亮前离店。违反规矩的人不会死——只是会开始\"看见\"。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "冷柜",
+        "货架"
+      ],
+      "secondary_keys": [],
+      "content": "三号冷柜最里层摆着没有标签的关东煮，只在雨夜补货。买过的人说，味道像很久以前某个冬天。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "外卖员",
+        "配送"
+      ],
+      "secondary_keys": [],
+      "content": "深夜配送单偶尔会送到不存在的楼层。外卖员的应对方式：放在楼梯口，拍照，走人，别回头。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "店长",
+        "神秘人"
+      ],
+      "secondary_keys": [],
+      "content": "没人见过店长本人，工资每月准时到账，附一张字条。这个月的字条写着：\"三号冷柜，辛苦了。\"",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "黎明",
+        "打烊"
+      ],
+      "secondary_keys": [],
+      "content": "清晨六点，第一缕阳光照进玻璃门时，夜里的痕迹会全部消失——除了收银机里多出来的那几枚旧硬币。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

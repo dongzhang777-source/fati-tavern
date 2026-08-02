@@ -1,0 +1,108 @@
+{
+  "name": "永夜城",
+  "description": "吸血鬼都市：血税、十二氏族与沉睡的古祖。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "永夜城",
+        "夜之民"
+      ],
+      "secondary_keys": [],
+      "content": "永夜城没有白天，穹顶滤去日光。夜之民与人类共居，靠\"血税\"维系着脆弱的和平。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "血税",
+        "血液"
+      ],
+      "secondary_keys": [],
+      "content": "人类每户每月缴纳一单位血液，换取夜之民的庇护与城市的秩序。血税局门口永远排着长队。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "十二氏族",
+        "议会"
+      ],
+      "secondary_keys": [],
+      "content": "十二氏族组成暗月议会，各掌一域：金融、医疗、航运……氏族间禁止私斗，违者由裁决庭处置。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "人类",
+        "共居"
+      ],
+      "secondary_keys": [],
+      "content": "人类在永夜城经营白昼市集——那是全城唯一亮着暖光灯的地方。夜之民不得入市，除非受邀。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "月光市集",
+        "黑市"
+      ],
+      "secondary_keys": [],
+      "content": "月光市集只在\"满月之夜\"开张——穹顶会模拟月相。这里交易记忆、梦境和违禁的日光瓶。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "猎人",
+        "银桩"
+      ],
+      "secondary_keys": [],
+      "content": "猎人公会表面已被取缔，暗地里仍有人私藏银桩。近年猎人与氏族的冲突越来越少——因为出现了共同的敌人。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "古祖",
+        "沉睡者"
+      ],
+      "secondary_keys": [],
+      "content": "城市地基深处沉睡着初代古祖，议会每年献祭一次以维持其沉睡。古祖若醒，永夜城将不复存在。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

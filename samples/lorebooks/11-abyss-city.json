@@ -1,0 +1,108 @@
+{
+  "name": "渊海城",
+  "description": "深海文明：抗压鳃民、潮汐议会与深渊裂隙的低语。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "渊海城",
+        "深海"
+      ],
+      "secondary_keys": [],
+      "content": "渊海城建在海沟之畔，以发光水母为灯。居民自称\"鳃民\"，已在此繁衍千年，从未浮上海面。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "抗压鳃",
+        "鳃民"
+      ],
+      "secondary_keys": [],
+      "content": "鳃民自幼植入抗压鳃，能在深海自由呼吸。鳃的纹路因人而异，被视为灵魂的指纹。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "潮汐议会",
+        "议会"
+      ],
+      "secondary_keys": [],
+      "content": "潮汐议会由七位\"听潮者\"组成，他们能听见洋流的低语，据此决定播种、迁徙与战争。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "水母田",
+        "发光水母"
+      ],
+      "secondary_keys": [],
+      "content": "发光水母田是渊海城的粮仓与光源，牧水母人是最受尊敬的职业。水母歉收之年，城市会暗一半。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "海面来客",
+        "地表"
+      ],
+      "secondary_keys": [],
+      "content": "百年前一位海面来客沉入渊海，带来了\"太阳\"这个词。长老会至今仍在争论该不该相信他的描述。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "深渊裂隙",
+        "海沟"
+      ],
+      "secondary_keys": [],
+      "content": "深渊裂隙深不见底，昼夜传出规律的震动声。听潮者说那不是地质活动——那是在数数。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "鲸歌档案馆",
+        "历史"
+      ],
+      "secondary_keys": [],
+      "content": "鲸歌档案馆以鲸歌刻录历史，一头古鲸的记忆可回溯三百年。馆中最古老的歌，唱的是一场大沉没。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

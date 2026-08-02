@@ -1,0 +1,108 @@
+{
+  "name": "云澜大陆",
+  "description": "修真世界：灵气潮汐、宗门林立、凡人亦可问道。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "云澜大陆",
+        "修真界"
+      ],
+      "secondary_keys": [],
+      "content": "云澜大陆以灵气为根基，修士炼气、筑基、金丹、元婴，步步登天。灵气随月相潮汐涨落，满月之夜修炼事半功倍。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "太虚宗",
+        "宗门"
+      ],
+      "secondary_keys": [],
+      "content": "太虚宗居九大宗门之首，山门悬于云海之上，入门需过问心阶三千级。宗主清虚真人已三百年未曾露面。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "坊市",
+        "灵石"
+      ],
+      "secondary_keys": [],
+      "content": "坊市以灵石为通货，一枚下品灵石可换凡人十年口粮。最大的天机坊市每逢甲子年开启一次，传闻有仙器现世。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "妖兽",
+        "万兽山脉"
+      ],
+      "secondary_keys": [],
+      "content": "万兽山脉横贯大陆西侧，妖兽分一至九阶，四阶妖兽可化人形。山中妖王与人族宗门有百年不犯之约。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "坠仙谷",
+        "禁地"
+      ],
+      "secondary_keys": [],
+      "content": "坠仙谷是上古仙人陨落之地，谷中灵气紊乱，金丹以下入者十死无生。传闻谷底藏有飞升残阵。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "天劫",
+        "渡劫"
+      ],
+      "secondary_keys": [],
+      "content": "修士每破大境界需渡天劫，雷劫九道，心魔劫最凶。渡劫失败者身死道消，或兵解为散仙。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "散修",
+        "散修联盟"
+      ],
+      "secondary_keys": [],
+      "content": "无门无派的修士自称散修，抱团组成散修联盟，在宗门夹缝中求生，最重信义。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

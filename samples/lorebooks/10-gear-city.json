@@ -1,0 +1,108 @@
+{
+  "name": "齿轮王都",
+  "description": "蒸汽朋克：以太引擎、天空船与机械仆从的黄金时代。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "齿轮王都",
+        "王都"
+      ],
+      "secondary_keys": [],
+      "content": "齿轮王都由黄铜与蒸汽铸成，千座钟楼同时报时。城市的心脏是一台运转百年的以太引擎。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "以太引擎",
+        "能源"
+      ],
+      "secondary_keys": [],
+      "content": "以太引擎以晶石为燃料，驱动全城的齿轮与轨道。引擎室的技师世袭罔替，从不向外人透露检修细节。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "机械师公会",
+        "公会"
+      ],
+      "secondary_keys": [],
+      "content": "机械师公会掌握全城技术命脉，入会考核是独自组装一台蒸汽鸟。公会与王室暗中角力数十年。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "天空船",
+        "飞艇"
+      ],
+      "secondary_keys": [],
+      "content": "天空船是王都的骄傲，商船队往来各城邦。去年一艘邮船在云层中失踪，只飘回半张船票。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "工人区",
+        "下城"
+      ],
+      "secondary_keys": [],
+      "content": "工人区的烟囱昼夜不息，工人们组建了互助会，要求十小时工作制。贵族报纸称他们\"危险的齿轮\"。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "皇家学会",
+        "学者"
+      ],
+      "secondary_keys": [],
+      "content": "皇家学会每年举办发明博览会，头奖是面见女王。去年的获奖作品是一台会说谎的自动人偶。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "自动人偶",
+        "机械仆从"
+      ],
+      "secondary_keys": [],
+      "content": "机械仆从走入富裕家庭，它们会泡茶、弹琴、守夜。但法律规定：人偶不得拥有表情。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

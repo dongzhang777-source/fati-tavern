@@ -1,0 +1,108 @@
+{
+  "name": "大梁京华",
+  "description": "古代朝堂：内阁、锦衣卫与江南盐案背后的棋局。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "大梁",
+        "京城"
+      ],
+      "secondary_keys": [],
+      "content": "大梁立国百五十年，京城九门十二坊。天子脚下，一桩命案能牵出三部堂官。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "内阁",
+        "朝堂"
+      ],
+      "secondary_keys": [],
+      "content": "内阁三位阁老：首辅掌票拟，次辅掌钱粮，三阁老掌兵——三足鼎立，谁也不敢先倒向谁。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "锦衣卫",
+        "缇骑"
+      ],
+      "secondary_keys": [],
+      "content": "锦衣卫缇骑遍布京城，明面上缉盗，暗地里监察百官。官员们私下说：家里的仆人都得查三代。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "科举",
+        "会试"
+      ],
+      "secondary_keys": [],
+      "content": "会试三年一次，今科主考官是首辅门生。放榜前夜，贡院失火，烧掉的恰好是江南考生的卷子。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "京城商行",
+        "商帮"
+      ],
+      "secondary_keys": [],
+      "content": "京城商帮表面做生意，暗地里替各派系过账。最大的\"恒通号\"东家，据说三十年没人见过真容。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "深宫",
+        "内廷"
+      ],
+      "secondary_keys": [],
+      "content": "深宫之中，太后礼佛十年不问政事——但每月初一，内阁的折子会先送佛堂，再送御前。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "盐案",
+        "江南"
+      ],
+      "secondary_keys": [],
+      "content": "江南盐案亏空三百万两，查案钦差换了四任。第五任钦差出发前只说了一句：\"这次查账，不查盐。\"",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

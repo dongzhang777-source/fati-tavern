@@ -1,0 +1,108 @@
+{
+  "name": "雾港镇",
+  "description": "克苏鲁风海滨小镇：浓雾、灯塔与不可名状之物。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "雾港镇",
+        "小镇"
+      ],
+      "secondary_keys": [],
+      "content": "雾港镇常年被浓雾笼罩，镇民靠捕鱼为生。外人说这里安静得反常，只有灯塔的雾笛日夜不休。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "灯塔",
+        "守塔人"
+      ],
+      "secondary_keys": [],
+      "content": "灯塔守塔人老雅各布已在塔上住了四十年。他说雾笛不是给船听的，是给\"水下的东西\"听的。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "捕鱼",
+        "渔汛"
+      ],
+      "secondary_keys": [],
+      "content": "渔汛季镇民绝不出海捕鱼——那是\"它们的产卵期\"。违反禁忌的人，船会自己漂回来，人不会。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "教堂",
+        "古卷"
+      ],
+      "secondary_keys": [],
+      "content": "镇教堂地下室锁着一批古卷，牧师每月初一独自下去\"诵读\"。有人听见地下传来回应声。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "雾笛",
+        "雾笛声"
+      ],
+      "secondary_keys": [],
+      "content": "雾笛声停过三次。每次停歇后的第七天，镇上就有人失踪，只在码头留下湿漉漉的脚印。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "调查员",
+        "外来者"
+      ],
+      "secondary_keys": [],
+      "content": "外来调查员总自称民俗学者。镇民对他们客气而疏远——上一个追问太多的人，现在住在疗养院。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "深潜者",
+        "水下"
+      ],
+      "secondary_keys": [],
+      "content": "老渔民说深海里有城，城里的东西偶尔上岸\"走亲戚\"。镇上几个家族的族谱，往上数三代就断了。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

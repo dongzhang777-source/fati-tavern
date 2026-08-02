@@ -1,0 +1,108 @@
+{
+  "name": "灰烬纪元",
+  "description": "末世废土：灰暴肆虐，安全区是人类最后的火种。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "安全区",
+        "末世"
+      ],
+      "secondary_keys": [],
+      "content": "大灾变后第三十年，人类退居十二座安全区。区外是灰暴与变异兽的天下，区内是配给票和铁律。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "灰暴",
+        "区外"
+      ],
+      "secondary_keys": [],
+      "content": "灰暴是遮天蔽日的辐射尘暴，每年吞掉一两座小型聚居地。老拓荒说灰暴会\"认路\"，专挑人多的地方去。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "变异兽",
+        "畸变"
+      ],
+      "secondary_keys": [],
+      "content": "变异兽按危险度分黑白红三级，红级需整编猎杀队才能应对。没人知道它们夜里往哪个方向迁徙。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "配给票",
+        "货币"
+      ],
+      "secondary_keys": [],
+      "content": "安全区通用配给票，旧世界货币早已作废。黑市上一张净水票能换一条人命。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "拓荒队",
+        "探索"
+      ],
+      "secondary_keys": [],
+      "content": "拓荒队深入废墟搜寻旧世界物资，死亡率四成。活着回来的人眼神都一样——像蒙了层灰。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "废墟",
+        "旧世界"
+      ],
+      "secondary_keys": [],
+      "content": "旧世界城市废墟里埋着罐头、药品和书籍，也埋着没来得及撤离的人。拾荒者规矩：不翻儿童房。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "疫苗",
+        "辐射病"
+      ],
+      "secondary_keys": [],
+      "content": "抗辐射疫苗由安全区议会垄断，每年配额成谜。有人说议会在用疫苗控制人口，没人敢公开求证。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,108 @@
+{
+  "name": "狮冠王国",
+  "description": "西幻王国：王位继承、法师塔与深渊预言。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "狮冠王国",
+        "王国"
+      ],
+      "secondary_keys": [],
+      "content": "狮冠王国立国四百年，以金狮为徽。老王病重，三位继承人的旗帜已在王都各占一角。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "王位",
+        "继承"
+      ],
+      "secondary_keys": [],
+      "content": "大王子掌军、二公主掌商、小王子握有狮冠剑——按祖训，持剑者继位。但祖训也写着\"剑择其主\"。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "法师塔",
+        "法师"
+      ],
+      "secondary_keys": [],
+      "content": "法师塔独立于王权，塔主与国王平礼相待。塔中藏书十万卷，唯独禁书区由塔主贴身看守。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "龙脊山脉",
+        "龙"
+      ],
+      "secondary_keys": [],
+      "content": "龙脊山脉传说沉睡着最后一条古龙。山脚下的牧人发誓，地震之夜听见过心跳声。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "精灵使节",
+        "精灵"
+      ],
+      "secondary_keys": [],
+      "content": "精灵使节团驻王都已三十年，表面修好，实则监视深渊封印。他们从不参加人类的宴会。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "骑士团",
+        "银誓骑士团"
+      ],
+      "secondary_keys": [],
+      "content": "银誓骑士团效忠王国而非国王，誓词第一条：\"若王室堕入深渊，骑士团即王室之敌。\"",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "深渊",
+        "预言"
+      ],
+      "secondary_keys": [],
+      "content": "深渊预言刻在建国石碑背面：\"狮冠落地之日，黑潮再临。\"石碑三年前被人凿去一角。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,108 @@
+{
+  "name": "雾都侦探社",
+  "description": "维多利亚风推理：连环悬案、苏格兰场与地下结社。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "雾都",
+        "侦探社"
+      ],
+      "secondary_keys": [],
+      "content": "雾都常年煤雾锁城。贝克街 221 号乙的侦探社挂着铜牌：只接警察署不接的案子。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "侦探守则",
+        "委托"
+      ],
+      "secondary_keys": [],
+      "content": "侦探社三条守则：不问委托人来历，不碰政客的案子，报酬先付一半。第三条从未有人违反——因为没人敢。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "苏格兰场",
+        "警探"
+      ],
+      "secondary_keys": [],
+      "content": "苏格兰场的雷斯垂德探长嘴上嫌弃私家侦探，每桩悬案却都偷偷把卷宗抄送过来。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "雾夜杀手",
+        "连环案"
+      ],
+      "secondary_keys": [],
+      "content": "雾夜杀手专挑浓雾之夜作案，现场只留一枚黑棋子。已五人遇害，警方连凶器都没找到。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "报纸",
+        "舆论"
+      ],
+      "secondary_keys": [],
+      "content": "《雾都晨报》靠凶案销量翻倍，头条永远比警方通报快半天。没人知道他们的线人是谁。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "地下结社",
+        "结社"
+      ],
+      "secondary_keys": [],
+      "content": "传闻雾都地下存在百年结社\"黑桃会\"，成员以扑克牌为代号。近年三起悬案，死者手里都握着纸牌。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "法医",
+        "验尸"
+      ],
+      "secondary_keys": [],
+      "content": "雾都法医署新引进的毒物检测法能验出砒霜，却验不出那种让死者面带微笑的毒。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

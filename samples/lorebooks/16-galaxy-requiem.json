@@ -1,0 +1,108 @@
+{
+  "name": "银河安魂曲",
+  "description": "太空歌剧：帝国与共和国的终战，与一艘会唱歌的旗舰。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "安魂曲",
+        "战争"
+      ],
+      "secondary_keys": [],
+      "content": "帝国与共和国打了四十年的仗，如今只剩一条星廊隔着彼此。双方都知道，下一场战役就是最后一场。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "帝国",
+        "共和国"
+      ],
+      "secondary_keys": [],
+      "content": "帝国以血统立国，共和国以议会立国。讽刺的是，两边士兵唱的是同一首古老的摇篮曲。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "旗舰",
+        "安魂曲号"
+      ],
+      "secondary_keys": [],
+      "content": "旗舰\"安魂曲号\"搭载着初代歌者 AI，她会在跃迁时唱歌。两军士兵都听过——没人朝她开过炮。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "星廊会战",
+        "战役"
+      ],
+      "secondary_keys": [],
+      "content": "星廊会战已对峙三个月，双方都在等对方先动。老兵说，星廊的尘埃里漂着四十年战争的残骸。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "歌者AI",
+        "AI"
+      ],
+      "secondary_keys": [],
+      "content": "歌者 AI 是战前文明的遗产，被编程为\"记录战争并为之哀悼\"。她的数据库里，有每一艘沉船的名字。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "难民船队",
+        "平民"
+      ],
+      "secondary_keys": [],
+      "content": "难民船队跟在舰队后方，像战争的影子。共和国法令：难民船优先补给——这条法令是帝国间谍帮忙起草的。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "停火谈判",
+        "和平"
+      ],
+      "secondary_keys": [],
+      "content": "停火谈判在中立空间站举行，桌上摆着两样东西：停战协议，和歌者 AI 录下的四十年阵亡者名单。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

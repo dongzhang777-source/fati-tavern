@@ -1,0 +1,107 @@
+{
+  "name": "霓虹城 2099",
+  "description": "赛博朋克都市：巨企统治地表，义体与数据即权力。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "霓虹城",
+        "2099"
+      ],
+      "secondary_keys": [],
+      "content": "霓虹城 2099：地表属于巨企，天空属于广告屏，地下属于穷人。在这里，数据比血更值钱。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "义体",
+        "改造"
+      ],
+      "secondary_keys": [],
+      "content": "义体改造明码标价，从眼球到脊椎皆可替换。改造超过六成的人被称作\"铁皮\"，求职会被隐性歧视。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "黑铁重工",
+        "巨企"
+      ],
+      "secondary_keys": [],
+      "content": "黑铁重工是霓虹城最大巨企，垄断义体与军火。它的安保部队比市政警察多三倍，董事会从不公开露面。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "下城区",
+        "地表"
+      ],
+      "secondary_keys": [],
+      "content": "下城区常年不见阳光，靠霓虹灯和合成食物过活。这里帮派自治，警察只在收保护费时出现。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "网络行者",
+        "骇入"
+      ],
+      "secondary_keys": [],
+      "content": "网络行者靠神经接驳潜入数据海，替人窃取、篡改、销毁数据。行规第一条：不留真名。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "夜市街",
+        "黑市"
+      ],
+      "secondary_keys": [],
+      "content": "夜市街什么都能买到：二手义体、违禁芯片、别人的记忆。现金交易，概不退换。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "合成人"
+      ],
+      "secondary_keys": [],
+      "content": "合成人平权运动要求给予仿生人法律人格，巨企坚决反对——他们不愿失去免费的劳动力。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}

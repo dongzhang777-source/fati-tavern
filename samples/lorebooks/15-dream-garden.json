@@ -1,0 +1,108 @@
+{
+  "name": "梦境花园",
+  "description": "梦世界：食梦者、园丁与醒不来的迷途者。",
+  "scan_depth": 2,
+  "case_sensitive": false,
+  "recursive_scanning": false,
+  "entries": [
+    {
+      "id": 0,
+      "keys": [
+        "梦境花园",
+        "梦"
+      ],
+      "secondary_keys": [],
+      "content": "每个睡着的人都会路过梦境花园。花园随入梦者的心意生长，唯一的固定建筑是那扇醒来之门。",
+      "enabled": true,
+      "insertion_order": 1,
+      "position": "before_char",
+      "constant": true,
+      "case_sensitive": false
+    },
+    {
+      "id": 1,
+      "keys": [
+        "食梦者",
+        "梦貘"
+      ],
+      "secondary_keys": [],
+      "content": "食梦者以噩梦为食，外形似貘，性情温顺。它们若饿极了，也会吃掉好梦——那晚人会睡得格外空虚。",
+      "enabled": true,
+      "insertion_order": 2,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 2,
+      "keys": [
+        "园丁",
+        "守梦人"
+      ],
+      "secondary_keys": [],
+      "content": "园丁是自愿留在梦里的人，修剪失控的梦境、照料迷途者。他们的身体在现实里沉睡，靠亲友的探望维生。",
+      "enabled": true,
+      "insertion_order": 3,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 3,
+      "keys": [
+        "噩梦",
+        "美梦"
+      ],
+      "secondary_keys": [],
+      "content": "噩梦区的花是黑色的，闻起来像雨前的尘土。园丁说噩梦不是毒物——它们是没被听见的呼救。",
+      "enabled": true,
+      "insertion_order": 4,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 4,
+      "keys": [
+        "醒来之门",
+        "苏醒"
+      ],
+      "secondary_keys": [],
+      "content": "醒来之门对想醒的人永远敞开。但有些门后不是清晨，而是另一个梦——这叫\"假醒\"，是花园最爱开的玩笑。",
+      "enabled": true,
+      "insertion_order": 5,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 5,
+      "keys": [
+        "梦币",
+        "珍珠"
+      ],
+      "secondary_keys": [],
+      "content": "梦币是入梦者掉落的记忆凝成的珍珠，可在花园集市交换体验：一次飞行、一场重逢、一句没说完的话。",
+      "enabled": true,
+      "insertion_order": 6,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    },
+    {
+      "id": 6,
+      "keys": [
+        "迷途者",
+        "沉睡"
+      ],
+      "secondary_keys": [],
+      "content": "迷途者是在梦里住了太久的人，渐渐忘了自己是谁。园丁会在他们手腕系上红绳——那是现实里亲人的呼唤。",
+      "enabled": true,
+      "insertion_order": 7,
+      "position": "before_char",
+      "constant": false,
+      "case_sensitive": false
+    }
+  ],
+  "version": 2
+}
