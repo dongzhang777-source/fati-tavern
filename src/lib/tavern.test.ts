@@ -5,7 +5,7 @@ import { gzipSync, deflateSync } from 'node:zlib'
 import {
   parseCharacterJson, parseLorebookJson, parsePngCard,
   applyMacros, cardToSystemPrompt, bookToContext, detectImportKind,
-  detectCardLanguage, personaLine,
+  detectCardLanguage, personaLine, bookToPremise,
 } from './tavern'
 
 // ─── 测试用 PNG 构造工具 ──────────────────────────────────
@@ -253,5 +253,87 @@ describe('detectImportKind', () => {
   })
   it('无法识别返回 unknown', () => {
     expect(detectImportKind('a.json', { foo: 1 })).toBe('unknown')
+  })
+})
+
+// ─── 世界书注入预算（bookToContext maxChars）─────────────
+
+describe('bookToContext 注入预算', () => {
+  const book = parseLorebookJson({
+    entries: [
+      { keys: ['a'], content: 'AAAA', insertion_order: 1 },
+      { keys: ['b'], content: 'BBBB', insertion_order: 2 },
+      { keys: ['c'], content: 'CCCC', insertion_order: 3 },
+    ],
+  })!
+
+  it('不传预算时全量注入', () => {
+    const ctx = bookToContext(book)
+    expect(ctx).toContain('AAAA')
+    expect(ctx).toContain('BBBB')
+    expect(ctx).toContain('CCCC')
+  })
+
+  it('超预算按 insertion_order 截断，保留头部条目', () => {
+    // 预算极小：header + 至少一条。AAAA 是 insertion_order 最小，应保留
+    const ctx = bookToContext(book, undefined, 'User', 'zh', 10)
+    expect(ctx).toContain('AAAA')
+    // CCCC 排在最后，预算不够时应被丢弃
+    expect(ctx).not.toContain('CCCC')
+  })
+
+  it('单条即超预算时截断保留该条', () => {
+    const big = parseLorebookJson({
+      entries: [{ keys: ['x'], content: 'Z'.repeat(1000), insertion_order: 1 }],
+    })!
+    const ctx = bookToContext(big, undefined, 'User', 'zh', 100)
+    expect(ctx.length).toBeLessThan(200) // header + 截断后的条目
+    expect(ctx).toContain('Z')
+  })
+})
+
+// ─── 世界书浓缩为剧情世界（bookToPremise）────────────────
+
+describe('bookToPremise', () => {
+  const book = parseLorebookJson({
+    name: '艾泽拉斯编年史',
+    description: '一个魔法与剑的世界。',
+    entries: [
+      { keys: ['历史'], content: '远古时代龙族统治大陆。', insertion_order: 1 },
+      { keys: ['地理'], content: '北方是冰封山脉。', insertion_order: 2 },
+      { keys: ['off'], content: '禁用条目不该出现', enabled: false, insertion_order: 3 },
+    ],
+  })!
+
+  it('title 取书名，premise 含描述与启用条目', () => {
+    const { title, premise } = bookToPremise(book, 'fallback')
+    expect(title).toBe('艾泽拉斯编年史')
+    expect(premise).toContain('魔法与剑')
+    expect(premise).toContain('龙族统治')
+    expect(premise).toContain('冰封山脉')
+    expect(premise).not.toContain('禁用条目')
+  })
+
+  it('书名为空时用 fallback', () => {
+    const noName = parseLorebookJson({ entries: [{ keys: [], content: 'hi', insertion_order: 1 }] })!
+    expect(bookToPremise(noName, 'myfile.json').title).toBe('myfile.json')
+  })
+
+  it('超预算时截断，至少保留描述与头部条目', () => {
+    const huge = parseLorebookJson({
+      description: 'D'.repeat(100),
+      entries: [
+        { keys: ['1'], content: 'E'.repeat(500), insertion_order: 1 },
+        { keys: ['2'], content: 'F'.repeat(500), insertion_order: 2 },
+      ],
+    })!
+    const { premise } = bookToPremise(huge, 'x', 300)
+    expect(premise.length).toBeLessThan(450) // 描述 100 + 一条截断
+    expect(premise).toContain('D')
+  })
+
+  it('条目为空时仍有描述可用', () => {
+    const onlyDesc = parseLorebookJson({ description: '只有描述', entries: [] })!
+    expect(bookToPremise(onlyDesc, 'x').premise).toBe('只有描述')
   })
 })
