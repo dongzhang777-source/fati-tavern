@@ -7,10 +7,11 @@ import { useStore } from '../store'
 import { useLoreStore } from '../store/slices/lore'
 import { useStoryStore } from '../store/slices/story'
 import { t } from '../lib/i18n'
+import { deriveBookRating, passesContentFilter } from '../lib/tavern'
 import type { StoredCharacter } from '../lib/db'
 
 export function LorebookPanel() {
-  const { characters, lang, endpoint, bindLorebookToCharacter, enterStoryView } = useStore()
+  const { characters, lang, endpoint, bindLorebookToCharacter, enterStoryView, safeMode } = useStore()
   const { lorebooks, activeLorebookId, removeLorebook, setActiveLorebook } = useLoreStore()
   const { openStory, stories } = useStoryStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -28,12 +29,19 @@ export function LorebookPanel() {
   const userChars = characters.filter((c) => !c.builtin)
   const charBoundTo = (charId: string) => characters.find((c) => c.id === charId)?.boundLorebookId
 
+  // safeMode：隐藏 adult 世界书（与角色卡过滤语义一致）
+  const visibleBooks = lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode))
+  const hiddenCount = lorebooks.length - visibleBooks.length
+
   return (
     <section className="lore-panel">
       <h3 className="lore-title">📖 {t(lang, 'lore.section')}</h3>
       <p className="lore-hint">{t(lang, 'lore.hint')}</p>
+      {hiddenCount > 0 && (
+        <p className="safe-hidden-note">{t(lang, 'lore.safeHidden', { n: hiddenCount })}</p>
+      )}
       <div className="lore-list">
-        {lorebooks.map((lb) => {
+        {visibleBooks.map((lb) => {
           const entries = lb.book.entries.filter((e) => e.enabled).length
           const isActive = activeLorebookId === lb.id
           const expanded = expandedId === lb.id
@@ -45,6 +53,7 @@ export function LorebookPanel() {
                 <div className="lore-item-info">
                   <strong className="lore-item-name">
                     {lb.book.name || lb.source || t(lang, 'lore.untitled')}
+                    {lb.builtin && <span className="lore-badge-builtin">{t(lang, 'lore.builtin')}</span>}
                     {isActive && <span className="lore-badge-active">{t(lang, 'lore.active')}</span>}
                   </strong>
                   <span className="lore-item-meta">

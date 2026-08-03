@@ -1,6 +1,8 @@
 // SillyTavern 角色卡 / 世界书 导入解析
 // 支持：角色卡 v1(JSON)、v2(JSON data 嵌套)、v3/PNG(tEXt chara)、独立世界书 JSON
 
+export type ContentRating = 'all' | 'suggestive' | 'adult' | 'unknown'
+
 export interface TavernCard {
   name: string
   description: string
@@ -14,7 +16,7 @@ export interface TavernCard {
   tags: string[]
   character_book?: TavernBook
   // ── 角色库地基（Phase 0）──
-  contentRating?: 'all' | 'suggestive' | 'adult' | 'unknown'
+  contentRating?: ContentRating
 }
 
 export interface TavernBookEntry {
@@ -29,6 +31,8 @@ export interface TavernBookEntry {
 export interface TavernBook {
   name?: string
   description?: string
+  tags?: string[]
+  contentRating?: ContentRating
   entries: TavernBookEntry[]
 }
 
@@ -55,16 +59,30 @@ export function parseCharacterJson(raw: any): TavernCard | null {
   return card
 }
 
+const ADULT_TAG_MARKERS = ['nsfw', 'adult', '18+', 'r18', 'r-18', 'explicit', '成人', '限制级']
+
+// tags 关键词推断：命中成人标记 → adult，否则无法判断（null）
+export function ratingFromTags(tags: string[] | undefined): ContentRating | null {
+  const list = (tags ?? []).map((t) => String(t).toLowerCase())
+  if (list.some((t) => ADULT_TAG_MARKERS.some((m) => t.includes(m)))) return 'adult'
+  return null
+}
+
+function isRating(v: unknown): v is ContentRating {
+  return v === 'all' || v === 'suggestive' || v === 'adult' || v === 'unknown'
+}
+
 // 分级推断：来源显式声明 > tags 关键词 > unknown
 // UGC 合规钩子——导入时标记，画廊展示 18+ 徽标
-function deriveContentRating(d: any): TavernCard['contentRating'] {
-  if (d.contentRating === 'all' || d.contentRating === 'suggestive' || d.contentRating === 'adult') {
-    return d.contentRating
-  }
-  const tags: string[] = Array.isArray(d.tags) ? d.tags.map((t: any) => String(t).toLowerCase()) : []
-  const adultMarkers = ['nsfw', 'adult', '18+', 'r18', 'r-18', 'explicit', '成人', '限制级']
-  if (tags.some((t) => adultMarkers.some((m) => t.includes(m)))) return 'adult'
-  return 'unknown'
+function deriveContentRating(d: any): ContentRating {
+  if (isRating(d.contentRating)) return d.contentRating
+  return ratingFromTags(Array.isArray(d.tags) ? d.tags.map((t: any) => String(t)) : undefined) ?? 'unknown'
+}
+
+// 世界书分级：显式分级 > tags 推断 > unknown（与角色卡语义对齐，供 safeMode 过滤）
+export function deriveBookRating(book: TavernBook): ContentRating {
+  if (book.contentRating) return book.contentRating
+  return ratingFromTags(book.tags) ?? 'unknown'
 }
 
 // ─── 世界书 JSON ──────────────────────────────────────────
@@ -80,6 +98,8 @@ function normalizeBook(raw: any): TavernBook {
   return {
     name: raw.name,
     description: raw.description,
+    tags: Array.isArray(raw.tags) ? raw.tags.map((t: any) => String(t)) : undefined,
+    contentRating: isRating(raw.contentRating) ? raw.contentRating : undefined,
     entries: (raw.entries || []).map((e: any) => ({
       keys: Array.isArray(e.keys) ? e.keys : [],
       content: e.content || '',

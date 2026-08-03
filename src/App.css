@@ -10,7 +10,7 @@
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; }
 #root { height: 100%; }
-.app { height: 100%; }
+.app { height: 100%; display: flex; flex-direction: column; }
 
 /* ─── 通用 ─── */
 .btn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; opacity: 0; transition: opacity 0.2s; }
@@ -30,7 +30,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 /* ─── 分级徽标 & UGC 免责 ─── */
 .badge-18 { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 0.6rem; font-weight: 700; color: #fff; background: var(--accent); border-radius: 4px; vertical-align: 2px; }
 .badge-free { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 0.6rem; font-weight: 500; color: #4caf50; background: rgba(76,175,80,0.15); border-radius: 4px; vertical-align: 2px; }
-.ugc-note { display: block; margin-top: 4px; font-size: 0.68rem; opacity: 0.7; }
 
 /* ─── AI 身份披露 & 危机资源提示 ─── */
 .chat-title-text { display: flex; flex-direction: column; line-height: 1.2; }
@@ -53,7 +52,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .safe-mode-hint { font-size: 0.72rem; color: var(--muted); padding-left: 23px; }
 
 /* ─── 画廊 ─── */
-.gallery { height: 100%; display: flex; flex-direction: column; padding: 24px 32px 0; position: relative; overflow: hidden; }
+.gallery { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 24px 32px 0; position: relative; overflow: hidden; }
 .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0; }
 .gallery-content { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 16px; }
 .gallery-header h1 { font-size: 1.5rem; font-weight: 300; color: #FF9F43; display: flex; align-items: center; }
@@ -120,7 +119,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .card-tags { font-size: 0.7rem; color: var(--accent); opacity: 0.8; }
 .char-card .btn-del { position: absolute; top: 8px; right: 8px; }
 
-.gallery-footer { margin-top: 0; padding: 12px 0; text-align: center; font-size: 0.72rem; color: var(--muted); flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); background: var(--bg); }
+.byok-note { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 6px 16px; font-size: 0.68rem; color: var(--muted); opacity: 0.85; line-height: 1.5; }
+.byok-note button { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--muted); border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 0.68rem; white-space: nowrap; }
+.byok-note button:hover { background: rgba(255,255,255,0.08); }
 
 /* ─── 设置面板 ─── */
 .settings-panel { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
@@ -147,6 +148,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 /* ── 模型选择器 ── */
 .tier-hint { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+.settings-disclaimer { margin-top: 20px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 6px; }
+.settings-disclaimer p { font-size: 0.68rem; color: var(--muted); line-height: 1.6; opacity: 0.85; }
+
+/* 首启年龄确认门 */
+.age-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.age-gate-card { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 28px 24px; }
+.age-gate-card h2 { font-size: 1.2rem; }
+.age-gate-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+.age-gate-input { padding: 10px 12px; font-size: 1rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: var(--text); }
+.age-gate-err { font-size: 0.75rem; color: var(--accent); }
+.age-gate-btn { padding: 10px; font-size: 0.95rem; font-weight: 600; color: #fff; background: var(--accent); border: none; border-radius: 8px; cursor: pointer; }
+.safe-hidden-note { margin: 0 0 10px; padding: 8px 12px; font-size: 0.72rem; color: var(--muted); background: rgba(255,255,255,0.05); border-radius: 8px; }
 .model-picker-wrap { display: flex; flex-direction: column; gap: 4px; }
 .model-picker-wrap select { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.85rem; outline: none; }
 .model-picker-wrap select:focus { border-color: var(--accent); }
@@ -162,7 +175,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .test-msg.loading { color: var(--muted); }
 
 /* ─── 聊天布局 ─── */
-.chat-layout { height: 100%; display: flex; overflow: hidden; }
+.chat-layout { flex: 1; min-height: 0; height: 100%; display: flex; overflow: hidden; }
 
 .conv-sidebar { width: 200px; background: var(--surface); border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; }
 .conv-header { padding: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -351,6 +364,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .lore-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .lore-item-name { font-size: 0.9rem; }
 .lore-badge-active { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: 0.6rem; font-weight: 600; color: #fff; background: var(--accent); border-radius: 4px; vertical-align: 2px; }
+.lore-badge-builtin { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: 0.6rem; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.1); border-radius: 4px; vertical-align: 2px; }
 .lore-item-meta { font-size: 0.7rem; color: var(--muted); }
 .lore-item-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .btn-story { background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); color: var(--text); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; white-space: nowrap; }
@@ -368,7 +382,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .lore-bound-chip button:hover { color: var(--accent); }
 
 /* ─── 剧情视图 ─── */
-.story-view { height: 100%; display: flex; flex-direction: column; }
+.story-view { flex: 1; min-height: 0; height: 100%; display: flex; flex-direction: column; }
 .story-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: var(--surface); flex-shrink: 0; }
 .story-title { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
 .story-title strong { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -413,3 +427,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .chat-lore-option { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text); border-radius: 6px; padding: 7px 10px; cursor: pointer; font-size: 0.78rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .chat-lore-option:hover { border-color: var(--accent); }
 .chat-lore-option.bound { border-color: var(--accent); }
+
+/* ─── 底部 Tab 导航 ─────────────────────────────────── */
+.tabbar { flex-shrink: 0; display: flex; border-top: 1px solid rgba(255,255,255,0.08); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 50; }
+.tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 6px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.66rem; font-family: inherit; transition: color 0.15s; }
+.tabbar button .tab-icon { font-size: 1.25rem; line-height: 1.1; }
+.tabbar button .tab-label { white-space: nowrap; }
+.tabbar button:hover { color: var(--text); }
+.tabbar button.active { color: var(--accent); }
+
+/* tab 页面容器（世界书 / 设置 / 聊天占位） */
+.tab-page { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 32px; }
+.tab-page > .lorebook-panel, .tab-page > .settings-panel, .tab-page > .p2p-panel, .tab-page > .settings-p2p-toggle { max-width: 960px; margin-left: auto; margin-right: auto; }
+.tab-page > .settings-p2p-toggle { display: block; width: 100%; margin-bottom: 12px; }
+
+.chat-tab-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--muted); font-size: 0.9rem; text-align: center; }
+
+@media (max-width: 600px) {
+  .tab-page { padding: 14px 12px; }
+  .tabbar button { padding: 7px 2px 5px; font-size: 0.62rem; }
+  .tabbar button .tab-icon { font-size: 1.15rem; }
+}

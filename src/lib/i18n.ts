@@ -45,15 +45,20 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'gallery.delete': {
     zh: '删除', en: 'Delete', ja: '削除', ko: '삭제',
   },
-  'gallery.footer': {
+  'chat.byokNote': {
     zh: 'BYOK · 你的 Key 和聊天记录不离开你的设备', en: 'BYOK · Your key and chats never leave your device',
     ja: 'BYOK · あなたのキーとチャットは端末の外に出ません', ko: 'BYOK · 키와 채팅은 기기 밖으로 나가지 않습니다',
   },
-  'gallery.ugcNote': {
-    zh: '角色卡为用户自行导入的第三方内容，本站不托管、不分发；标记为 18+ 的内容仅限成年人使用。',
-    en: 'Character cards are third-party content imported by users — this site hosts and distributes nothing; 18+ content is for adults only.',
-    ja: 'キャラクターカードはユーザーが自らインポートする第三者コンテンツです。当サイトは一切をホスト・配布しません。18+コンテンツは成人のみ利用できます。',
-    ko: '캐릭터 카드는 사용자가 직접 가져오는 서드파티 콘텐츠입니다. 본 사이트는 어떤 것도 호스팅하거나 배포하지 않습니다. 18+ 콘텐츠는 성인 전용입니다.',
+  // ── 底部 Tab 导航 ──
+  'tab.chars': { zh: '角色', en: 'Chars', ja: 'キャラ', ko: '캐릭터' },
+  'tab.chat': { zh: '聊天', en: 'Chat', ja: 'チャット', ko: '채팅' },
+  'tab.books': { zh: '世界书', en: 'Lore', ja: '世界書', ko: '월드북' },
+  'tab.settings': { zh: '设置', en: 'Settings', ja: '設定', ko: '설정' },
+  'chat.pickFirst': {
+    zh: '还没有进行中的聊天。去角色库挑一个角色，开始聊天吧',
+    en: 'No active chat yet — pick a character from the library to start',
+    ja: '進行中のチャットがありません。キャラライブラリから選んで開始しましょう',
+    ko: '진행 중인 채팅이 없습니다. 캐릭터 라이브러리에서 선택해 시작하세요',
   },
   'landing.title': {
     zh: '拖一张角色卡进来，和 TA 聊天', en: 'Drop a character card in and start chatting',
@@ -178,6 +183,7 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'lore.hint': { zh: '世界书为聊天提供世界观设定；★ 设为全局激活，或展开绑定到指定角色。点「进入剧情」直接在这个世界里开始互动剧情。', en: 'Lorebooks supply world lore for chats — ★ activates globally, or expand to bind to a character. Hit "Enter story" to play an interactive story in this world.', ja: 'ワールドブックはチャットに世界観を提供します。★で全体有効化、または展開してキャラクターに紐付け。「ストーリーへ」でこの世界のインタラクティブストーリーを開始。', ko: '월드북은 채팅에 세계관 설정을 제공합니다. ★로 전체 활성화하거나 펼쳐서 캐릭터에 연결하세요. "스토리 입장"을 눌러 이 세계에서 인터랙티브 스토리를 시작하세요.' },
   'lore.untitled': { zh: '未命名世界书', en: 'Untitled lorebook', ja: '無題のワールドブック', ko: '제목 없는 월드북' },
   'lore.active': { zh: '全局激活', en: 'Active', ja: '全体有効', ko: '전체 활성화' },
+  'lore.builtin': { zh: '内置示例', en: 'Built-in', ja: '内蔵サンプル', ko: '내장 샘플' },
   'lore.entries': { zh: '{n} 条设定', en: '{n} entries', ja: '{n}件の設定', ko: '설정 {n}개' },
   'lore.bound': { zh: '已绑定 {n} 个角色', en: 'bound to {n} character(s)', ja: '{n}キャラクターに紐付け済み', ko: '캐릭터 {n}명에 연결됨' },
   'lore.progress': { zh: '剧情已推进 {n} 幕', en: 'story at scene {n}', ja: 'ストーリー{n}幕まで進行', ko: '스토리 {n}막 진행' },
@@ -186,6 +192,7 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'lore.deleteConfirm': { zh: '删除这本世界书？相关剧情进度也会一并删除。', en: 'Delete this lorebook? Related story progress will be removed too.', ja: 'このワールドブックを削除しますか？関連するストーリー進行も削除されます。', ko: '이 월드북을 삭제할까요? 관련 스토리 진행도 함께 삭제됩니다.' },
   'lore.bindChar': { zh: '绑定到角色（该角色聊天时优先用这本书）', en: 'Bind to a character (this book takes priority in their chats)', ja: 'キャラクターに紐付け（そのキャラのチャットでこの本を優先使用）', ko: '캐릭터에 연결(해당 캐릭터 채팅에서 이 책 우선 사용)' },
   'lore.bindPick': { zh: '选择角色…', en: 'Pick a character…', ja: 'キャラクターを選択…', ko: '캐릭터 선택…' },
+  'lore.safeHidden': { zh: '安全模式已开启：{n} 本成人世界书已隐藏', en: 'Safe mode on — {n} adult lorebook(s) hidden', ja: 'セーフモード有効：成人向けワールドブック {n} 件を非表示中', ko: '세이프 모드 켜짐 — 성인 월드북 {n}권 숨김' },
 
   // ── 剧情模式 ──
   'story.back': { zh: '← 返回', en: '← Back', ja: '← 戻る', ko: '← 뒤로' },
@@ -248,6 +255,25 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'gallery.edit': { zh: '编辑', en: 'Edit', ja: '編集', ko: '편집' },
   'settings.safeMode': { zh: '安全模式', en: 'Safe mode', ja: 'セーフモード', ko: '세이프 모드' },
   'settings.safeModeDesc': { zh: '开启后隐藏标记为 18+ 的角色卡', en: 'Hide character cards marked as 18+ when enabled', ja: '有効にすると18+とマークされたカードを非表示にします', ko: '활성화하면 18+로 표시된 카드를 숨깁니다' },
+  'settings.safeModeLocked': { zh: '未满 18 岁，安全模式已锁定开启', en: 'Locked on because you are under 18', ja: '18歳未満のためセーフモードはロックされています', ko: '18세 미만이므로 세이프 모드가 잠겨 있습니다' },
+  'age.title': { zh: '年龄确认', en: 'Age Check', ja: '年齢確認', ko: '연령 확인' },
+  'age.desc': { zh: '请输入你的年龄，用于决定是否开启安全模式（隐藏 18+ 角色卡）。仅保存在你的设备上。', en: 'Enter your age so we can decide whether to enable safe mode (hides 18+ cards). Stored only on your device.', ja: '年齢を入力してください。セーフモード（18+カードを非表示）の有効判定に使用します。デバイスにのみ保存されます。', ko: '나이를 입력해 주세요. 세이프 모드(18+ 카드 숨김) 활성화 여부를 결정하는 데 사용됩니다. 기기에만 저장됩니다.' },
+  'age.placeholder': { zh: '你的年龄', en: 'Your age', ja: '年齢', ko: '나이' },
+  'age.confirm': { zh: '确认', en: 'Confirm', ja: '確認', ko: '확인' },
+  'age.invalid': { zh: '请输入有效年龄（1-120）', en: 'Please enter a valid age (1–120)', ja: '有効な年齢を入力してください（1〜120）', ko: '유효한 나이를 입력해 주세요 (1–120)' },
+  'gallery.safeHidden': { zh: '安全模式已开启：{n} 张 18+ 角色卡已隐藏', en: 'Safe mode on — {n} 18+ card(s) hidden', ja: 'セーフモード有効：18+カード {n} 枚を非表示中', ko: '세이프 모드 켜짐 — 18+ 카드 {n}장 숨김' },
+  'settings.disclaimerByok': {
+    zh: 'BYOK · 你的 Key 和聊天记录不离开你的设备',
+    en: 'BYOK · Your API key and chat history never leave your device',
+    ja: 'BYOK · APIキーとチャット履歴はお使いのデバイスから外に出ません',
+    ko: 'BYOK · API 키와 대화 기록은 기기를 떠나지 않습니다',
+  },
+  'settings.disclaimerContent': {
+    zh: '角色卡为用户自行导入的第三方内容，本站不托管、不分发；标记为 18+ 的内容仅限成年人使用。',
+    en: 'Character cards are third-party content imported by users; this site neither hosts nor distributes them. Content marked 18+ is for adults only.',
+    ja: 'キャラクターカードはユーザーが自らインポートした第三者コンテンツであり、当サイトはホスト・配布を行いません。18+とマークされたコンテンツは成人のみ利用可能です。',
+    ko: '캐릭터 카드는 사용자가 직접 가져온 제3자 콘텐츠이며, 본 사이트는 호스팅·배포하지 않습니다. 18+로 표시된 콘텐츠는 성인만 이용할 수 있습니다.',
+  },
 
   // ── P2P 群聊 ──
   p2pTitle: { zh: 'P2P 群聊', en: 'P2P Group Chat', ja: 'P2Pグループチャット', ko: 'P2P 그룹 채팅' },

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { TavernCard } from './lib/tavern'
-import { cardToSystemPrompt, bookToContext, applyMacros, detectCardLanguage, personaLine } from './lib/tavern'
+import { cardToSystemPrompt, bookToContext, applyMacros, detectCardLanguage, personaLine, passesContentFilter, deriveBookRating, type TavernBook } from './lib/tavern'
 import type { EndpointConfig } from './lib/api'
 import { streamChat } from './lib/api'
 import { buildSuggestionsPrompt, buildSingleSuggestionPrompt, buildRefinePrompt, parseSuggestions, collectChat } from './lib/impersonate'
@@ -26,7 +26,7 @@ export interface ChatMessage {
   ts?: number
 }
 
-export type View = 'gallery' | 'chat' | 'story'
+export type View = 'gallery' | 'chat' | 'story' | 'lore' | 'settings'
 
 // 用户 persona（全局单个）：名字填 {{user}} 宏，描述拼入 system prompt
 export interface UserPersona {
@@ -58,6 +58,9 @@ interface State {
   // 安全模式（隐藏 adult 卡）
   safeMode: boolean
 
+  // 首启年龄确认门：unset=未确认；minor=未成年（安全模式锁定开启）
+  ageGate: 'unset' | 'adult' | 'minor'
+
   // 用户 persona（我在故事里扮演谁）
   persona: UserPersona
 
@@ -78,6 +81,9 @@ interface State {
   openCharacter: (id: string) => Promise<void>
   backToGallery: () => void
   enterStoryView: () => void
+  showChatTab: () => void
+  showLore: () => void
+  showSettings: () => void
 
   // 世界书绑定（角色 ↔ 世界书）
   bindLorebookToCharacter: (charId: string, lorebookId: string | null) => Promise<void>
@@ -93,6 +99,7 @@ interface State {
   setEndpoint: (cfg: Partial<EndpointConfig>) => void
   setLang: (lang: Lang) => void
   setSafeMode: (v: boolean) => void
+  confirmAge: (age: number) => void
   setPersona: (p: Partial<UserPersona>) => void
   dismissSafetyNotice: () => void
 
@@ -134,6 +141,19 @@ function loadSafeMode(): boolean {
 
 function saveSafeMode(v: boolean) {
   try { localStorage.setItem(LS_SAFE_MODE_KEY, v ? '1' : '0') } catch { /* ignore */ }
+}
+
+const LS_AGE_GATE_KEY = 'tavern-age-gate'
+
+function loadAgeGate(): 'unset' | 'adult' | 'minor' {
+  try {
+    const v = localStorage.getItem(LS_AGE_GATE_KEY)
+    return v === 'adult' || v === 'minor' ? v : 'unset'
+  } catch { return 'unset' }
+}
+
+function saveAgeGate(v: 'adult' | 'minor') {
+  try { localStorage.setItem(LS_AGE_GATE_KEY, v) } catch { /* ignore */ }
 }
 
 function loadPersona(): UserPersona {
@@ -182,6 +202,7 @@ export const useStore = create<State>((set, get) => ({
   webllmProgress: null,
   lang: detectLang(),
   safeMode: loadSafeMode(),
+  ageGate: loadAgeGate(),
   endpoint: loadEndpoint(),
   persona: loadPersona(),
   impSuggestions: [],
@@ -280,15 +301,21 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
+  // 返回角色库。保留 activeCharId / activeConvId / conversations：
+  // 底部「聊天」tab 需要凭它们直接恢复上一次聊天，不必重新加载。
   backToGallery: () => {
     get().clearImpersonate()
-    set({ view: 'gallery', activeCharId: null, activeConvId: null, conversations: [] })
+    set({ view: 'gallery' })
   },
 
   enterStoryView: () => {
     get().clearImpersonate()
     set({ view: 'story' })
   },
+
+  showChatTab: () => set({ view: 'chat' }),
+  showLore: () => set({ view: 'lore', activeConvId: null }),
+  showSettings: () => set({ view: 'settings', activeConvId: null }),
 
   // 绑定/解绑世界书到角色。内置角色先转用户副本再绑定（与编辑一致），
   // 并把该角色的会话迁移到副本，保证聊天不中断。
@@ -438,7 +465,11 @@ export const useStore = create<State>((set, get) => ({
     const activeBook = !boundBook && lore.activeLorebookId
       ? lore.lorebooks.find((l) => l.id === lore.activeLorebookId)?.book
       : undefined
-    const effectiveBook = boundBook ?? char.card.character_book ?? activeBook
+    // safeMode：adult 世界书不注入（与角色卡过滤语义一致）
+    const safe = get().safeMode
+    const effectiveBook = [boundBook, char.card.character_book, activeBook].find(
+      (b): b is TavernBook => !!b && passesContentFilter(deriveBookRating(b), safe),
+    )
     if (effectiveBook) {
       // 6000 字符注入预算：超长的书按 insertion_order 截断，避免撑爆上下文
       const ctx = bookToContext(effectiveBook, char.card.name, userName, cardLang, 6000)
@@ -541,8 +572,21 @@ export const useStore = create<State>((set, get) => ({
   },
 
   setSafeMode: (v) => {
+    // 未成年：安全模式锁定开启，不允许关闭
+    if (get().ageGate === 'minor' && !v) return
     saveSafeMode(v)
     set({ safeMode: v })
+  },
+
+  confirmAge: (age) => {
+    if (age < 18) {
+      saveAgeGate('minor')
+      saveSafeMode(true)
+      set({ ageGate: 'minor', safeMode: true })
+    } else {
+      saveAgeGate('adult')
+      set({ ageGate: 'adult' })
+    }
   },
 
   setPersona: (p) => set((s) => {

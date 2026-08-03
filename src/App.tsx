@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useStore } from './store'
-import { parseCharacterJson, parsePngCard, parseLorebookJson, detectImportKind, passesContentFilter, type TavernCard } from './lib/tavern'
+import { parseCharacterJson, parsePngCard, parseLorebookJson, detectImportKind, passesContentFilter, deriveBookRating, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
@@ -19,14 +19,151 @@ import './App.css'
 export default function App() {
   const store = useStore()
   const { view, lang } = store
+  const hasActiveChar = useStore((s) => s.characters.some((c) => c.id === s.activeCharId))
 
   useEffect(() => { store.init() }, [])
   // 中文=肥猫酒馆，其他语言=FATI Tavern
   useEffect(() => { document.title = docTitle(lang) }, [lang])
 
+  // 首启年龄确认门：未确认前不展示任何内容
+  if (store.ageGate === 'unset') return <AgeGate />
+
+  // 聊天 / 剧情是沉浸式全屏页（自带返回），不显示底部 tab
+  const inChat = view === 'chat' && hasActiveChar
+  const inStory = view === 'story'
+  const showTabBar = !inChat && !inStory
+
   return (
     <div className="app">
-      {view === 'gallery' ? <Gallery /> : view === 'chat' ? <ChatView /> : <StoryView />}
+      {inStory ? <StoryView /> : inChat ? <ChatView /> : (
+        <>
+          {view === 'gallery' && <Gallery />}
+          {view === 'chat' && <ChatTabEmpty />}
+          {view === 'lore' && <div className="tab-page"><LorebookPanel /></div>}
+          {view === 'settings' && <SettingsTab />}
+        </>
+      )}
+      {showTabBar && <TabBar />}
+    </div>
+  )
+}
+
+// ─── 首启年龄确认门 ─────────────────────────────────────
+// 未确认年龄前不进入应用；<18 岁强制开启并锁定安全模式
+function AgeGate() {
+  const lang = useStore((s) => s.lang)
+  const confirmAge = useStore((s) => s.confirmAge)
+  const [age, setAge] = useState('')
+  const [err, setErr] = useState(false)
+  function submit() {
+    const n = parseInt(age, 10)
+    if (Number.isNaN(n) || n < 1 || n > 120) { setErr(true); return }
+    confirmAge(n)
+  }
+  return (
+    <div className="age-gate">
+      <div className="age-gate-card">
+        <h2>{t(lang, 'age.title')}</h2>
+        <p className="age-gate-desc">{t(lang, 'age.desc')}</p>
+        <input
+          className="age-gate-input"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={120}
+          value={age}
+          placeholder={t(lang, 'age.placeholder')}
+          onChange={(e) => { setAge(e.target.value); setErr(false) }}
+          onKeyDown={(e) => e.key === 'Enter' && submit()}
+        />
+        {err && <p className="age-gate-err">{t(lang, 'age.invalid')}</p>}
+        <button className="age-gate-btn" onClick={submit}>{t(lang, 'age.confirm')}</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── 底部 Tab 导航 ───────────────────────────────────────
+function TabBar() {
+  const view = useStore((s) => s.view)
+  const lang = useStore((s) => s.lang)
+  const hasActiveChar = useStore((s) => s.characters.some((c) => c.id === s.activeCharId))
+  const { backToGallery, showChatTab, showLore, showSettings } = useStore.getState()
+
+  // 顺序为镜面反转：设置 → 世界书 → 聊天 → 角色（老张 2026-08-02 指定）
+  const tabs: { key: string; icon: string; label: string; active: boolean; go: () => void }[] = [
+    { key: 'settings', icon: '⚙️', label: t(lang, 'tab.settings'), active: view === 'settings', go: showSettings },
+    { key: 'books', icon: '📚', label: t(lang, 'tab.books'), active: view === 'lore', go: showLore },
+    { key: 'chat', icon: '💬', label: t(lang, 'tab.chat'), active: view === 'chat' && hasActiveChar, go: showChatTab },
+    { key: 'chars', icon: '🎭', label: t(lang, 'tab.chars'), active: view === 'gallery', go: backToGallery },
+  ]
+
+  return (
+    <nav className="tabbar">
+      {tabs.map((tab) => (
+        <button key={tab.key} className={tab.active ? 'active' : ''} onClick={tab.go}>
+          <span className="tab-icon">{tab.icon}</span>
+          <span className="tab-label">{tab.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+}
+
+// 「聊天」tab：还没有可恢复的聊天时的占位页
+function ChatTabEmpty() {
+  const lang = useStore((s) => s.lang)
+  const backToGallery = useStore((s) => s.backToGallery)
+  return (
+    <div className="tab-page chat-tab-empty">
+      <p>{t(lang, 'chat.pickFirst')}</p>
+      <button className="btn-import" onClick={backToGallery}>{t(lang, 'tab.chars')}</button>
+    </div>
+  )
+}
+
+// 「设置」tab：P2P 联机面板 + 模型/语言/安全设置
+function SettingsTab() {
+  const lang = useStore((s) => s.lang)
+  const characters = useStore((s) => s.characters)
+  const activeCharId = useStore((s) => s.activeCharId)
+  const openCharacter = useStore((s) => s.openCharacter)
+  const p2pState = useP2PStore((s) => s.p2pState)
+  const p2pMembers = useP2PStore((s) => s.p2pMembers)
+  const disconnectP2P = useP2PStore((s) => s.disconnectP2P)
+  const [showP2P, setShowP2P] = useState(false)
+  const [p2pMode, setP2PMode] = useState<'invite' | 'join'>('join')
+
+  return (
+    <div className="tab-page settings-tab">
+      <button className="btn-import settings-p2p-toggle" onClick={() => setShowP2P((v) => !v)}>
+        👥 {t(lang, 'p2pTitle')}
+      </button>
+      {showP2P && (
+        <div className="p2p-panel">
+          <h3>{t(lang, 'p2pTitle')}</h3>
+          {p2pState === 'idle' || p2pState === 'disconnected' ? (
+            <>
+              <div className="chat-tabs">
+                <button className={`chat-tab ${p2pMode === 'join' ? 'active' : ''}`} onClick={() => setP2PMode('join')}>{t(lang, 'p2pJoinRoom')}</button>
+                <button className={`chat-tab ${p2pMode === 'invite' ? 'active' : ''}`} onClick={() => setP2PMode('invite')}>{t(lang, 'p2pCreateInvite')}</button>
+              </div>
+              {p2pMode === 'join' ? <P2PJoinPanel /> : <P2PInvitePanel />}
+            </>
+          ) : (
+            <div className="p2p-panel">
+              <p>{t(lang, 'p2pJoined')} · {t(lang, 'p2pMembers')}: {p2pMembers.length + 1}</p>
+              <button className="btn-p2p" disabled={characters.length === 0} onClick={() => {
+                useP2PStore.getState().setP2PChatTab('group')
+                const id = activeCharId || characters[0]?.id
+                if (id) { openCharacter(id); setShowP2P(false) }
+              }}>{t(lang, 'p2pEnterChat')}</button>
+              <button className="btn-p2p" onClick={disconnectP2P}>{t(lang, 'p2pDisconnect')}</button>
+            </div>
+          )}
+        </div>
+      )}
+      <SettingsPanel />
     </div>
   )
 }
@@ -93,17 +230,11 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, activeCharId, safeMode } = useStore()
+  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, safeMode } = useStore()
   const importLorebook = useLoreStore((s) => s.importLorebook)
   const [dragOver, setDragOver] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [editingChar, setEditingChar] = useState<StoredCharacter | null>(null)
-  const [showP2P, setShowP2P] = useState(false)
-  const [p2pMode, setP2PMode] = useState<'invite' | 'join'>('join')
-  const p2pState = useP2PStore(s => s.p2pState)
-  const p2pMembers = useP2PStore(s => s.p2pMembers)
-  const disconnectP2P = useP2PStore(s => s.disconnectP2P)
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -112,6 +243,8 @@ function Gallery() {
   const showCatalog = userChars.length === 0 // 没导入过卡 → 显示内置目录
   // 安全模式：隐藏 adult 卡（内置卡均为 all，不受影响）
   const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode)
+  // 被安全模式隐藏的卡数（给用户可见的反馈）
+  const hiddenCount = safeMode ? characters.filter((c) => !passesSafeMode(c)).length : 0
 
   // 每个文件独立解析，成功/失败都必须给用户可见反馈
   // JSON 先用 detectImportKind 分流：角色卡 → 角色库，世界书 → 世界书库
@@ -172,35 +305,8 @@ function Gallery() {
         <h1><BrandLogo />{brandName(lang)}</h1>
         <div className="gallery-actions">
           <button className="btn-import" onClick={() => fileRef.current?.click()}>{t(lang, 'gallery.import')}</button>
-          <button className="btn-icon" onClick={() => setShowSettings(!showSettings)}>⚙</button>
-          <button className="btn-icon" onClick={() => setShowP2P(v => !v)} title={t(lang, 'p2pTitle')}>👥</button>
         </div>
       </header>
-
-      {showP2P && (
-        <div className="p2p-panel">
-          <h3>{t(lang, 'p2pTitle')}</h3>
-          {p2pState === 'idle' || p2pState === 'disconnected' ? (
-            <>
-              <div className="chat-tabs">
-                <button className={`chat-tab ${p2pMode === 'join' ? 'active' : ''}`} onClick={() => setP2PMode('join')}>{t(lang, 'p2pJoinRoom')}</button>
-                <button className={`chat-tab ${p2pMode === 'invite' ? 'active' : ''}`} onClick={() => setP2PMode('invite')}>{t(lang, 'p2pCreateInvite')}</button>
-              </div>
-              {p2pMode === 'join' ? <P2PJoinPanel /> : <P2PInvitePanel />}
-            </>
-          ) : (
-            <div className="p2p-panel">
-              <p>{t(lang, 'p2pJoined')} · {t(lang, 'p2pMembers')}: {p2pMembers.length + 1}</p>
-              <button className="btn-p2p" disabled={characters.length === 0} onClick={() => {
-                useP2PStore.getState().setP2PChatTab('group')
-                const id = activeCharId || characters[0]?.id
-                if (id) { openCharacter(id); setShowP2P(false) }
-              }}>{t(lang, 'p2pEnterChat')}</button>
-              <button className="btn-p2p" onClick={disconnectP2P}>{t(lang, 'p2pDisconnect')}</button>
-            </div>
-          )}
-        </div>
-      )}
 
       <input
         ref={fileRef} type="file" accept=".png,.json" multiple hidden
@@ -208,9 +314,10 @@ function Gallery() {
       />
 
       <div className="gallery-content">
-      {showSettings && <SettingsPanel />}
-
-      {showCatalog ? (
+        {hiddenCount > 0 && (
+          <p className="safe-hidden-note">{t(lang, 'gallery.safeHidden', { n: hiddenCount })}</p>
+        )}
+        {showCatalog ? (
         <div className="catalog-view">
           <div className="catalog-hero">
             <h2>{t(lang, 'landing.title2')}</h2>
@@ -271,14 +378,9 @@ function Gallery() {
           ))}
         </div>
       )}
-      {/* 世界书管理区：导入过世界书后才显示（组件内部判空） */}
-      <LorebookPanel />
       </div>
 
-      <footer className="gallery-footer">
-        <span>{t(lang, 'gallery.footer')}</span>
-        <span className="ugc-note">{t(lang, 'gallery.ugcNote')}</span>
-      </footer>
+
 
       {importResult && (
         <div className={`import-toast ${importResult.fails.length > 0 ? 'has-fail' : ''}`} onClick={() => setImportResult(null)}>
@@ -392,7 +494,7 @@ function ChatView() {
     lang, safetyNotice, dismissSafetyNotice, webllmProgress,
     impSuggestions, impLoading, impRefining, impExpansion,
     fetchImpersonate, refineImpersonate, setImpExpansion, clearImpersonate,
-    bindLorebookToCharacter,
+    bindLorebookToCharacter, safeMode,
   } = useStore()
   const lorebooks = useLoreStore(s => s.lorebooks)
   const activeLorebookId = useLoreStore(s => s.activeLorebookId)
@@ -408,15 +510,25 @@ function ChatView() {
   const dismissP2PSafetyNotice = useP2PStore(s => s.dismissP2PSafetyNotice)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  // BYOK 隐私提示：非固定、可关闭，关闭后本机不再显示
+  const [byokNoteDismissed, setByokNoteDismissed] = useState(() => localStorage.getItem('tavern-byok-note-dismissed') === '1')
+  function dismissByokNote() {
+    localStorage.setItem('tavern-byok-note-dismissed', '1')
+    setByokNoteDismissed(true)
+  }
+
   const char = characters.find((c) => c.id === activeCharId)
   const conv = conversations.find((c) => c.id === activeConvId)
   const messages = conv?.messages ?? []
 
   // 当前生效的世界书（与 sendMessage 注入优先级一致：角色绑定 > 卡自带 > 全局激活）
+  // safeMode：adult 世界书视为不生效（与注入端一致）
   const effectiveBook = char
-    ? (char.boundLorebookId
-        ? lorebooks.find((l) => l.id === char.boundLorebookId)?.book
-        : char.card.character_book ?? (activeLorebookId ? lorebooks.find((l) => l.id === activeLorebookId)?.book : undefined))
+    ? [
+        char.boundLorebookId ? lorebooks.find((l) => l.id === char.boundLorebookId)?.book : undefined,
+        char.card.character_book,
+        activeLorebookId ? lorebooks.find((l) => l.id === activeLorebookId)?.book : undefined,
+      ].find((b): b is NonNullable<typeof b> => !!b && passesContentFilter(deriveBookRating(b), safeMode))
     : undefined
 
   useEffect(() => {
@@ -509,7 +621,7 @@ function ChatView() {
                   ? t(lang, 'chat.loreCurrent', { name: effectiveBook.name || t(lang, 'lore.untitled') })
                   : t(lang, 'chat.loreNone')}
               </p>
-              {lorebooks.map((lb) => (
+              {lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode)).map((lb) => (
                 <button
                   key={lb.id}
                   className={`chat-lore-option ${char.boundLorebookId === lb.id ? 'bound' : ''}`}
@@ -538,6 +650,14 @@ function ChatView() {
           <div className="crisis-bar">
             <span>💛 {t(lang, 'chat.crisis')}</span>
             <button onClick={() => { dismissSafetyNotice(); dismissP2PSafetyNotice() }}>{t(lang, 'chat.crisisDismiss')}</button>
+          </div>
+        )}
+
+        {/* BYOK 隐私提示：不固定、可关闭 */}
+        {!byokNoteDismissed && (
+          <div className="byok-note">
+            <span>🔒 {t(lang, 'chat.byokNote')}</span>
+            <button onClick={dismissByokNote}>✕</button>
           </div>
         )}
 
@@ -793,7 +913,9 @@ function WebLLMModelPicker({
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode } = useStore()
+  const { endpoint, setEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode, ageGate } = useStore()
+  // 未成年：安全模式锁定开启
+  const safeLocked = ageGate === 'minor'
   const [models, setModels] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [statusMsg, setStatusMsg] = useState('')
@@ -862,10 +984,10 @@ function SettingsPanel() {
       </div>
       <div className="safe-mode-row">
         <label className="safe-mode-label">
-          <input type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} />
+          <input type="checkbox" checked={safeMode} disabled={safeLocked} onChange={(e) => setSafeMode(e.target.checked)} />
           <span>{t(lang, 'settings.safeMode')}</span>
         </label>
-        <span className="safe-mode-hint">{t(lang, 'settings.safeModeDesc')}</span>
+        <span className="safe-mode-hint">{safeLocked ? t(lang, 'settings.safeModeLocked') : t(lang, 'settings.safeModeDesc')}</span>
       </div>
       <div className="presets">
         {PRESETS.map((p) => (
@@ -991,6 +1113,10 @@ function SettingsPanel() {
           </div>
         </>
       )}
+      <footer className="settings-disclaimer">
+        <p>{t(lang, 'settings.disclaimerByok')}</p>
+        <p>{t(lang, 'settings.disclaimerContent')}</p>
+      </footer>
     </div>
   )
 }
