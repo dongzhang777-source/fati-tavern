@@ -32,6 +32,7 @@ export interface StoredLorebook {
   book: TavernBook
   source?: string // 来源文件名，便于用户辨认
   imported: number
+  builtin?: boolean // 内置样本：不落库，删除仅当次会话生效
 }
 
 // ── 剧情模式（v2 新增）──

@@ -7,6 +7,7 @@
 import { create } from 'zustand'
 import type { TavernBook } from '../../lib/tavern'
 import { dbGetLorebooks, dbPutLorebook, dbDeleteLorebook, genId, type StoredLorebook } from '../../lib/db'
+import { BUILTIN_LOREBOOKS } from '../../lib/builtin-lorebooks'
 
 const LS_ACTIVE_KEY = 'tavern-active-lorebook'
 
@@ -34,7 +35,15 @@ export const useLoreStore = create<LoreState>((set, get) => ({
   activeLorebookId: loadActiveLorebookId(),
 
   initLore: async () => {
-    const lorebooks = await dbGetLorebooks()
+    const userBooks = await dbGetLorebooks()
+    // 内置样本世界书（不写 IndexedDB，标记 builtin: true；与内置角色同模式）
+    const builtinBooks: StoredLorebook[] = BUILTIN_LOREBOOKS.map((b) => ({
+      id: b.id,
+      book: b.book,
+      imported: 0, // 时间戳为 0，排在用户导入的书后面
+      builtin: true,
+    }))
+    const lorebooks = [...userBooks, ...builtinBooks]
     // 激活 id 指向已删除的书时静默清理
     const active = get().activeLorebookId
     const cleaned = active && !lorebooks.some((l) => l.id === active) ? null : active
