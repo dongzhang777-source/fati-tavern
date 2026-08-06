@@ -100,6 +100,37 @@ export const PRESETS: { label: string; baseUrl: string; hint: string }[] = [
   { label: '自定义', baseUrl: '', hint: '' },
 ]
 
+// ── L-6/L-8/L-9 安全加固 ─────────────────────────────────
+/** L-6：baseUrl 校验——仅 http/https，拒绝 URL 内嵌凭据与非法协议（file:// 等） */
+export function validateBaseUrl(baseUrl: string): string | null {
+  try {
+    const u = new URL(baseUrl)
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return '仅支持 http/https 端点'
+    if (u.username || u.password) return '端点地址不得内嵌账号密码'
+    return null
+  } catch {
+    return '端点地址格式无效'
+  }
+}
+
+/** L-9：错误文本脱敏——部分提供商/代理会在错误体回显 Authorization 头，防截屏外泄 key */
+export function sanitizeErrorText(text: string): string {
+  return text
+    .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, 'Bearer ***')
+    .replace(/\bsk-[A-Za-z0-9_\-]{8,}/g, 'sk-***')
+}
+
+// L-8：请求超时常量
+const REQUEST_TIMEOUT_MS = 120_000   // 整体兑底
+const STREAM_IDLE_TIMEOUT_MS = 60_000 // 流式阶段：最后一个 chunk 后 60s 无数据
+const MAX_SSE_BUFFER = 1_000_000     // L-7：SSE 未切行 buffer 上限（正常单事件远小于此）
+
+/** 组合用户 signal 与整体超时 */
+function withTimeout(signal: AbortSignal | undefined, ms: number): AbortSignal {
+  const timeout = AbortSignal.timeout(ms)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 /**
  * 流式 POST /chat/completions。
  * 逐 chunk 回调 onChunk，支持 AbortSignal 取消。
@@ -110,6 +141,9 @@ export async function streamChat(
   signal: AbortSignal,
   onChunk: (delta: string) => void,
 ): Promise<void> {
+  // L-6：协议/凭据校验
+  const invalid = validateBaseUrl(endpoint.baseUrl)
+  if (invalid) throw new Error(invalid)
   const url = `${endpoint.baseUrl.replace(/\/$/, '')}/chat/completions`
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (endpoint.apiKey && endpoint.apiKey !== 'not-needed') {
@@ -129,12 +163,14 @@ export async function streamChat(
       enable_thinking: false,
       chat_template_kwargs: { enable_thinking: false },
     }),
-    signal,
+    // L-8：整体超时兑底（半开连接不再永久挂起）
+    signal: withTimeout(signal, REQUEST_TIMEOUT_MS),
   })
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+    // L-9：错误体脱敏后再抛出
+    throw new Error(`HTTP ${res.status}: ${sanitizeErrorText(text.slice(0, 200))}`)
   }
   if (!res.body) throw new Error('响应体为空')
 
@@ -143,10 +179,23 @@ export async function streamChat(
   const filter = new ThinkTagFilter()
   let buffer = ''
 
+  // L-8：流式 idle 超时辅助——60s 无新 chunk 视为端点挂死
+  const idleRead = (): Promise<ReadableStreamReadResult<Uint8Array>> => {
+    let timer: ReturnType<typeof setTimeout>
+    return Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('流式读取超时（60s 无新数据）')), STREAM_IDLE_TIMEOUT_MS)
+      }),
+    ]).finally(() => clearTimeout(timer!)) as Promise<ReadableStreamReadResult<Uint8Array>>
+  }
+
   while (true) {
-    const { done, value } = await reader.read()
+    const { done, value } = await idleRead()
     if (done) break
     buffer += decoder.decode(value, { stream: true })
+    // L-7：buffer 上界——无换行长流不再无限吃内存
+    if (buffer.length > MAX_SSE_BUFFER) throw new Error('响应格式异常（单事件过大）')
     const lines = buffer.split('\n')
     buffer = lines.pop() || ''
     for (const line of lines) {
@@ -160,7 +209,7 @@ export async function streamChat(
       }
       try {
         const json = JSON.parse(data)
-        if (json.error) throw new Error(json.error.message || '模型返回错误')
+        if (json.error) throw new Error(sanitizeErrorText(String(json.error.message || '模型返回错误')))
         // 忽略 reasoning_content（部分模型单独字段输出推理）
         const delta = json.choices?.[0]?.delta?.content
         if (delta) {
@@ -178,13 +227,16 @@ export async function streamChat(
 }
 
 /** 获取可用模型列表 */
-export async function fetchModels(endpoint: EndpointConfig): Promise<string[]> {
+export async function fetchModels(endpoint: EndpointConfig, signal?: AbortSignal): Promise<string[]> {
+  const invalid = validateBaseUrl(endpoint.baseUrl)
+  if (invalid) throw new Error(invalid)
   const url = `${endpoint.baseUrl.replace(/\/$/, '')}/models`
   const headers: Record<string, string> = {}
   if (endpoint.apiKey && endpoint.apiKey !== 'not-needed') {
     headers['Authorization'] = `Bearer ${endpoint.apiKey}`
   }
-  const res = await fetch(url, { headers })
+  // L-8：补超时与可取消 signal
+  const res = await fetch(url, { headers, signal: withTimeout(signal, REQUEST_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
   const list = Array.isArray(data?.data) ? data.data : []
@@ -195,7 +247,9 @@ export async function fetchModels(endpoint: EndpointConfig): Promise<string[]> {
  * 发送一条真实测试消息（非流式），验证 /chat/completions 全链路。
  * /models 通了不代表聊天接口能用——这才是产品信任的验证点。
  */
-export async function testChat(endpoint: EndpointConfig): Promise<string> {
+export async function testChat(endpoint: EndpointConfig, signal?: AbortSignal): Promise<string> {
+  const invalid = validateBaseUrl(endpoint.baseUrl)
+  if (invalid) throw new Error(invalid)
   const url = `${endpoint.baseUrl.replace(/\/$/, '')}/chat/completions`
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (endpoint.apiKey && endpoint.apiKey !== 'not-needed') {
@@ -210,13 +264,16 @@ export async function testChat(endpoint: EndpointConfig): Promise<string> {
       stream: false,
       max_tokens: 8,
     }),
+    // L-8：补超时与可取消 signal
+    signal: withTimeout(signal, REQUEST_TIMEOUT_MS),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+    // L-9：错误体脱敏
+    throw new Error(`HTTP ${res.status}: ${sanitizeErrorText(text.slice(0, 200))}`)
   }
   const data = await res.json()
-  if (data.error) throw new Error(data.error.message || '模型返回错误')
+  if (data.error) throw new Error(sanitizeErrorText(String(data.error.message || '模型返回错误')))
   const text = data.choices?.[0]?.message?.content
   if (typeof text !== 'string') throw new Error('响应格式异常')
   return text

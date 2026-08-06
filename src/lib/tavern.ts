@@ -37,24 +37,33 @@ export interface TavernBook {
 }
 
 // ─── 从任意 JSON 对象提取角色卡字段（兼容 v1 / v2）─────────
+// M-4：统一字符串强制——白名单重建只保证「不多字段」，不保证类型；
+// 畍形类型（如 name: 123）会让下游 .replace/.match 崩溃且毒数据持久化到 IDB
+function str(v: unknown): string {
+  if (typeof v === 'string') return v
+  if (v == null) return ''
+  return String(v)
+}
+
 export function parseCharacterJson(raw: any): TavernCard | null {
   if (!raw || typeof raw !== 'object') return null
 
   // V2: 数据在 data 下
   const d = raw.data ?? raw
   const card: TavernCard = {
-    name: d.name || '未命名角色',
-    description: d.description || '',
-    personality: d.personality || '',
-    scenario: d.scenario || '',
-    first_mes: d.first_mes || '',
-    mes_example: d.mes_example || '',
-    system_prompt: d.system_prompt || '',
-    creator_notes: d.creator_notes || '',
-    creator: d.creator || '',
-    tags: d.tags || [],
+    name: str(d.name) || '未命名角色',
+    description: str(d.description),
+    personality: str(d.personality),
+    scenario: str(d.scenario),
+    first_mes: str(d.first_mes),
+    mes_example: str(d.mes_example),
+    system_prompt: str(d.system_prompt),
+    creator_notes: str(d.creator_notes),
+    creator: str(d.creator),
+    // M-4：元素强制字符串 + 长度/数量上限（与 normalizeBook 对齐）
+    tags: Array.isArray(d.tags) ? d.tags.slice(0, 50).map((t: any) => str(t).slice(0, 100)) : [],
     character_book: d.character_book ? normalizeBook(d.character_book) : undefined,
-    contentRating: deriveContentRating(d), // 显式分级优先，其次按 tags 推断
+    contentRating: deriveContentRating(d), // H-3：显式声明只加严不放宽
   }
   return card
 }
@@ -72,17 +81,31 @@ function isRating(v: unknown): v is ContentRating {
   return v === 'all' || v === 'suggestive' || v === 'adult' || v === 'unknown'
 }
 
-// 分级推断：来源显式声明 > tags 关键词 > unknown
-// UGC 合规钩子——导入时标记，画廊展示 18+ 徽标
-function deriveContentRating(d: any): ContentRating {
-  if (isRating(d.contentRating)) return d.contentRating
-  return ratingFromTags(Array.isArray(d.tags) ? d.tags.map((t: any) => String(t)) : undefined) ?? 'unknown'
+// H-3：分级严格度序（数值越大越严）。UGC 显式声明不可信——
+// 只允许「加严」tags 推断结果，不允许「放宽」（fail-closed）：
+// 成人卡自声明 all 但 tags 含 nsfw → 仍定级 adult。unknown 严格度高于
+// suggestive：未自证安全的内容不应比已声明的宽松内容更可见。
+const RATING_SEVERITY: Record<ContentRating, number> = { all: 0, suggestive: 1, unknown: 2, adult: 3 }
+
+function stricter(a: ContentRating, b: ContentRating): ContentRating {
+  return RATING_SEVERITY[a] >= RATING_SEVERITY[b] ? a : b
 }
 
-// 世界书分级：显式分级 > tags 推断 > unknown（与角色卡语义对齐，供 safeMode 过滤）
+// 分级推断：max(显式声明, tags 推断)，都缺 → unknown
+// UGC 合规钩子——导入时标记，画廊展示 18+ 徽标
+function deriveContentRating(d: any): ContentRating {
+  const declared = isRating(d.contentRating) ? d.contentRating : null
+  const fromTags = ratingFromTags(Array.isArray(d.tags) ? d.tags.map((t: any) => String(t)) : undefined)
+  if (declared && fromTags) return stricter(declared, fromTags)
+  return declared ?? fromTags ?? 'unknown'
+}
+
+// 世界书分级：与角色卡同语义（H-3 fail-closed）
 export function deriveBookRating(book: TavernBook): ContentRating {
-  if (book.contentRating) return book.contentRating
-  return ratingFromTags(book.tags) ?? 'unknown'
+  const declared = isRating(book.contentRating) ? book.contentRating : null
+  const fromTags = ratingFromTags(book.tags)
+  if (declared && fromTags) return stricter(declared, fromTags)
+  return declared ?? fromTags ?? 'unknown'
 }
 
 // ─── 世界书 JSON ──────────────────────────────────────────
@@ -96,15 +119,16 @@ export function parseLorebookJson(raw: any): TavernBook | null {
 
 function normalizeBook(raw: any): TavernBook {
   return {
-    name: raw.name,
-    description: raw.description,
-    tags: Array.isArray(raw.tags) ? raw.tags.map((t: any) => String(t)) : undefined,
+    name: raw.name !== undefined ? str(raw.name) : undefined,
+    description: raw.description !== undefined ? str(raw.description) : undefined,
+    tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 50).map((t: any) => str(t).slice(0, 100)) : undefined,
     contentRating: isRating(raw.contentRating) ? raw.contentRating : undefined,
-    entries: (raw.entries || []).map((e: any) => ({
-      keys: Array.isArray(e.keys) ? e.keys : [],
-      content: e.content || '',
+    // M-4：keys/content 同样强制字符串，防畍形类型下游崩溃；条目数上限防资源耗尽
+    entries: (Array.isArray(raw.entries) ? raw.entries : []).slice(0, 500).map((e: any) => ({
+      keys: Array.isArray(e.keys) ? e.keys.slice(0, 100).map((k: any) => str(k).slice(0, 200)) : [],
+      content: str(e.content),
       enabled: e.enabled !== false,
-      insertion_order: e.insertion_order ?? 0,
+      insertion_order: typeof e.insertion_order === 'number' ? e.insertion_order : 0,
       position: e.position === 'after_char' ? 'after_char' : 'before_char',
       constant: e.constant === true,
     })),
@@ -206,13 +230,35 @@ async function decodeCharData(data: string): Promise<string> {
 }
 
 // 用浏览器原生 DecompressionStream 解压（gzip / deflate）
+// M-5：分段累计输出字节数，超 20MB 主动 cancel——防解压炸弹（2KB 高压缩比
+// payload 可解出数百 MB 直接 OOM）
+const MAX_DECOMPRESSED_BYTES = 20 * 1024 * 1024
 async function decompressToText(bytes: Uint8Array, format: CompressionFormat, encoding: string): Promise<string> {
   try {
     const stream = new Blob([bytes as BlobPart]).stream().pipeThrough(new DecompressionStream(format))
-    const buf = await new Response(stream).arrayBuffer()
-    return new TextDecoder(encoding).decode(buf)
-  } catch {
-    throw new Error(`角色卡数据解压失败（${format}）`)
+    const reader = stream.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (value) {
+        total += value.byteLength
+        if (total > MAX_DECOMPRESSED_BYTES) {
+          await reader.cancel().catch(() => {})
+          throw new Error('too large')
+        }
+        chunks.push(value)
+      }
+    }
+    const merged = new Uint8Array(total)
+    let off = 0
+    for (const c of chunks) { merged.set(c, off); off += c.byteLength }
+    return new TextDecoder(encoding).decode(merged)
+  } catch (e) {
+    throw new Error(e instanceof Error && e.message === 'too large'
+      ? '角色卡数据解压后过大（>20MB），已拒绝'
+      : `角色卡数据解压失败（${format}）`)
   }
 }
 
@@ -357,11 +403,15 @@ export function personaLine(description: string, lang: 'zh' | 'en'): string {
 
 // ─── 安全模式过滤（Phase: fati 嫁接）─────────────────────────
 // safeMode=false → 全部可见；safeMode=true → 隐藏 adult
-// 与 fati passesContentFilter 语义对齐（suggestive/unknown/all 始终可见）
+// H-3：isMinor（ageGate=minor）时 fail-closed——unknown/未定级视同 adult，
+// UGC 未自证安全的内容不对未成年展示（纯本地 PWA 无服务端审核兑底，此过滤是唯一防线）
 export function passesContentFilter(
   rating: TavernCard['contentRating'] | undefined,
   safeMode: boolean,
+  isMinor = false,
 ): boolean {
   if (!safeMode) return true
-  return rating !== 'adult'
+  if (rating === 'adult') return false
+  if (isMinor && (rating === 'unknown' || rating === undefined)) return false
+  return true
 }

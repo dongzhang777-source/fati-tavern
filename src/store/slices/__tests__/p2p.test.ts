@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useP2PStore } from '../p2p'
 import type { P2PMessage } from '../../../p2p/client'
+import { t, detectLang } from '../../../lib/i18n'
 
 const mem = new Map<string, string>()
 vi.stubGlobal('localStorage', {
@@ -55,9 +56,15 @@ describe('useP2PStore 消息归约', () => {
     expect(useP2PStore.getState().p2pComputes[0].result).toBe('')
   })
 
-  it('reject / _max_retries 写入 p2pError', () => {
+  it('reject 走白名单映射（L-5）/ _max_retries 写入 p2pError', () => {
+    const lang = detectLang()
     handle({ kind: 'reject', reason: 'invalid token' })
-    expect(useP2PStore.getState().p2pError).toBe('invalid token')
+    expect(useP2PStore.getState().p2pError).toBe(t(lang, 'p2pRejectInvalid'))
+    handle({ kind: 'reject', reason: 'token expired 已过期' })
+    expect(useP2PStore.getState().p2pError).toBe(t(lang, 'p2pRejectExpired'))
+    // 未知 reason 不得回显原文（防恶意 relay 注入文案）
+    handle({ kind: 'reject', reason: '<script>恶意文案</script>' })
+    expect(useP2PStore.getState().p2pError).toBe(t(lang, 'p2pRejectGeneric'))
     handle({ kind: '_max_retries' })
     expect(useP2PStore.getState().p2pError).toBe('reconnect_failed')
   })
@@ -89,8 +96,16 @@ describe('useP2PStore 消息归约', () => {
     handle({ kind: 'chat', id: 'dup_1', ts: 2, body: 'msg', from: 'p1' })
     expect(useP2PStore.getState().p2pMessages.length).toBe(1)
 
-    for (let i = 0; i < 250; i++) {
-      handle({ kind: 'chat', id: `m_${i}`, ts: i, body: `msg_${i}`, from: 'p1' })
+    // L-1 入站限速 60/s：先跨窗口重置预算，再验证滑动窗口本身不受影响
+    vi.useFakeTimers()
+    try {
+      vi.advanceTimersByTime(1100) // 重置限速窗口（模块级计数器跨测试残留）
+      for (let i = 0; i < 250; i++) {
+        if (i > 0 && i % 55 === 0) vi.advanceTimersByTime(1100)
+        handle({ kind: 'chat', id: `m_${i}`, ts: i, body: `msg_${i}`, from: 'p1' })
+      }
+    } finally {
+      vi.useRealTimers()
     }
     expect(useP2PStore.getState().p2pMessages.length).toBe(200)
     expect(useP2PStore.getState().p2pMessages[0].id).toBe('m_50')

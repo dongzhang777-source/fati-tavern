@@ -72,8 +72,40 @@ export function isValidRelayUrl(url: string): boolean {
   try {
     if (!url.startsWith('ws://') && !url.startsWith('wss://')) return false
     // P0-2: 严格 URL 格式验证，防止畸形 URL 绕过（与 fati 桌面端对齐）
-    new URL(url.replace(/^ws/, 'http'))
+    const u = new URL(url.replace(/^ws/, 'http'))
+    // L-4：非回环主机强制 wss://——bearer token 不得经明文链路传输
+    if (url.startsWith('ws://') && u.hostname !== '127.0.0.1' && u.hostname.toLowerCase() !== 'localhost' && u.hostname !== '::1') {
+      return false
+    }
     return true
+  } catch {
+    return false
+  }
+}
+
+/** 从票提取算力端 Ed25519 公钥（供握手帧验签用，H-2） */
+export function extractServerPubFromToken(token: string): string | null {
+  try {
+    const [payloadB64] = token.split('.')
+    if (!payloadB64) return null
+    const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(payloadB64))) as InvitePayload
+    return typeof payload.pk === 'string' && payload.pk ? payload.pk : null
+  } catch {
+    return null
+  }
+}
+
+/** H-2：Ed25519 帧签名验证（pk/sig 均为 b64url）。验签消息格式由调用方约定 */
+export async function verifyFrameSignature(pubB64url: string, sigB64url: string, message: string): Promise<boolean> {
+  try {
+    const pubKey = await crypto.subtle.importKey(
+      'raw', toBuf(b64urlDecode(pubB64url)), 'Ed25519', false, ['verify'],
+    )
+    return await crypto.subtle.verify(
+      'Ed25519', pubKey,
+      toBuf(b64urlDecode(sigB64url)),
+      toBuf(new TextEncoder().encode(message)),
+    )
   } catch {
     return false
   }
@@ -143,6 +175,14 @@ export async function verifyInvite(token: string): Promise<VerifyResult> {
     if (!payloadB64 || !sigB64) return { ok: false, reason: 'token 格式错误' }
     const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(payloadB64))) as InvitePayload
 
+    // M-1：exp 强校验——缺失/非有限数时旧逻辑 `undefined > now === false` 直接放行，畸形票永不过期
+    if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+      return { ok: false, reason: 'token 格式异常（缺少过期时间）' }
+    }
+    // M-1：n 枚举校验（缺失容忍，按多次用处理；非法值拒绝）
+    if (payload.n !== undefined && payload.n !== 'single' && payload.n !== 'multi') {
+      return { ok: false, reason: 'token 格式异常（用次标记非法）' }
+    }
     // 1. 过期检查
     if (Math.floor(Date.now() / 1000) > payload.exp) {
       return { ok: false, reason: 'token 已过期', payload }

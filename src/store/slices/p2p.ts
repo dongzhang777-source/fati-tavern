@@ -12,6 +12,17 @@ export interface P2PCompute { id: string; prompt: string; result: string; done: 
 const LS_RELAY_KEY = 'tavern-p2p-relay'
 export const DEFAULT_RELAY = 'ws://127.0.0.1:8081'
 
+// L-1：入站防护——成员列表硬上限 + 入站消息令牌桶限速（防恶意 relay/peer 灌帧）
+const MAX_MEMBERS = 64
+const INBOUND_RATE_PER_SEC = 60
+let inboundCount = 0
+let inboundWindowStart = Date.now()
+function inboundAllowed(): boolean {
+  const now = Date.now()
+  if (now - inboundWindowStart >= 1000) { inboundWindowStart = now; inboundCount = 0 }
+  return ++inboundCount <= INBOUND_RATE_PER_SEC
+}
+
 export function loadRelayUrl(): string {
   try { return localStorage.getItem(LS_RELAY_KEY) || DEFAULT_RELAY } catch { return DEFAULT_RELAY }
 }
@@ -100,8 +111,7 @@ export const useP2PStore = create<P2PState>((set, get) => ({
     if (detectSelfHarm(body)) {
       set({ p2pSafetyNotice: true })
     }
-    // N-B1 修正: sendChat 加密 + body 明文并存，加密失败时 .catch() 降级为明文
-    // QNEW-1: encryptMessage 的 .catch() 已在 client 层处理，失败时自动降级
+    // H-1 修正: sendChat 内部三态策略——有 groupKey 仅发密文，密钥未建立时排队，绝不降级明文
     client.sendChat(body)
     const me = get().p2pPeerId || 'me'
     set(s => ({
@@ -131,6 +141,9 @@ export const useP2PStore = create<P2PState>((set, get) => ({
   },
 
   _handleP2PMessage: (msg) => {
+    // L-1：入站限速——超限帧静默丢弃（内部事件不受限，保障 UI 状态机）
+    const internal = typeof msg.kind === 'string' && msg.kind.startsWith('_')
+    if (!internal && !inboundAllowed()) return
     switch (msg.kind) {
       case '_state_change':
         set({ p2pState: msg.state as ClientState })
@@ -148,23 +161,40 @@ export const useP2PStore = create<P2PState>((set, get) => ({
         set({ p2pQueueWarning: t(lang, key) })
         return
       }
+      case '_send_failed': {
+        // H-1：加密失败丢弃（不降级明文），通知用户消息未发出
+        set({ p2pQueueWarning: t(detectLang(), 'p2pSendFailed') })
+        return
+      }
       case '_max_retries':
         set({ p2pError: 'reconnect_failed' })
         return
-      case 'reject':
-        set({ p2pError: String(msg.reason || 'rejected') })
+      case 'reject': {
+        // L-5：reject reason 走白名单映射——恶意 relay 不得向 UI 注入任意文案（钓鱼面）
+        const reason = String(msg.reason || '')
+        const lang2 = detectLang()
+        const mapped = /expired|过期/.test(reason) ? t(lang2, 'p2pRejectExpired')
+          : /invalid|无效|篡改/.test(reason) ? t(lang2, 'p2pRejectInvalid')
+          : /full|满/.test(reason) ? t(lang2, 'p2pRejectFull')
+          : t(lang2, 'p2pRejectGeneric')
+        set({ p2pError: mapped })
         return
+      }
       case 'welcome':
         set({
           p2pPeerId: msg.peerId as string,
-          p2pMembers: (msg.peers as P2PMember[]) || [],
+          // L-1：成员列表硬上限
+          p2pMembers: ((msg.peers as P2PMember[]) || []).slice(0, MAX_MEMBERS),
           p2pError: null,
         })
         return
       case 'presence':
-        set(s => s.p2pMembers.some(m => m.id === msg.from)
-          ? s
-          : { p2pMembers: [...s.p2pMembers, { id: msg.from as string, isCompute: !!msg.isCompute }] })
+        set(s => {
+          if (s.p2pMembers.some(m => m.id === msg.from)) return s
+          // L-1：超限拒绝新成员
+          if (s.p2pMembers.length >= MAX_MEMBERS) return s
+          return { p2pMembers: [...s.p2pMembers, { id: msg.from as string, isCompute: !!msg.isCompute }] }
+        })
         return
       case 'leave':
         set(s => ({ p2pMembers: s.p2pMembers.filter(m => m.id !== msg.from) }))

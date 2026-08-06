@@ -230,7 +230,7 @@ interface ImportResult {
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, safeMode } = useStore()
+  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, safeMode, ageGate } = useStore()
   const importLorebook = useLoreStore((s) => s.importLorebook)
   const [dragOver, setDragOver] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -241,8 +241,9 @@ function Gallery() {
   // 区分内置角色和用户导入角色
   const userChars = characters.filter((c) => !c.builtin)
   const showCatalog = userChars.length === 0 // 没导入过卡 → 显示内置目录
-  // 安全模式：隐藏 adult 卡（内置卡均为 all，不受影响）
-  const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode)
+  // 安全模式：隐藏 adult 卡（内置卡均为 all，不受影响）；H-3：minor 下 unknown 也隐藏
+  const isMinor = ageGate === 'minor'
+  const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode, isMinor)
   // 被安全模式隐藏的卡数（给用户可见的反馈）
   const hiddenCount = safeMode ? characters.filter((c) => !passesSafeMode(c)).length : 0
 
@@ -254,12 +255,19 @@ function Gallery() {
     const fails: { name: string; reason: string }[] = []
     for (const file of Array.from(files)) {
       try {
-        if (file.name.toLowerCase().endsWith('.png')) {
+        // M-5：导入文件大小上限，防 GB 级文件直接吃内存（PNG≤50MB / JSON≤20MB）
+        const isPng = file.name.toLowerCase().endsWith('.png')
+        const isJson = file.name.toLowerCase().endsWith('.json')
+        const sizeLimit = isPng ? 50 * 1024 * 1024 : isJson ? 20 * 1024 * 1024 : 0
+        if (sizeLimit > 0 && file.size > sizeLimit) {
+          throw new Error(t(lang, 'import.tooLarge'))
+        }
+        if (isPng) {
           const buf = await file.arrayBuffer()
           const card = await parsePngCard(buf)
           await importCard(card, file)
           okCards++
-        } else if (file.name.toLowerCase().endsWith('.json')) {
+        } else if (isJson) {
           const text = await file.text()
           let json: any
           try {
@@ -494,7 +502,7 @@ function ChatView() {
     lang, safetyNotice, dismissSafetyNotice, webllmProgress,
     impSuggestions, impLoading, impRefining, impExpansion,
     fetchImpersonate, refineImpersonate, setImpExpansion, clearImpersonate,
-    bindLorebookToCharacter, safeMode,
+    bindLorebookToCharacter, safeMode, ageGate,
   } = useStore()
   const lorebooks = useLoreStore(s => s.lorebooks)
   const activeLorebookId = useLoreStore(s => s.activeLorebookId)
@@ -528,7 +536,7 @@ function ChatView() {
         char.boundLorebookId ? lorebooks.find((l) => l.id === char.boundLorebookId)?.book : undefined,
         char.card.character_book,
         activeLorebookId ? lorebooks.find((l) => l.id === activeLorebookId)?.book : undefined,
-      ].find((b): b is NonNullable<typeof b> => !!b && passesContentFilter(deriveBookRating(b), safeMode))
+      ].find((b): b is NonNullable<typeof b> => !!b && passesContentFilter(deriveBookRating(b), safeMode, ageGate === 'minor'))
     : undefined
 
   useEffect(() => {
@@ -621,7 +629,7 @@ function ChatView() {
                   ? t(lang, 'chat.loreCurrent', { name: effectiveBook.name || t(lang, 'lore.untitled') })
                   : t(lang, 'chat.loreNone')}
               </p>
-              {lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode)).map((lb) => (
+              {lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode, ageGate === 'minor')).map((lb) => (
                 <button
                   key={lb.id}
                   className={`chat-lore-option ${char.boundLorebookId === lb.id ? 'bound' : ''}`}
@@ -837,6 +845,8 @@ function WebLLMModelPicker({
   return (
     <div className="webllm-picker">
       <p className="cors-hint">{t(lang, 'webllm.hint')}</p>
+      {/* M-3：模型来源披露——供应链透明度（权重下载自 HF mlc-ai 组织） */}
+      <p className="cors-hint">{t(lang, 'webllm.modelSource')}</p>
 
       {!supported && (
         <div className="webllm-unsupported">{t(lang, 'webllm.unsupported')}</div>
@@ -913,7 +923,7 @@ function WebLLMModelPicker({
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode, ageGate } = useStore()
+  const { endpoint, setEndpoint, clearEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode, ageGate } = useStore()
   // 未成年：安全模式锁定开启
   const safeLocked = ageGate === 'minor'
   const [models, setModels] = useState<string[]>([])
@@ -1015,6 +1025,12 @@ function SettingsPanel() {
           <label>{t(lang, 'settings.apiKey')}
             <input type="password" value={endpoint.apiKey} onChange={(e) => setEndpoint({ apiKey: e.target.value })} placeholder="sk-..." />
           </label>
+          {/* M-2：共用设备风险提示 + 一键清除（Key 明文存 localStorage 的配套自控件） */}
+          <p className="cors-hint">{t(lang, 'settings.keySharedHint')}</p>
+          <button
+            className="btn-p2p"
+            onClick={() => { clearEndpoint(); setModels([]); setStatus('idle') }}
+          >{t(lang, 'settings.clearEndpoint')}</button>
           {/* ── 模型选择下拉 ── */}
           <label>{t(lang, 'model.picker')}
             <select

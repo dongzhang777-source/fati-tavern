@@ -89,9 +89,13 @@ describe('parseCharacterJson', () => {
 // ─── 内容分级推断 ─────────────────────────────────────────
 
 describe('contentRating 推断', () => {
-  it('显式声明优先', () => {
+  it('显式声明只加严不放宽（H-3 fail-closed）', () => {
+    // 声明与 tags 一致取更严
     expect(parseCharacterJson({ name: 'a', contentRating: 'adult', tags: [] })?.contentRating).toBe('adult')
-    expect(parseCharacterJson({ name: 'a', contentRating: 'all', tags: ['nsfw'] })?.contentRating).toBe('all')
+    // 声明 all 但 tags 含 nsfw → 不得放宽，仍定级 adult
+    expect(parseCharacterJson({ name: 'a', contentRating: 'all', tags: ['nsfw'] })?.contentRating).toBe('adult')
+    // 声明 adult 可加严无标记卡
+    expect(parseCharacterJson({ name: 'a', contentRating: 'adult', tags: ['fantasy'] })?.contentRating).toBe('adult')
   })
 
   it('tags 含 NSFW 类标记推断为 adult（大小写不敏感）', () => {

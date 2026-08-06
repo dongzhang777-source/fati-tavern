@@ -97,6 +97,8 @@ interface State {
   stopStreaming: () => void
   clearChat: () => void
   setEndpoint: (cfg: Partial<EndpointConfig>) => void
+  /** M-2：清除端点与 API Key（共用设备离开前），恢复本地默认 */
+  clearEndpoint: () => void
   setLang: (lang: Lang) => void
   setSafeMode: (v: boolean) => void
   confirmAge: (age: number) => void
@@ -115,7 +117,13 @@ const LS_KEY = 'tavern-endpoint'
 function loadEndpoint(): EndpointConfig {
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      // 字段收窄：本地存储被篡改时不至于把非字符串丢进下游
+      if (parsed && typeof parsed.baseUrl === 'string' && typeof parsed.apiKey === 'string' && typeof parsed.model === 'string') {
+        return parsed as EndpointConfig
+      }
+    }
   } catch { /* ignore */ }
   // 默认 WebLLM 浏览器本地推理，零配置即可聊天
   // iOS 默认 0.5B（1.5B 推理时会白屏），其他移动端 1.5B
@@ -465,10 +473,10 @@ export const useStore = create<State>((set, get) => ({
     const activeBook = !boundBook && lore.activeLorebookId
       ? lore.lorebooks.find((l) => l.id === lore.activeLorebookId)?.book
       : undefined
-    // safeMode：adult 世界书不注入（与角色卡过滤语义一致）
+    // safeMode：adult 世界书不注入（与角色卡过滤语义一致）；H-3：minor 下 unknown 同 adult
     const safe = get().safeMode
     const effectiveBook = [boundBook, char.card.character_book, activeBook].find(
-      (b): b is TavernBook => !!b && passesContentFilter(deriveBookRating(b), safe),
+      (b): b is TavernBook => !!b && passesContentFilter(deriveBookRating(b), safe, get().ageGate === 'minor'),
     )
     if (effectiveBook) {
       // 6000 字符注入预算：超长的书按 insertion_order 截断，避免撑爆上下文
@@ -516,6 +524,11 @@ export const useStore = create<State>((set, get) => ({
       }))
     }).then(() => {
       set({ streaming: false, webllmProgress: null })
+      // L-12：自伤检测补 assistant 回复方向——恶意卡可诱导模型输出自伤内容，
+      // 仅检测用户输入会漏掉此路径（仅触发危机提示，不拦截内容）
+      if (assistantText && detectSelfHarm(assistantText)) {
+        set({ safetyNotice: true })
+      }
       const final = get().conversations.find((c) => c.id === conv.id)
       if (final) dbPutConversation(final)
     }).catch((e: any) => {
@@ -565,6 +578,12 @@ export const useStore = create<State>((set, get) => ({
     saveEndpoint(next)
     return { endpoint: next }
   }),
+
+  // M-2：清除端点与 Key——删 localStorage 后恢复本地默认（共用设备离开前）
+  clearEndpoint: () => {
+    try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
+    set({ endpoint: loadEndpoint() })
+  },
 
   setLang: (lang) => {
     saveLang(lang)

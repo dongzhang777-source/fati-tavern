@@ -11,7 +11,7 @@ import { deriveBookRating, passesContentFilter } from '../lib/tavern'
 import type { StoredCharacter } from '../lib/db'
 
 export function LorebookPanel() {
-  const { characters, lang, endpoint, bindLorebookToCharacter, enterStoryView, safeMode } = useStore()
+  const { characters, lang, endpoint, bindLorebookToCharacter, enterStoryView, safeMode, ageGate } = useStore()
   const { lorebooks, activeLorebookId, removeLorebook, setActiveLorebook } = useLoreStore()
   const { openStory, stories } = useStoryStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -29,8 +29,8 @@ export function LorebookPanel() {
   const userChars = characters.filter((c) => !c.builtin)
   const charBoundTo = (charId: string) => characters.find((c) => c.id === charId)?.boundLorebookId
 
-  // safeMode：隐藏 adult 世界书（与角色卡过滤语义一致）
-  const visibleBooks = lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode))
+  // safeMode：隐藏 adult 世界书（与角色卡过滤语义一致）；H-3：minor 下 unknown 也隐藏
+  const visibleBooks = lorebooks.filter((lb) => passesContentFilter(deriveBookRating(lb.book), safeMode, ageGate === 'minor'))
   const hiddenCount = lorebooks.length - visibleBooks.length
 
   return (

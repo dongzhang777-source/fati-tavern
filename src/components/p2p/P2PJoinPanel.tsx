@@ -13,10 +13,8 @@ export function P2PJoinPanel() {
   const join = () => {
     const tok = token.trim()
     if (!tok) return
-    // https 页面连 ws:// 会被浏览器拦截，提前提示
-    if (location.protocol === 'https:' && !tok.includes('wss')) {
-      // 不阻断，仅在下方错误区提示；实际拦截由浏览器执行
-    }
+    // L-4：移除死代码——https 页面连 ws:// 的拦截由浏览器混合内容策略执行，
+    // 下方 p2pMixedContentWarn 提示已覆盖用户告知
     void joinWithToken(tok)
   }
 

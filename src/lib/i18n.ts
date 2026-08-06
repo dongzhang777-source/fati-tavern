@@ -126,6 +126,9 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'settings.lang': { zh: '语言 / Language', en: 'Language / 语言', ja: '言語 / Language', ko: '언어 / Language' },
   'settings.baseUrl': { zh: 'Base URL', en: 'Base URL', ja: 'ベースURL', ko: '기본 URL' },
   'settings.apiKey': { zh: 'API Key（只存本地，不离开你的设备）', en: 'API Key (stored locally, never leaves your device)', ja: 'APIキー（ローカル保存のみ、端末の外に出ません）', ko: 'API 키(로컬에만 저장, 기기 밖으로 나가지 않음)' },
+  'settings.keySharedHint': { zh: 'Key 仅存于本浏览器（localStorage）。共用设备请在离开前清除。', en: 'Your key is stored only in this browser (localStorage). Clear it before leaving a shared device.', ja: 'キーはこのブラウザ（localStorage）にのみ保存されます。共用端末では離席前に削除してください。', ko: '키는 이 브라우저(localStorage)에만 저장됩니다. 공용 기기에서는 떠나기 전에 지워 주세요.' },
+  'settings.clearEndpoint': { zh: '清除端点与 Key', en: 'Clear endpoint & key', ja: 'エンドポイントとキーを削除', ko: '엔드포인트 및 키 지우기' },
+  'settings.clearEndpointDone': { zh: '已清除，已恢复为本地默认', en: 'Cleared, restored to local default', ja: '削除しました。ローカル既定に戻しました', ko: '지웠습니다. 로컬 기본값으로 복원됨' },
   'settings.model': { zh: '模型', en: 'Model', ja: 'モデル', ko: '모델' },
   'settings.temp': { zh: '温度（0–2）', en: 'Temperature (0–2)', ja: '温度（0–2）', ko: '온도 (0–2)' },
   'settings.maxTokens': { zh: '最大回复 tokens', en: 'Max response tokens', ja: '最大応答トークン数', ko: '최대 응답 토큰 수' },
@@ -170,6 +173,7 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'import.unknownFormat': { zh: '无法识别的角色卡格式', en: 'Unrecognized card format', ja: '認識できないカード形式', ko: '인식할 수 없는 카드 형식' },
   'import.unsupported': { zh: '仅支持 .png / .json 文件', en: 'Only .png / .json files are supported', ja: '.png / .json ファイルのみ対応', ko: '.png / .json 파일만 지원' },
   'import.fail': { zh: '导入失败', en: 'Import failed', ja: 'インポート失敗', ko: '가져오기 실패' },
+  'import.tooLarge': { zh: '文件过大，已拒绝（PNG≤50MB / JSON≤20MB）', en: 'File too large, rejected (PNG≤50MB / JSON≤20MB)', ja: 'ファイルが大きすぎます（PNG≤50MB / JSON≤20MB）', ko: '파일이 너무 큽니다(PNG≤50MB / JSON≤20MB)' },
 
   // ── 世界书 ──
   'toast.importedBooks': { zh: '✓ 已导入 {n} 本世界书', en: '✓ Imported {n} lorebook(s)', ja: '✓ {n}冊のワールドブックをインポートしました', ko: '✓ 월드북 {n}권을 가져왔습니다' },
@@ -322,6 +326,14 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   p2pUndecryptable: { zh: '[无法解密的消息]', en: '[Undecryptable message]', ja: '[復号できないメッセージ]', ko: '[복호화할 수 없는 메시지]' },
   p2pEncFail: { zh: '消息加密失败，未发送', en: 'Message encryption failed, not sent', ja: 'メッセージの暗号化に失敗しました。送信されていません', ko: '메시지 암호화 실패, 전송되지 않음' },
   p2pComputeTimeout: { zh: '算力请求超时（30s），已取消', en: 'Compute request timed out (30s), cancelled', ja: '計算リクエストがタイムアウトしました（30秒）。キャンセルしました', ko: '컴퓨팅 요청 시간 초과(30초), 취소됨' },
+  // L-5：reject reason 白名单映射（恶意 relay 不得向 UI 注入任意文案）
+  p2pRejectExpired: { zh: '邀请票已过期', en: 'Invite token expired', ja: '招待トークンの期限切れ', ko: '초대 토큰이 만료됨' },
+  p2pRejectInvalid: { zh: '邀请票无效', en: 'Invite token invalid', ja: '招待トークンが無効', ko: '초대 토큰이 유효하지 않음' },
+  p2pRejectFull: { zh: '房间已满', en: 'Room is full', ja: 'ルームが満員', ko: '방이 가득 참' },
+  p2pRejectGeneric: { zh: '连接被拒绝', en: 'Connection rejected', ja: '接続が拒否されました', ko: '연결이 거부됨' },
+  p2pSendFailed: { zh: '消息加密失败，未发送', en: 'Message encryption failed, not sent', ja: '暗号化に失敗し、送信されませんでした', ko: '암호화 실패로 전송되지 않음' },
+  // M-3：WebLLM 模型来源披露
+  'webllm.modelSource': { zh: '模型权重从 huggingface.co/mlc-ai 下载，缓存于浏览器本地', en: 'Model weights are downloaded from huggingface.co/mlc-ai and cached locally in your browser', ja: 'モデルはhuggingface.co/mlc-aiからダウンロードし、ブラウザにローカルキャッシュされます', ko: '모델은 huggingface.co/mlc-ai에서 다운로드되어 브라우저에 로컬 캐시됩니다' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {

@@ -11,10 +11,14 @@
 
 const OPEN_TAG = '<think>'
 const CLOSE_TAG = '</think>'
+// L-11：thinking 状态丢弃预算——未闭合 <think> 时丢弃超过此量则判定异常，
+// 恢复输出（防恶意卡诱导模型输出永不闭合的 think 块导致整条回复静默消失）
+const THINK_DROP_BUDGET = 100_000
 
 export class ThinkTagFilter {
   private state: 'normal' | 'thinking' = 'normal'
   private pending = '' // 缓冲可能是标签前缀的字符
+  private dropped = 0 // thinking 状态下累计丢弃的字符数
 
   /** 送入一个 chunk，返回应展示给用户的文本（可能为空） */
   push(chunk: string): string {
@@ -22,6 +26,12 @@ export class ThinkTagFilter {
     let i = 0
 
     while (i < chunk.length) {
+      // L-11：丢弃预算超限 → 判定标签不会闭合，恢复输出
+      if (this.state === 'thinking' && this.dropped > THINK_DROP_BUDGET) {
+        this.state = 'normal'
+        this.pending = ''
+        this.dropped = 0
+      }
       if (this.pending.length > 0) {
         // 正在缓冲一个潜在标签
         this.pending += chunk[i]
@@ -33,6 +43,7 @@ export class ThinkTagFilter {
               // 完整匹配到 <think>，进入 thinking 状态
               this.state = 'thinking'
               this.pending = ''
+              this.dropped = 0
             }
             // 否则继续缓冲
           } else {
@@ -50,6 +61,7 @@ export class ThinkTagFilter {
             }
           } else {
             // 不是关闭标签前缀，丢弃缓冲（thinking 内容不输出）
+            this.dropped += this.pending.length
             this.pending = ''
           }
         }
@@ -61,8 +73,10 @@ export class ThinkTagFilter {
         } else {
           if (this.state === 'normal') {
             out += ch
+          } else {
+            // thinking 状态下非 '<' 字符直接丢弃（计入预算）
+            this.dropped++
           }
-          // thinking 状态下非 '<' 字符直接丢弃
           i++
         }
       }
@@ -86,5 +100,6 @@ export class ThinkTagFilter {
   reset(): void {
     this.state = 'normal'
     this.pending = ''
+    this.dropped = 0
   }
 }

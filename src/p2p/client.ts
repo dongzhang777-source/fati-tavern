@@ -1,5 +1,5 @@
 // P2P 客户端 —— 协议兼容 FATI relay（消息鉴别字段为 kind）
-import { extractRelayUrlFromToken } from './token'
+import { extractRelayUrlFromToken, extractServerPubFromToken, verifyFrameSignature } from './token'
 import {
   generateEcdhKeyPair, decryptGroupKeyFromPeer, encryptMessage, decryptMessage,
 } from './crypto'
@@ -50,6 +50,10 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
   let rateTokens = RATE_LIMIT_TOKENS
   let rateLastRefill = Date.now()
   const url = relayUrl || extractRelayUrlFromToken(token) || DEFAULT_RELAY
+  // H-2：从票提取算力端 Ed25519 公钥，用于验证握手帧签名（前向兼容）
+  const serverSignPub = extractServerPubFromToken(token)
+  // H-1：房内有算力端 → E2E 握手会发生，消息必须等加密建立后发送，绝不降级明文
+  let computePresent = false
 
   // QNEW-2: 跟踪进行中的算力请求，30s 超时后 reject
   const computeTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -88,36 +92,60 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
     }
   }
 
-  // N-B1 修正：保留加密，同时附加 body 明文字段供桌面端直读
+  function queueChat(item: { id: string; ts: number; text: string }) {
+    if (pendingChat.length >= MAX_PENDING) {
+      pendingChat.shift()
+      emit({ kind: '_queue_overflow', queue: 'chat' })
+    }
+    pendingChat.push(item)
+  }
+
+  function queueCompute(item: { id: string; ts: number; prompt: string }) {
+    if (pendingCompute.length >= MAX_PENDING) {
+      pendingCompute.shift()
+      emit({ kind: '_queue_overflow', queue: 'compute' })
+    }
+    pendingCompute.push(item)
+  }
+
+  // H-1：加密帧不再附带 body 明文（旧行为让 relay 可直读全部聊天，E2E 名存实亡）。
+  // 加密失败时丢弃并通知 UI，不降级明文。
   async function flushPendingChat() {
-    while (pendingChat.length) {
+    while (pendingChat.length && groupKey) {
       const item = pendingChat.shift()!
-      if (groupKey) {
-        try {
-          const { data, iv } = await encryptMessage(groupKey, item.text)
-          safeSend(JSON.stringify({ kind: 'chat', id: item.id, ts: item.ts, body: item.text, encrypted: true, data, iv }))
-        } catch { /* 加密失败降级为明文 */
-          safeSend(JSON.stringify({ kind: 'chat', id: item.id, ts: item.ts, body: item.text }))
-        }
-      } else {
-        safeSend(JSON.stringify({ kind: 'chat', id: item.id, ts: item.ts, body: item.text }))
+      try {
+        const { data, iv } = await encryptMessage(groupKey, item.text)
+        safeSend(JSON.stringify({ kind: 'chat', id: item.id, ts: item.ts, encrypted: true, data, iv }))
+      } catch {
+        emit({ kind: '_send_failed', id: item.id, queue: 'chat' })
       }
     }
   }
 
   async function flushPendingCompute() {
+    while (pendingCompute.length && groupKey) {
+      const item = pendingCompute.shift()!
+      try {
+        const { data, iv } = await encryptMessage(groupKey, item.prompt)
+        safeSend(JSON.stringify({ kind: 'compute_request', id: item.id, ts: item.ts, encrypted: true, data, iv }))
+      } catch {
+        emit({ kind: '_send_failed', id: item.id, queue: 'compute' })
+      }
+    }
+  }
+
+  // 仅在房内无算力端（无 E2E 能力，tavern↔tavern 房间）时使用明文 flush
+  function flushPlainChat() {
+    while (pendingChat.length) {
+      const item = pendingChat.shift()!
+      safeSend(JSON.stringify({ kind: 'chat', id: item.id, ts: item.ts, body: item.text }))
+    }
+  }
+
+  function flushPlainCompute() {
     while (pendingCompute.length) {
       const item = pendingCompute.shift()!
-      if (groupKey) {
-        try {
-          const { data, iv } = await encryptMessage(groupKey, item.prompt)
-          safeSend(JSON.stringify({ kind: 'compute_request', id: item.id, ts: item.ts, body: item.prompt, encrypted: true, data, iv }))
-        } catch { /* 加密失败降级为明文 */
-          safeSend(JSON.stringify({ kind: 'compute_request', id: item.id, ts: item.ts, body: item.prompt }))
-        }
-      } else {
-        safeSend(JSON.stringify({ kind: 'compute_request', id: item.id, ts: item.ts, body: item.prompt }))
-      }
+      safeSend(JSON.stringify({ kind: 'compute_request', id: item.id, ts: item.ts, body: item.prompt }))
     }
   }
 
@@ -130,16 +158,19 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
 
   async function handleMessage(msg: P2PMessage) {
     switch (msg.kind) {
-      case 'welcome':
+      case 'welcome': {
         peerId = msg.peerId as string
         retryCount = 0
+        const peers = (msg.peers as Array<{ id: string; isCompute?: boolean }>) || []
+        computePresent = peers.some(p => p && p.isCompute === true)
         setState('joined')
         flushPending()
-        // 连接建立后刷新排队的 chat / compute（明文，此时尚无 groupKey）
-        flushPendingChat()
-        flushPendingCompute()
+        // H-1：房内无算力端 → 不会发生 E2E 握手，排队消息明文发出（tavern↔tavern 房间）；
+        // 有算力端 → 等 group_key 建立后加密发送，绝不降级明文
+        if (!computePresent) { flushPlainChat(); flushPlainCompute() }
         emit(msg)
         return
+      }
       case 'ecdh_pub': {
         // 重连时复用已有密钥对
         if (!ecdhKp) ecdhKp = await generateEcdhKeyPair()
@@ -149,15 +180,33 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
       }
       case 'group_key': {
         if (!ecdhKp) return
+        // H-2：首密钥锁定——群组密钥建立后拒绝后续重投，防恶意 relay 覆盖密钥
+        if (groupKey) return
+        // H-2（前向兼容）：帧带 sig 时用票内 Ed25519 公钥验签（签名消息格式
+        // `group_key|<serverPub>|<data>|<iv>`，待算力端升级后强制）；无签名旧端迁移期容忍
+        if (typeof msg.sig === 'string') {
+          const enc = msg.encrypted as { data: string; iv: string } | undefined
+          const sigMsg = `group_key|${String(msg.serverPub || '')}|${enc?.data || ''}|${enc?.iv || ''}`
+          if (!serverSignPub || !(await verifyFrameSignature(serverSignPub, msg.sig, sigMsg))) {
+            console.warn('[p2p] group_key 帧签名验证失败，已拒绝')
+            return
+          }
+        }
         try {
           groupKey = await decryptGroupKeyFromPeer(
             ecdhKp.privateKey, msg.serverPub as string,
             msg.encrypted as { data: string; iv: string })
           emit({ kind: '_e2e_ready' })
-          // 握手完成后刷新排队中的 chat / compute（加密 + body 明文并存）
+          // 握手完成后加密发送排队中的 chat / compute（无 body 明文）
           void flushPendingChat()
           void flushPendingCompute()
         } catch { /* relay 是广播，这份密文不是发给我的 */ }
+        return
+      }
+      case 'presence': {
+        // H-1：算力端进房后置位，后续发送路径等加密建立
+        if (msg.isCompute === true) computePresent = true
+        emit(msg)
         return
       }
       case 'chat': {
@@ -220,6 +269,11 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
     ws.onerror = () => { /* 交给 onclose 处理 */ }
     ws.onclose = () => {
       if (disposed) return
+      // H-1/H-2：断连后重置握手状态——旧 groupKey 对重连后的新会话无效，
+      // 必须重新 ECDH 握手，避免拿旧密钥发出对端无法解密的帧
+      groupKey = null
+      ecdhKp = null
+      computePresent = false
       setState('disconnected')
       if (retryCount >= MAX_RETRIES) { emit({ kind: '_max_retries' }); return }
       const delay = Math.min(1000 * 2 ** retryCount, 16000)
@@ -249,28 +303,28 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
 
   return {
     onMessage(cb) { listeners.add(cb); return () => { listeners.delete(cb) } },
-    // N-B1 修正：加密 + body 明文并存，桌面端直读 body，tavern 解密 data
+    // H-1：有 groupKey → 仅发密文（不带 body 明文）；算力端在房但密钥未建立 → 排队等待；
+    // 房内无算力端（tavern↔tavern）→ 无 E2E 能力，明文是唯一选择
     sendChat(text) {
       const id = `m_${Date.now()}_${randHex(4)}`
       const ts = Date.now()
-      if (state !== 'joined' || !ws || ws.readyState !== WebSocket.OPEN) {
-        if (pendingChat.length >= MAX_PENDING) {
-          pendingChat.shift()
-          emit({ kind: '_queue_overflow', queue: 'chat' })
-        }
-        pendingChat.push({ id, ts, text })
-      } else if (groupKey) {
-        // 加密 + body 明文并存
+      if (groupKey) {
         void encryptMessage(groupKey, text).then(({ data, iv }) =>
-          safeSend(JSON.stringify({ kind: 'chat', id, ts, body: text, encrypted: true, data, iv }))
-        ).catch(() =>
-          safeSend(JSON.stringify({ kind: 'chat', id, ts, body: text }))
-        )
-      } else {
-        safeSend(JSON.stringify({ kind: 'chat', id, ts, body: text }))
+          safeSend(JSON.stringify({ kind: 'chat', id, ts, encrypted: true, data, iv }))
+        ).catch(() => emit({ kind: '_send_failed', id, queue: 'chat' }))
+        return
       }
+      if (state !== 'joined' || !ws || ws.readyState !== WebSocket.OPEN) {
+        queueChat({ id, ts, text })
+        return
+      }
+      if (computePresent) {
+        queueChat({ id, ts, text })
+        return
+      }
+      safeSend(JSON.stringify({ kind: 'chat', id, ts, body: text }))
     },
-    // N-B1 修正：加密 + body 明文并存
+    // H-1：同 sendChat 的三态发送策略
     requestCompute(prompt) {
       const id = `c_${Date.now()}_${randHex(4)}`
       const ts = Date.now()
@@ -280,22 +334,21 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
         emit({ kind: '_compute_timeout', id })
       }, COMPUTE_TIMEOUT_MS)
       computeTimers.set(id, timer)
-      if (state !== 'joined' || !ws || ws.readyState !== WebSocket.OPEN) {
-        if (pendingCompute.length >= MAX_PENDING) {
-          pendingCompute.shift()
-          emit({ kind: '_queue_overflow', queue: 'compute' })
-        }
-        pendingCompute.push({ id, ts, prompt })
-      } else if (groupKey) {
-        // 加密 + body 明文并存
+      if (groupKey) {
         void encryptMessage(groupKey, prompt).then(({ data, iv }) =>
-          safeSend(JSON.stringify({ kind: 'compute_request', id, ts, body: prompt, encrypted: true, data, iv }))
-        ).catch(() =>
-          safeSend(JSON.stringify({ kind: 'compute_request', id, ts, body: prompt }))
-        )
-      } else {
-        safeSend(JSON.stringify({ kind: 'compute_request', id, ts, body: prompt }))
+          safeSend(JSON.stringify({ kind: 'compute_request', id, ts, encrypted: true, data, iv }))
+        ).catch(() => emit({ kind: '_send_failed', id, queue: 'compute' }))
+        return id
       }
+      if (state !== 'joined' || !ws || ws.readyState !== WebSocket.OPEN) {
+        queueCompute({ id, ts, prompt })
+        return id
+      }
+      if (computePresent) {
+        queueCompute({ id, ts, prompt })
+        return id
+      }
+      safeSend(JSON.stringify({ kind: 'compute_request', id, ts, body: prompt }))
       return id
     },
     disconnect() {

@@ -87,8 +87,8 @@ describe('client 连接与状态机', () => {
 })
 
 describe('client E2E 状态机', () => {
-  // N-B1 修正：加密 + body 明文并存
-  it('ecdh_pub → 回公钥 → group_key 解密 → chat 加密 + body 并存', async () => {
+  // H-1：加密帧不再附带 body 明文（relay 不可直读）
+  it('ecdh_pub → 回公钥 → group_key 解密 → chat 仅发密文（无 body）', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     const got: P2PMessage[] = []
     h.onMessage(m => got.push(m))
@@ -111,11 +111,11 @@ describe('client E2E 状态机', () => {
     await flush(); await flush(); await flush()
     expect(h.isEncrypted()).toBe(true)
 
-    // 出向 chat：加密 + body 明文并存（N-B1 修正）
+    // 出向 chat：仅密文，不带 body 明文（H-1）
     h.sendChat('加密消息')
     await flush(); await flush(); await flush()
     const sent = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')[0]
-    expect(sent.body).toBe('加密消息')
+    expect(sent.body).toBeUndefined()
     expect(sent.encrypted).toBe(true)
     expect(sent.data).toBeTruthy()
     expect(sent.iv).toBeTruthy()
@@ -160,7 +160,7 @@ describe('client E2E 状态机', () => {
     expect(frames[0].encrypted).toBeUndefined()
   })
 
-  it('requestCompute 在有 groupKey 时发送加密 + body 并存帧（N-B1 修正）', async () => {
+  it('requestCompute 在有 groupKey 时仅发密文帧（H-1：无 body）', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
@@ -181,11 +181,74 @@ describe('client E2E 状态机', () => {
     await flush(); await flush()
     const frame = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'compute_request').pop()
     expect(frame).toBeTruthy()
-    expect(frame.body).toBe('写一首诗')
+    expect(frame.body).toBeUndefined()
     expect(frame.id).toBe(id)
     expect(frame.encrypted).toBe(true)
     expect(frame.data).toBeTruthy()
     expect(frame.iv).toBeTruthy()
+  })
+
+  // H-1：算力端在房但密钥未建立 → 排队等加密，绝不降级明文
+  it('房内有算力端时 sendChat 排队，group_key 到达后仅密文发出', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [{ id: 'peer_srv', isCompute: true }] })
+    await flush()
+    h.sendChat('等待加密的消息')
+    await flush(); await flush()
+    // 密钥未建立：不得有任何 chat 帧（既不加密也不明文）
+    expect(ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat').length).toBe(0)
+
+    // 建立 E2E 后排队消息仅密文发出
+    const server = await generateEcdhKeyPair()
+    const groupKey = await generateGroupKey()
+    ws.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
+    await flush(); await flush()
+    const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
+    const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
+    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    await flush(); await flush(); await flush()
+    const frames = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')
+    expect(frames.length).toBe(1)
+    expect(frames[0].body).toBeUndefined()
+    expect(frames[0].encrypted).toBe(true)
+    h.disconnect()
+  })
+
+  // H-2：首密钥锁定——groupKey 建立后拒绝后续 group_key 重投
+  it('group_key 重复投递不覆盖已建立的群组密钥', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await flush()
+
+    // 首次正常建立
+    const server = await generateEcdhKeyPair()
+    const groupKey = await generateGroupKey()
+    ws.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
+    await flush(); await flush()
+    const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
+    const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
+    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    await flush(); await flush(); await flush()
+    expect(h.isEncrypted()).toBe(true)
+
+    // 恶意 relay 重投另一个密钥（能解开的）——应被忽略
+    const attacker = await generateEcdhKeyPair()
+    const evilKey = await generateGroupKey()
+    const evilEnc = await encryptGroupKeyForPeer(attacker.privateKey, reply!.pub, evilKey)
+    ws.receive({ kind: 'group_key', serverPub: attacker.publicKeyB64, encrypted: evilEnc, from: 'peer_srv' })
+    await flush(); await flush(); await flush()
+    // 用原密钥加密仍能解密 → 密钥未被覆盖
+    const probe = await encryptMessage(groupKey, 'probe')
+    const got: P2PMessage[] = []
+    h.onMessage(m => got.push(m))
+    ws.receive({ kind: 'chat', id: 'probe_1', ts: 1, encrypted: true, data: probe.data, iv: probe.iv, from: 'peer_srv' })
+    await flush(); await flush(); await flush()
+    expect(got.some(m => (m as { body?: string }).body === 'probe')).toBe(true)
+    h.disconnect()
   })
 
   it('requestCompute 排队后在连接建立时自动明文发出', async () => {
