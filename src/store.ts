@@ -77,7 +77,7 @@ interface State {
   init: () => Promise<void>
   importCard: (card: TavernCard, file?: File) => Promise<void>
   removeCharacter: (id: string) => Promise<void>
-  updateCharacter: (id: string, card: TavernCard) => Promise<void>
+  updateCharacter: (id: string, card: TavernCard) => Promise<StoredCharacter | undefined>
   openCharacter: (id: string) => Promise<void>
   backToGallery: () => void
   enterStoryView: () => void
@@ -286,8 +286,10 @@ export const useStore = create<State>((set, get) => ({
       await dbPutCharacter(stored)
       set((s) => ({
         characters: [stored, ...s.characters], // 添加到列表顶部
+        activeCharId: s.activeCharId === id ? newId : s.activeCharId,
       }))
       trackOnce('character_edit')
+      return stored
     } else {
       // 用户角色：直接更新
       const updated = { ...existing, card }
@@ -295,6 +297,7 @@ export const useStore = create<State>((set, get) => ({
       set((s) => ({
         characters: s.characters.map((c) => c.id === id ? updated : c),
       }))
+      return updated
     }
   },
 

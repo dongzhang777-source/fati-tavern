@@ -226,6 +226,7 @@ function BrandLogo() {
 interface ImportResult {
   okCards: number
   okBooks: number
+  customToast?: string
   fails: { name: string; reason: string }[]
 }
 
@@ -348,7 +349,7 @@ function Gallery() {
                     <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
                   )}
                 </div>
-                <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{t(lang, 'gallery.edit')}</button>
+                <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{t(lang, 'gallery.copyEdit')}</button>
               </div>
             ))}
           </div>
@@ -380,7 +381,7 @@ function Gallery() {
                   <span className="card-tags">{c.card.tags.slice(0, 3).join(' · ')}</span>
                 )}
               </div>
-              <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{t(lang, 'gallery.edit')}</button>
+              <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{c.builtin ? t(lang, 'gallery.copyEdit') : t(lang, 'gallery.edit')}</button>
               <button className="btn-del" onClick={(e) => { e.stopPropagation(); removeCharacter(c.id) }} title={t(lang, 'gallery.delete')}>×</button>
             </div>
           ))}
@@ -394,6 +395,7 @@ function Gallery() {
         <div className={`import-toast ${importResult.fails.length > 0 ? 'has-fail' : ''}`} onClick={() => setImportResult(null)}>
           {importResult.okCards > 0 && <p>{t(lang, 'toast.imported', { n: importResult.okCards })}</p>}
           {importResult.okBooks > 0 && <p>{t(lang, 'toast.importedBooks', { n: importResult.okBooks })}</p>}
+          {importResult.customToast && <p>{importResult.customToast}</p>}
           {importResult.fails.map((f) => (
             <p key={f.name} className="fail-line">✗ {f.name}：{f.reason}</p>
           ))}
@@ -403,7 +405,21 @@ function Gallery() {
       {editingChar && (
         <CharacterEditor
           character={editingChar}
-          onSave={(card) => { updateCharacter(editingChar.id, card); setEditingChar(null) }}
+          onSave={async (card) => {
+            const isBuiltin = !!editingChar.builtin
+            await updateCharacter(editingChar.id, card)
+            setEditingChar(null)
+            if (isBuiltin) {
+              setImportResult({
+                okCards: 0,
+                okBooks: 0,
+                customToast: t(lang, 'toast.builtinCopied', { name: card.name }),
+                fails: [],
+              })
+              if (toastTimer.current) clearTimeout(toastTimer.current)
+              toastTimer.current = setTimeout(() => setImportResult(null), 4000)
+            }
+          }}
           onClose={() => setEditingChar(null)}
         />
       )}
@@ -436,7 +452,7 @@ function CharacterEditor({ character, onSave, onClose }: {
     <div className="editor-overlay" onClick={onClose}>
       <div className="editor-modal" onClick={(e) => e.stopPropagation()}>
         <div className="editor-header">
-          <h3>{t(lang, 'editor.title')}</h3>
+          <h3>{character.builtin ? t(lang, 'editor.titleCopy') : t(lang, 'editor.title')}</h3>
         </div>
         <div className="editor-body">
           {character.builtin && (
@@ -486,7 +502,7 @@ function CharacterEditor({ character, onSave, onClose }: {
         </div>
         <div className="editor-footer">
           <button className="btn-editor-cancel" onClick={onClose}>{t(lang, 'editor.cancel')}</button>
-          <button className="btn-editor-save" onClick={handleSave}>{t(lang, 'editor.save')}</button>
+          <button className="btn-editor-save" onClick={handleSave}>{character.builtin ? t(lang, 'editor.saveCopy') : t(lang, 'editor.save')}</button>
         </div>
       </div>
     </div>

@@ -20,7 +20,8 @@ class FakeWS {
   lastSent() { return JSON.parse(this.sent[this.sent.length - 1]) }
 }
 
-const flush = () => new Promise(r => setTimeout(r, 0))
+// setTimeout(10) 而非 0：全量并发跑时微任务时序竞争导致偶发失败，加 10ms 让 FakeWS 队列稳定
+const flush = () => new Promise(r => setTimeout(r, 10))
 
 beforeEach(() => {
   FakeWS.instances = []
