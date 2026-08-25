@@ -1,0 +1,111 @@
+{
+  "rootId": "s1",
+  "endingIds": ["e_altar", "e_spirit", "e_water"],
+  "nodes": [
+    {
+      "id": "s1",
+      "kind": "scene",
+      "text": {
+        "en": "Luminescent spores drift lazily between towering ancient silverbarks. The forest trail forks: one path slopes downward toward a shimmering lake, while another ascends toward ancient stone ruins.",
+        "zh-Hans": "荧光孢子在参天的银皮古树间缓缓漂浮。森林小径在此分岔：一条蜿蜒下行通往泛着微光的湖泊，另一条则拾阶而上通往古老的石砌遗迹。"
+      },
+      "choices": [
+        {
+          "id": "c1_lake",
+          "label": {
+            "en": "Follow the glowing moss to the lake",
+            "zh-Hans": "沿着发光的苔藓走向湖泊"
+          },
+          "target": "s_lake"
+        },
+        {
+          "id": "c1_ruins",
+          "label": {
+            "en": "Climb the stone stairs toward the ruins",
+            "zh-Hans": "沿着石阶攀登前往遗迹"
+          },
+          "target": "s_ruins"
+        }
+      ]
+    },
+    {
+      "id": "s_lake",
+      "kind": "scene",
+      "text": {
+        "en": "The lake surface is as smooth as dark glass, reflecting twin moons. Gentle ripples form as a luminous creature observes you from beneath the water.",
+        "zh-Hans": "湖面宛如光滑的暗色明镜，倒映着夜空中的双月。水面泛起柔和的涟漪，一只发光的神秘生灵在清澈的水下注视着你。"
+      },
+      "choices": [
+        {
+          "id": "c2_dive",
+          "label": {
+            "en": "Dive into the moonlit waters",
+            "zh-Hans": "潜入月光照耀的湖水中"
+          },
+          "target": "e_water"
+        },
+        {
+          "id": "c2_pray",
+          "label": {
+            "en": "Kneel and whisper a forest prayer",
+            "zh-Hans": "在湖畔半跪念出森林祷词"
+          },
+          "target": "e_spirit"
+        }
+      ]
+    },
+    {
+      "id": "s_ruins",
+      "kind": "scene",
+      "text": {
+        "en": "Crumbling stone arches are wrapped in violet vines. At the center of the sanctum, an ethereal crystal floats above a forgotten altar, pulsing with rhythmic energy.",
+        "zh-Hans": "崩塌的石拱上缠绕着紫色的藤蔓。圣殿中央，一块空灵的水晶悬浮在遗忘祭坛上方，散发着律动的魔法能量。"
+      },
+      "choices": [
+        {
+          "id": "c3_touch",
+          "label": {
+            "en": "Touch the humming crystal",
+            "zh-Hans": "伸手触碰嗡鸣的水晶"
+          },
+          "target": "e_altar"
+        },
+        {
+          "id": "c3_retreat",
+          "label": {
+            "en": "Flee back toward the tranquil lake",
+            "zh-Hans": "转身退回宁静的湖畔"
+          },
+          "target": "e_water"
+        }
+      ]
+    },
+    {
+      "id": "e_water",
+      "kind": "ending",
+      "text": {
+        "en": "The cooling waters embrace you with ancient protective magic. You emerge renewed, forever gifted with clarity of mind and water's grace.",
+        "zh-Hans": "清凉的湖水以古老的守护魔法环抱着你。当你再次踏上岸时，内心获得了前所未有的宁静与水之眷顾。"
+      },
+      "choices": []
+    },
+    {
+      "id": "e_spirit",
+      "kind": "ending",
+      "text": {
+        "en": "The lake spirit rises gracefully, bestowing upon you an evergreen leaf that whispers ancient secrets of the woods whenever danger nears.",
+        "zh-Hans": "湖中水灵优雅地破水而出，赠予你一片永不枯萎的青叶。每当危机临近，它便会在你耳畔低语森林的预兆。"
+      },
+      "choices": []
+    },
+    {
+      "id": "e_altar",
+      "kind": "ending",
+      "text": {
+        "en": "Arcane light erupts from the crystal, awakening slumbering runes across the entire forest. You have awakened an ancient guardian legacy.",
+        "zh-Hans": "奥术光辉从水晶中喷薄而出，唤醒了整座森林中沉睡的古老符文。你成为了这片古老守护者传承的新宿主。"
+      },
+      "choices": []
+    }
+  ]
+}

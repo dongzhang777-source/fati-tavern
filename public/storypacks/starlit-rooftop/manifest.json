@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "2.0",
+  "packId": "starlit-rooftop",
+  "title": {
+    "en": "Midnight on the Starlit Rooftop",
+    "zh-Hans": "星光天台的午夜"
+  },
+  "summary": {
+    "en": "A quiet breeze, a neon city below, and a choice to make under the stars.",
+    "zh-Hans": "微风拂过，俯瞰霓虹灯火的城市，在繁星下做出你的抉择。"
+  },
+  "language": ["en", "zh-Hans"],
+  "origin": {
+    "channel": "official",
+    "provenance": "human"
+  },
+  "creator": {
+    "name": "FATI Team"
+  },
+  "contentRating": "all",
+  "ageGateRequired": false,
+  "distribution": {
+    "channels": ["mobile-pwa", "desktop-web"],
+    "publicIndex": true
+  },
+  "tier": "base",
+  "genres": ["slice-of-life"],
+  "tags": ["demo", "converging"],
+  "stats": {
+    "nodes": 5,
+    "endings": 2,
+    "blanks": 0
+  },
+  "size": {
+    "scriptBytes": 1800,
+    "mediaBytes": 0,
+    "totalBytes": 1800
+  }
+}

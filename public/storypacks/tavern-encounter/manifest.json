@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "2.0",
+  "packId": "tavern-encounter",
+  "title": {
+    "en": "A Tavern Encounter",
+    "zh-Hans": "酒馆奇遇"
+  },
+  "summary": {
+    "en": "A mysterious stranger approaches you in a dimly lit tavern on a rainy night.",
+    "zh-Hans": "雨夜昏暗的酒馆里，一个神秘的陌生人向你走来。"
+  },
+  "language": ["en", "zh-Hans"],
+  "origin": {
+    "channel": "official",
+    "provenance": "human"
+  },
+  "creator": {
+    "name": "FATI Team"
+  },
+  "contentRating": "all",
+  "ageGateRequired": false,
+  "distribution": {
+    "channels": ["mobile-pwa", "desktop-web"],
+    "publicIndex": true
+  },
+  "tier": "base",
+  "genres": ["fantasy"],
+  "tags": ["demo", "linear"],
+  "stats": {
+    "nodes": 6,
+    "endings": 2,
+    "blanks": 0
+  },
+  "size": {
+    "scriptBytes": 2000,
+    "mediaBytes": 0,
+    "totalBytes": 2000
+  }
+}

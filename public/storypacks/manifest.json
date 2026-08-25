@@ -1,0 +1,7 @@
+{
+  "packs": [
+    { "packId": "tavern-encounter", "dir": "tavern-encounter" },
+    { "packId": "forest-crossroads", "dir": "forest-crossroads" },
+    { "packId": "starlit-rooftop", "dir": "starlit-rooftop" }
+  ]
+}

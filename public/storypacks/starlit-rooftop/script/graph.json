@@ -1,0 +1,102 @@
+{
+  "rootId": "s1",
+  "endingIds": ["e_dawn", "e_farewell"],
+  "nodes": [
+    {
+      "id": "s1",
+      "kind": "scene",
+      "text": {
+        "en": "Midnight air is crisp on the apartment rooftop. Neon signs flicker in the vast cityscape below. Your companion sits on the ledge, looking up at the rare stars piercing the city smog.",
+        "zh-Hans": "午夜的天台空气微凉。脚下的城市霓虹闪烁如海。身旁的同伴坐在天台边缘，抬头仰望着穿透城市光晕的稀疏繁星。"
+      },
+      "choices": [
+        {
+          "id": "c1_coffee",
+          "label": {
+            "en": "Hand over a warm can of coffee",
+            "zh-Hans": "递上一罐温热的罐装咖啡"
+          },
+          "target": "s_talk"
+        },
+        {
+          "id": "c1_music",
+          "label": {
+            "en": "Share an earphone playing retro synthwave",
+            "zh-Hans": "分出一只耳机播放复古电子乐"
+          },
+          "target": "s_music"
+        }
+      ]
+    },
+    {
+      "id": "s_talk",
+      "kind": "scene",
+      "text": {
+        "en": "Warm steam rises from the coffee cans. You talk about old dreams, unfinished projects, and where the winding roads of life might lead after tonight.",
+        "zh-Hans": "热咖啡散发着阵阵微温。你们聊起过去的梦想、未完成的作品，以及今夜之后各自人生的未知轨迹。"
+      },
+      "choices": [
+        {
+          "id": "c2a_promise",
+          "label": {
+            "en": "Promise to meet here again next year",
+            "zh-Hans": "许下明年此时再相见的约定"
+          },
+          "target": "e_dawn"
+        },
+        {
+          "id": "c2a_silent",
+          "label": {
+            "en": "Sip coffee in companionable silence",
+            "zh-Hans": "在静谧中默默饮尽温热咖啡"
+          },
+          "target": "e_farewell"
+        }
+      ]
+    },
+    {
+      "id": "s_music",
+      "kind": "scene",
+      "text": {
+        "en": "Lo-fi synth melodies blend seamlessly with the distant hum of night traffic. The rhythm beats in sync with the quiet serenity of the night.",
+        "zh-Hans": "低保真合成器的旋律与远处的城市车流声融为一体。律动的节拍与午夜的安宁在此刻达成奇妙的共鸣。"
+      },
+      "choices": [
+        {
+          "id": "c2b_promise",
+          "label": {
+            "en": "Hum along softly and make a promise",
+            "zh-Hans": "轻声合唱并许下未来的承诺"
+          },
+          "target": "e_dawn"
+        },
+        {
+          "id": "c2b_silent",
+          "label": {
+            "en": "Watch the city neon slowly fade",
+            "zh-Hans": "静看城市灯火渐渐隐入夜色"
+          },
+          "target": "e_farewell"
+        }
+      ]
+    },
+    {
+      "id": "e_dawn",
+      "kind": "ending",
+      "text": {
+        "en": "The first golden rays of dawn break over the skyline, sealing your shared promise in the amber morning light.",
+        "zh-Hans": "破晓的第一缕金光洒向天际线，在温暖的晨曦中为你们彼此的誓言镀上一层金边。"
+      },
+      "choices": []
+    },
+    {
+      "id": "e_farewell",
+      "kind": "ending",
+      "text": {
+        "en": "As dawn arrives, you both smile and wave goodbye. The memory of this starlit night remains an everlasting warmth in your heart.",
+        "zh-Hans": "晨光熹微之际，你们微笑着挥手告别。这个繁星天台的夜晚，成为了心底永远温暖的珍藏。"
+      },
+      "choices": []
+    }
+  ]
+}

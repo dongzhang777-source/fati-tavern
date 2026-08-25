@@ -1,0 +1,120 @@
+{
+  "rootId": "s1",
+  "endingIds": ["e1", "e2"],
+  "nodes": [
+    {
+      "id": "s1",
+      "kind": "scene",
+      "text": {
+        "en": "Rain lashes against the stained glass windows of the Rusty Anchor Tavern. A cloaked figure pulls up a chair across from your table and slides an ancient silver coin between your fingers.",
+        "zh-Hans": "暴雨拍打着生锈锚酒馆的花窗玻璃。一个裹着厚斗篷的身影在你对面拉开椅子坐下，将一枚古老的银币推到了你的指尖前。"
+      },
+      "choices": [
+        {
+          "id": "c1_friendly",
+          "label": {
+            "en": "Welcome them to sit down and order a drink",
+            "zh-Hans": "热情招呼对方坐下并点杯麦酒"
+          },
+          "target": "s2a"
+        },
+        {
+          "id": "c1_wary",
+          "label": {
+            "en": "Keep your hand on your weapon and ask their name",
+            "zh-Hans": "按住剑柄冷眼询问对方来历"
+          },
+          "target": "s2b"
+        }
+      ]
+    },
+    {
+      "id": "s2a",
+      "kind": "scene",
+      "text": {
+        "en": "The stranger lowers their hood, revealing a warm smile. They unroll a weathered parchment map showing the forgotten sunken crypt beneath the harbor.",
+        "zh-Hans": "陌生人拉下兜帽，露出了温和的笑容。对方展开一份泛黄的羊皮纸地图，上面标注着港口下方被遗忘的沉没古墓。"
+      },
+      "choices": [
+        {
+          "id": "c2a_accept",
+          "label": {
+            "en": "Agree to explore the crypt together",
+            "zh-Hans": "答应一同前往古墓探险"
+          },
+          "target": "s3"
+        },
+        {
+          "id": "c2a_decline",
+          "label": {
+            "en": "Politely decline and leave the tavern",
+            "zh-Hans": "礼貌拒绝并收拾行囊离开"
+          },
+          "target": "e2"
+        }
+      ]
+    },
+    {
+      "id": "s2b",
+      "kind": "scene",
+      "text": {
+        "en": "The stranger catches your gaze and flashes a royal crest hidden inside their cloak. 'Royal guards are scouring the district. Help me reach the docks, and your reward will be legendary.'",
+        "zh-Hans": "陌生人迎上你的目光，微微掀开斗篷露出皇室徽记：'城防卫兵正在挨家挨户搜查。帮我赶到码头，你将获得意想不到的酬劳。'"
+      },
+      "choices": [
+        {
+          "id": "c2b_help",
+          "label": {
+            "en": "Lead them through the dark back alley",
+            "zh-Hans": "带对方穿过后巷避开守卫"
+          },
+          "target": "s3"
+        },
+        {
+          "id": "c2b_report",
+          "label": {
+            "en": "Quietly alert the tavern guard at the door",
+            "zh-Hans": "悄悄向门口的守卫示意"
+          },
+          "target": "e2"
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "kind": "scene",
+      "text": {
+        "en": "Under the cover of howling wind and torrential rain, you navigate the cobblestone labyrinth of the old wharf. A hidden skiff rocks gently by the secret canal gate.",
+        "zh-Hans": "在呼啸的风雨掩护下，你们穿过了旧码头错综复杂的鹅卵石小巷。一艘隐秘的小船正在暗河闸门边轻轻摇晃。"
+      },
+      "choices": [
+        {
+          "id": "c3_board",
+          "label": {
+            "en": "Board the skiff and sail into the unknown",
+            "zh-Hans": "登上小船驶向未知的海域"
+          },
+          "target": "e1"
+        }
+      ]
+    },
+    {
+      "id": "e1",
+      "kind": "ending",
+      "text": {
+        "en": "The oars cut smoothly through the black water as the tavern lights fade into the mist. A legendary adventure has just begun.",
+        "zh-Hans": "船桨轻柔地划破黑沉的波涛，酒馆的昏黄灯火逐渐隐没在浓雾中。一段属于你们的传奇冒险就此启程。"
+      },
+      "choices": []
+    },
+    {
+      "id": "e2",
+      "kind": "ending",
+      "text": {
+        "en": "You step outside into the cold rain alone. The storm washes away any trace of the stranger, leaving only ordinary tavern tales behind.",
+        "zh-Hans": "你独自推门走进冰冷的雨夜中。暴雨冲刷掉了一切踪迹，今夜发生的一切最终化作酒客们口中微不足道的传闻。"
+      },
+      "choices": []
+    }
+  ]
+}

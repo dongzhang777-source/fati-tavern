@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "2.0",
+  "packId": "forest-crossroads",
+  "title": {
+    "en": "Crossroads in the Whispering Woods",
+    "zh-Hans": "低语森林的岔路"
+  },
+  "summary": {
+    "en": "Ancient paths diverge before you in the misty enchanted forest.",
+    "zh-Hans": "迷雾笼罩的魔法森林中，古老的小径在你眼前分岔。"
+  },
+  "language": ["en", "zh-Hans"],
+  "origin": {
+    "channel": "official",
+    "provenance": "human"
+  },
+  "creator": {
+    "name": "FATI Team"
+  },
+  "contentRating": "all",
+  "ageGateRequired": false,
+  "distribution": {
+    "channels": ["mobile-pwa", "desktop-web"],
+    "publicIndex": true
+  },
+  "tier": "base",
+  "genres": ["fantasy"],
+  "tags": ["demo", "branching"],
+  "stats": {
+    "nodes": 6,
+    "endings": 3,
+    "blanks": 0
+  },
+  "size": {
+    "scriptBytes": 2000,
+    "mediaBytes": 0,
+    "totalBytes": 2000
+  }
+}
