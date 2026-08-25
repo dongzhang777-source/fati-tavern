@@ -11,6 +11,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // 故事包 JSON 进预缓存：免 Key 试玩是离线卖点，
+        // 总量约 36KB，不值得为省这点体积牺牲离线可用
+        globPatterns: ['**/*.{js,css,html}', 'storypacks/**/*.json'],
         // web-llm 推理引擎分包（数 MB）只被免 Key 体验档懒加载，
         // 不进 SW 预缓存，避免所有访客后台白下载
         globIgnores: ['**/webllm-*.js'],
