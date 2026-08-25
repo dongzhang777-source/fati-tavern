@@ -103,6 +103,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .catalog-hero { text-align: center; padding: 16px 0 8px; }
 .catalog-hero h2 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--text), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .catalog-sub { color: var(--muted); font-size: 0.85rem; }
+.catalog-model-ready { margin-top: 6px; font-size: 0.75rem; color: #4caf50; }
+.catalog-model-warning { margin-top: 6px; font-size: 0.75rem; color: #e6b566; }
 .catalog-import-hint { text-align: center; padding: 16px 0; }
 .btn-import-secondary { background: none; border: 1px dashed rgba(255,255,255,0.2); color: var(--muted); padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
 .btn-import-secondary:hover { border-color: var(--accent); color: var(--text); }
@@ -118,6 +120,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .card-desc { font-size: 0.75rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-tags { font-size: 0.7rem; color: var(--accent); opacity: 0.8; }
 .char-card .btn-del { position: absolute; top: 8px; right: 8px; }
+.char-card .btn-share { position: absolute; top: 8px; right: 32px; opacity: 0; transition: opacity .2s; background: var(--surface2); border: 1px solid rgba(255,255,255,.1); color: var(--muted); font-size: .7rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.char-card:hover .btn-share, .char-card:focus-within .btn-share { opacity: 1; }
+.char-card .btn-share:hover:not(:disabled) { color: var(--accent); border-color: rgba(233,69,96,.4); }
+.char-card .btn-share:disabled { opacity: .5; cursor: default; }
+.import-toast .share-link { width: min(520px, calc(100vw - 64px)); margin-top: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); border-radius: 6px; color: var(--text); padding: 6px 8px; font-size: .72rem; word-break: break-all; }
 
 .byok-note { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 6px 16px; font-size: 0.68rem; color: var(--muted); opacity: 0.85; line-height: 1.5; }
 .byok-note button { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--muted); border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 0.68rem; white-space: nowrap; }

@@ -77,6 +77,31 @@ export interface ParsedScene {
   choices: string[]
 }
 
+function extractBalancedJson(input: string): string | null {
+  const start = input.indexOf('{')
+  if (start < 0) return null
+
+  let inString = false
+  let escaped = false
+  let depth = 0
+
+  for (let index = start; index < input.length; index += 1) {
+    const char = input[index]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (char === '\\') escaped = true
+      else if (char === '"') inString = false
+      continue
+    }
+    if (char === '"') inString = true
+    else if (char === '{') depth += 1
+    else if (char === '}') {
+      depth -= 1
+      if (depth === 0) return input.slice(start, index + 1)
+    }
+  }
+  return null
+}
 /**
  * 解析模型输出，三级降级链：
  * 1. 合法 JSON → sceneText + choices；
@@ -97,6 +122,8 @@ export function parseSceneOutput(raw: string): ParsedScene {
   if (firstBrace >= 0 && lastBrace > firstBrace) {
     candidates.push(text.slice(firstBrace, lastBrace + 1))
   }
+  const balanced = extractBalancedJson(text)
+  if (balanced && !candidates.includes(balanced)) candidates.push(balanced)
 
   for (const c of candidates) {
     try {

@@ -1,5 +1,5 @@
 /**
- * 漏斗埋点——只记 4 个匿名事件：访问 / 导入成功 / 首条消息 / 第二轮对话。
+ * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开。
  * 不含任何聊天内容、Key、角色卡数据；隐私声明在落地页明示。
  *
  * 双通道：
@@ -45,7 +45,17 @@ export function initAnalytics() {
 }
 
 /** 每设备只上报一次的漏斗事件 */
-export function trackOnce(event: string) {
+export type AnalyticsEvent =
+  | '$pageview'
+  | 'import_success'
+  | 'first_message'
+  | 'second_round'
+  | 'character_edit'
+  | 'impersonate_used'
+  | 'share_create'
+  | 'share_open'
+
+export function trackOnce(event: AnalyticsEvent) {
   try {
     const key = `tavern-evt-${event}`
     if (localStorage.getItem(key)) return

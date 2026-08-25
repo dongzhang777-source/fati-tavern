@@ -72,6 +72,25 @@ describe('parseSceneOutput 三级降级链', () => {
     expect(r.text).toBe('正文')
   })
 
+  it('正文包含嵌套花括号时仍能提取完整 JSON', () => {
+    const r = parseSceneOutput('开场 {"sceneText":"你看到 {发光的门}。","choices":["推门","后退"]} 结束')
+    expect(r.text).toBe('你看到 {发光的门}。')
+    expect(r.choices).toEqual(['推门', '后退'])
+  })
+
+  it('字符串内未闭合花括号不会截断 JSON', () => {
+    const r = parseSceneOutput('{"sceneText":"她低声说：{\\"别动\\"}","choices":["停下"]}')
+    expect(r.text).toBe('她低声说：{"别动"}')
+    expect(r.choices).toEqual(['停下'])
+  })
+
+  it('未闭合 JSON 回退为纯文本', () => {
+    const raw = '{"sceneText":"未闭合剧情","choices":["a"'
+    const r = parseSceneOutput(raw)
+    expect(r.text).toBe(raw)
+    expect(r.choices).toEqual([])
+  })
+
   it('纯文本 → 整段当正文、无选项', () => {
     const r = parseSceneOutput('你推开了那扇门，门后一片漆黑。')
     expect(r.text).toBe('你推开了那扇门，门后一片漆黑。')

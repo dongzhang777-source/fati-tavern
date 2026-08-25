@@ -85,6 +85,85 @@ describe('client 连接与状态机', () => {
     await vi.advanceTimersByTimeAsync(60000)
     expect(FakeWS.instances.length).toBe(n)
   })
+
+  it('断线后重置加密握手并重新协商新密钥', async () => {
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    const groupKey = await generateGroupKey()
+
+    const establishEncryption = async (socket: FakeWS, key: string) => {
+      socket.open()
+      socket.receive({ kind: 'welcome', peerId: `peer_${FakeWS.instances.length}`, peers: [] })
+      await flush()
+      const server = await generateEcdhKeyPair()
+      socket.receive({ kind: 'ecdh_pub', pub: server.publicKeyB64, from: 'peer_srv' })
+      await flush()
+      const reply = socket.sent.map(frame => JSON.parse(frame)).find(m => m.kind === 'ecdh_pub')
+      const encryptedKey = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, key)
+      socket.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: encryptedKey, from: 'peer_srv' })
+      await flush(); await flush(); await flush()
+      expect(h.isEncrypted()).toBe(true)
+    }
+
+    await establishEncryption(ws, groupKey)
+    expect(h.isEncrypted()).toBe(true)
+
+    ws.close()
+    expect(h.getState()).toBe('disconnected')
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    expect(FakeWS.instances.length).toBe(2)
+    expect(h.isEncrypted()).toBe(false)
+
+    const reconnected = FakeWS.instances[1]
+    const newGroupKey = await generateGroupKey()
+    await establishEncryption(reconnected, newGroupKey)
+    h.disconnect()
+  })
+
+  it('可见恢复重连时清空聊天与算力队列', async () => {
+    const visibilityListeners = new Set<() => void>()
+    class VisibleDocument {
+      visibilityState = 'visible'
+      addEventListener = (_event: string, listener: () => void) => { visibilityListeners.add(listener) }
+      removeEventListener = (_event: string, listener: () => void) => { visibilityListeners.delete(listener) }
+    }
+    const originalDocument = globalThis.document
+    vi.stubGlobal('document', new VisibleDocument())
+
+    try {
+      const handler = createP2PClient('tok', 'ws://127.0.0.1:8081')
+      handler.sendChat('过时聊天')
+      handler.requestCompute('过时算力请求')
+      await flush()
+
+      const first = FakeWS.instances[0]
+      first.open()
+      first.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+      await flush()
+      expect(first.sent.some(frame => JSON.parse(frame).kind === 'chat')).toBe(true)
+
+      first.close()
+      await flush()
+      handler.sendChat('不应在重连后发送')
+      handler.requestCompute('不应在重连后发送')
+
+      ;(visibilityListeners.values().next().value as () => void)()
+      await flush()
+      expect(FakeWS.instances.length).toBe(2)
+
+      const second = FakeWS.instances[1]
+      second.open()
+      second.receive({ kind: 'welcome', peerId: 'p2', peers: [] })
+      await flush()
+      const kinds = second.sent.map(frame => JSON.parse(frame).kind)
+      expect(kinds).not.toContain('chat')
+      expect(kinds).not.toContain('compute_request')
+      handler.disconnect()
+    } finally {
+      vi.unstubAllGlobals()
+      if (originalDocument !== undefined) vi.stubGlobal('document', originalDocument)
+    }
+  })
 })
 
 describe('client E2E 状态机', () => {
@@ -281,6 +360,24 @@ describe('client E2E 状态机', () => {
 })
 
 describe('client 安全边界', () => {
+  it('限速等待期间连接关闭则不再发送', async () => {
+    vi.useFakeTimers()
+    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const ws = FakeWS.instances[0]
+    ws.open()
+    ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
+    await vi.advanceTimersByTimeAsync(10)
+
+    for (let index = 0; index < 10; index += 1) h.sendChat(`消息 ${index}`)
+    h.sendChat('被限速的消息')
+    expect(ws.sent.filter(frame => JSON.parse(frame).kind === 'chat').length).toBe(10)
+
+    ws.close()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(ws.sent.filter(frame => JSON.parse(frame).kind === 'chat').length).toBe(10)
+    h.disconnect()
+  })
+
   it('超大消息触发连接关闭', async () => {
     const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
@@ -292,7 +389,7 @@ describe('client 安全边界', () => {
     const bigData = 'x'.repeat(256 * 1024 + 1)
     let closeCalled = false
     const origClose = ws.close.bind(ws)
-    ws.close = (code?: number, reason?: string) => { closeCalled = true; origClose() }
+    ws.close = (_code?: number, _reason?: string) => { closeCalled = true; origClose() }
     ws.onmessage?.({ data: bigData })
     expect(closeCalled).toBe(true)
     h.disconnect()

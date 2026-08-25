@@ -5,6 +5,7 @@ import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
+import { createShareLink, ShareCardTooLargeError } from './lib/share'
 import type { StoredCharacter } from './lib/db'
 import { useP2PStore } from './store/slices/p2p'
 import { loadRelayUrl, saveRelayUrl } from './store/slices/p2p'
@@ -228,14 +229,16 @@ interface ImportResult {
   okBooks: number
   customToast?: string
   fails: { name: string; reason: string }[]
+  shareLink?: string
 }
 
 function Gallery() {
-  const { characters, importCard, removeCharacter, updateCharacter, openCharacter, lang, safeMode, ageGate } = useStore()
+  const { characters, endpoint, importCard, removeCharacter, updateCharacter, openCharacter, lang, safeMode, ageGate } = useStore()
   const importLorebook = useLoreStore((s) => s.importLorebook)
   const [dragOver, setDragOver] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [editingChar, setEditingChar] = useState<StoredCharacter | null>(null)
+  const [sharingId, setSharingId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -247,6 +250,7 @@ function Gallery() {
   const passesSafeMode = (c: StoredCharacter) => passesContentFilter(c.card.contentRating, safeMode, isMinor)
   // 被安全模式隐藏的卡数（给用户可见的反馈）
   const hiddenCount = safeMode ? characters.filter((c) => !passesSafeMode(c)).length : 0
+  const localAiReady = endpoint.baseUrl === 'webllm' && webllmSupported()
 
   // 每个文件独立解析，成功/失败都必须给用户可见反馈
   // JSON 先用 detectImportKind 分流：角色卡 → 角色库，世界书 → 世界书库
@@ -301,6 +305,27 @@ function Gallery() {
     toastTimer.current = setTimeout(() => setImportResult(null), fails.length > 0 ? 8000 : 3000)
   }
 
+  async function handleShare(character: StoredCharacter) {
+    setSharingId(character.id)
+    try {
+      const link = await createShareLink(character.card)
+      try {
+        await navigator.clipboard.writeText(link)
+      } catch { /* UI 仍展示链接，用户可手动复制 */ }
+      setImportResult({ okCards: 0, okBooks: 0, fails: [], shareLink: link })
+      trackOnce('share_create')
+    } catch (e) {
+      const reason = e instanceof ShareCardTooLargeError
+        ? e.message
+        : '链接分享不可用，请导出文件后分享'
+      setImportResult({ okCards: 0, okBooks: 0, fails: [{ name: character.card.name, reason }] })
+    } finally {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      toastTimer.current = setTimeout(() => setImportResult(null), 12000)
+      setSharingId(null)
+    }
+  }
+
   return (
     <div
       className="gallery"
@@ -331,6 +356,9 @@ function Gallery() {
           <div className="catalog-hero">
             <h2>{t(lang, 'landing.title2')}</h2>
             <p className="catalog-sub">{t(lang, 'landing.subtitle2')}</p>
+            <p className={localAiReady ? 'catalog-model-ready' : 'catalog-model-warning'}>
+              {localAiReady ? t(lang, 'catalog.modelReady', { model: endpoint.model }) : t(lang, 'catalog.modelUnavailable')}
+            </p>
           </div>
 
           <div className="card-grid">
@@ -382,6 +410,15 @@ function Gallery() {
                 )}
               </div>
               <button className="btn-edit" onClick={(e) => { e.stopPropagation(); setEditingChar(c) }}>{c.builtin ? t(lang, 'gallery.copyEdit') : t(lang, 'gallery.edit')}</button>
+              {!c.builtin && (
+                <button
+                  className="btn-share"
+                  disabled={sharingId === c.id}
+                  onClick={(e) => { e.stopPropagation(); void handleShare(c) }}
+                >
+                  {sharingId === c.id ? t(lang, 'gallery.sharing') : t(lang, 'gallery.share')}
+                </button>
+              )}
               <button className="btn-del" onClick={(e) => { e.stopPropagation(); removeCharacter(c.id) }} title={t(lang, 'gallery.delete')}>×</button>
             </div>
           ))}
@@ -396,6 +433,12 @@ function Gallery() {
           {importResult.okCards > 0 && <p>{t(lang, 'toast.imported', { n: importResult.okCards })}</p>}
           {importResult.okBooks > 0 && <p>{t(lang, 'toast.importedBooks', { n: importResult.okBooks })}</p>}
           {importResult.customToast && <p>{importResult.customToast}</p>}
+          {importResult.shareLink && (
+            <p>
+              {t(lang, 'share.copied')}
+              <input className="share-link" readOnly value={importResult.shareLink} onFocus={event => event.currentTarget.select()} />
+            </p>
+          )}
           {importResult.fails.map((f) => (
             <p key={f.name} className="fail-line">✗ {f.name}：{f.reason}</p>
           ))}

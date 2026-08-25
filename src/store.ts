@@ -10,6 +10,7 @@ import { detectLang, saveLang, t, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
 import { WEBLLM_BASE, streamWebLLM, webllmSupported, modelBlocked, setWebllmProgressHandler, isMobile, isIOS, WEBLLM_MODEL_MOBILE } from './lib/webllm'
 import { BUILTIN_CHARACTERS } from './lib/catalog'
+import { readSharedCard } from './lib/share'
 import {
   dbGetCharacters, dbPutCharacter, dbDeleteCharacter,
   dbGetConversations, dbPutConversation, dbDeleteConversation,
@@ -221,6 +222,13 @@ export const useStore = create<State>((set, get) => ({
   init: async () => {
     // 加载用户导入的角色（IndexedDB）
     const userChars = await dbGetCharacters()
+    // 分享链接导入：URL fragment 不离开浏览器；解析失败静默回正常目录
+    const shared = await readSharedCard()
+    if (shared) {
+      await get().importCard(shared)
+      trackOnce('share_open')
+      history.replaceState(null, '', location.pathname + location.search)
+    }
     // 加载内置角色目录（不写 IndexedDB，标记 builtin: true）
     const builtinChars: StoredCharacter[] = BUILTIN_CHARACTERS.map((c) => ({
       id: c._id,
