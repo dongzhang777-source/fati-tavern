@@ -1,5 +1,5 @@
 /**
- * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开。
+ * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开、截图分享。
  * 不含任何聊天内容、Key、角色卡数据；隐私声明在落地页明示。
  *
  * 双通道：
@@ -54,6 +54,7 @@ export type AnalyticsEvent =
   | 'impersonate_used'
   | 'share_create'
   | 'share_open'
+  | 'share_screenshot'
 
 export function trackOnce(event: AnalyticsEvent) {
   try {

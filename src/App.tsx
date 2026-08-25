@@ -5,6 +5,7 @@ import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT
 import { webllmSupported, loadWebLLMModel, loadedWebLLMModel, modelBlocked } from './lib/webllm'
 import { t, brandName, docTitle, localizeError, type Lang } from './lib/i18n'
 import { trackOnce } from './lib/analytics'
+import { pickShotMessages, renderChatScreenshot, shareOrDownload, shotFilename } from './lib/screenshot'
 import { createShareLink, ShareCardTooLargeError } from './lib/share'
 import type { StoredCharacter } from './lib/db'
 import { useP2PStore } from './store/slices/p2p'
@@ -570,6 +571,9 @@ function ChatView() {
   const [showConvList, setShowConvList] = useState(false)
   const [impOpen, setImpOpen] = useState(false)
   const [showLorePicker, setShowLorePicker] = useState(false)
+  const [shotBusy, setShotBusy] = useState(false)
+  const [shotNotice, setShotNotice] = useState<string | null>(null)
+  const shotTimer = useRef<number | null>(null)
   const p2pTab = useP2PStore(s => s.p2pChatTab)
   const setP2PChatTab = useP2PStore(s => s.setP2PChatTab)
   const p2pActive = useP2PStore(s => s.p2pState !== 'idle')
@@ -633,6 +637,38 @@ function ChatView() {
     if (refined) setInput(refined)
   }
 
+  function showShotNotice(text: string) {
+    setShotNotice(text)
+    if (shotTimer.current) clearTimeout(shotTimer.current)
+    shotTimer.current = window.setTimeout(() => setShotNotice(null), 3000)
+  }
+
+  // 截图分享：端侧 Canvas 手绘，聊天内容不出设备（T-A TA-1）
+  async function handleScreenshot() {
+    if (shotBusy || !char) return
+    const shotMessages = pickShotMessages(messages)
+    if (shotMessages.length === 0) return
+    setShotBusy(true)
+    try {
+      const blob = await renderChatScreenshot({
+        messages: shotMessages,
+        characterName: char.card.name,
+        avatarDataUrl: char.avatarUrl,
+        brand: brandName(lang),
+        tagline: t(lang, 'shot.tagline'),
+      })
+      const outcome = await shareOrDownload(blob, shotFilename(char.card.name))
+      if (outcome !== 'cancelled') {
+        trackOnce('share_screenshot')
+        showShotNotice(t(lang, 'chat.shotOk'))
+      }
+    } catch {
+      showShotNotice(t(lang, 'chat.shotFail'))
+    } finally {
+      setShotBusy(false)
+    }
+  }
+
   if (!char) return null
 
   return (
@@ -677,6 +713,13 @@ function ChatView() {
                 📖{effectiveBook ? '' : '＋'}
               </button>
             )}
+            <button
+              onClick={handleScreenshot}
+              disabled={shotBusy || messages.length === 0}
+              title={t(lang, shotBusy ? 'chat.shotBusy' : 'chat.screenshot')}
+            >
+              {shotBusy ? '…' : '📸'}
+            </button>
             <button onClick={() => setShowConvList(!showConvList)} title={t(lang, 'chat.convList')}>☰</button>
             <button onClick={clearChat} title={t(lang, 'chat.clear')}>🗑</button>
           </div>
@@ -748,6 +791,9 @@ function ChatView() {
         )}
 
         {error && <div className="error-bar">⚠ {error}</div>}
+
+        {/* 截图分享提示条（非阻断，3 秒自动消失） */}
+        {shotNotice && <div className="shot-notice">{shotNotice}</div>}
 
         {/* 嘴替抽屉：建议只供填入输入框，不入聊天记录 */}
         {impOpen && (
