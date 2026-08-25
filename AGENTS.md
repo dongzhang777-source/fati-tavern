@@ -60,3 +60,9 @@ npm run build    # tsc -b && vite build（含 PWA 产物）
 - `docs/IMPROVEMENT-PLAN.md` — 改进工作计划
 - `docs/SHARE-LOOP-DESIGN.md` — 分享回路设计
 - `CHANGELOG.md` — 更新日志
+
+## 跨项目联系
+
+请分析当前会话与我目前在做的项目之间有什么联系。如果识别到了联系，请分析并保存在适当的位置，使这些存档的信息或观点有助于统领并推进这些项目。
+
+- 2026-08-24 分析结果见 `docs/PROJECT-STATUS-2026-08-24.md`：Tavern 定位为主 FATI/tuna 虚拟社交体系外的“最小可信入口”；远期只吸收冷启动内容与替身体验洞察，不引入后端、内容托管或画像系统。
