@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fati.app/schemas/storypack-v2.schema.json",
+  "title": "StoryPack v2 (manifest | graph)",
+  "description": "StoryPack v2 静态包格式的机器可读契约（对应 docs/plans/w1-storypack-contract.md §1-§5）。\n\n用法（两份独立顶层定义，单文件以 $defs 区分）：\n  - 校验 <pack>/manifest.json      → 使用 #/$defs/manifest\n  - 校验 <pack>/script/graph.json  → 使用 #/$defs/graph\n根级 oneOf 仅作契约 §4 的整档兜底形态：因两侧均 additionalProperties:false 且必需键不相交，\nmanifest 与 graph 不可能同时匹配，故按根 schema 整验与按目标 $defs 定向校验结论一致。\n\n分工边界：本 schema 只管「形状」（白名单、必需、类型、枚举、长度、区间、可表达的跨字段政策）；\n跨字段/跨文件语义（默认语言覆盖 TXT-702/704、DAG 环与可达性 SP-DAG-*、引用悬挂 SP-REF-*、\n重复 id SP-REF-206/207/208、stats/size 真值 SP-REF-209/MAN-018、向量条数 REF-210、文件存在性\nREF-211/205/204、留白占比 BLK-504、minChars≤maxChars BLK-508、vectors.bin 字节/摘要 EMB-404）\n由运行时校验器 S10-S18 阶段执行。\n\n阈值口径：KB/MB 按 1024 进制（300KB=307200、400KB=409600、800KB=819200、500KB=512000、2MB=2097152），\n与打包管线对齐时如需改十进制，仅动此处数值常量。\n长度单位为 Unicode 码点；控制字符除 \\n \\t 外一律禁止（SP-TXT-705）。",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/graph" }
+  ],
+  "$defs": {
+    "noHazards": {
+      "description": "原型污染键双保险（SP-MAN-013）；配合各对象的 additionalProperties:false 构成两道闸",
+      "type": "object",
+      "propertyNames": {
+        "not": { "enum": ["__proto__", "constructor", "prototype"] }
+      }
+    },
+    "locale": {
+      "description": "语言注册表闭集（SP-TXT-703）",
+      "enum": ["en", "zh-Hans", "zh-Hant", "ja", "ko", "de", "fr", "es", "pt-BR", "ru"]
+    },
+    "nodeId": {
+      "description": "节点/选项/媒体资产 id 正则（SP-MAN-016 / REF-206 前置形状关）",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$"
+    },
+    "packId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+    },
+    "sha256": {
+      "description": "小写 hex64（SP-MED-304）",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "noControlChars": {
+      "description": "禁止 C0 控制字符（\\t \\u000A 除外）、DEL 与 C1（SP-TXT-705）",
+      "type": "string",
+      "pattern": "^[^\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F]*$"
+    },
+    "localizedTitle": {
+      "description": "LocalizedText ≤80 码点（title 用）",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/locale" },
+      "additionalProperties": {
+        "type": "string", "minLength": 1, "maxLength": 80,
+        "allOf": [{ "$ref": "#/$defs/noControlChars" }]
+      }
+    },
+    "localized280": {
+      "description": "LocalizedText ≤280 码点（summary / prompt / ghostHint 用）",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/locale" },
+      "additionalProperties": {
+        "type": "string", "minLength": 1, "maxLength": 280,
+        "allOf": [{ "$ref": "#/$defs/noControlChars" }]
+      }
+    },
+    "localizedLabel": {
+      "description": "LocalizedText ≤60 码点（choice.label 用）",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/locale" },
+      "additionalProperties": {
+        "type": "string", "minLength": 1, "maxLength": 60,
+        "allOf": [{ "$ref": "#/$defs/noControlChars" }]
+      }
+    },
+    "localizedText": {
+      "description": "LocalizedText ≤4000 码点（node.text 用）",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/locale" },
+      "additionalProperties": {
+        "type": "string", "minLength": 1, "maxLength": 4000,
+        "allOf": [{ "$ref": "#/$defs/noControlChars" }]
+      }
+    },
+    "musicCue": {
+      "description": "Layer1 参数化音频（§2.8；CUE-901/902/908/904 形状部分）",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["mood"],
+      "properties": {
+        "mood": { "enum": ["peace", "melancholy", "mystery", "tension", "joy", "dream", "epic", "intimate"] },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "transitionType": { "enum": ["crossfade", "cut", "filter_sweep"] },
+        "transitionDurationMs": { "type": "integer", "minimum": 120, "maximum": 6000 }
+      }
+    },
+    "visualCueParamsValue": {
+      "description": "params 值三型：string ≤64 且禁 url(/expression(/javascript: 注入（CUE-905）；number 非负；boolean",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 64,
+          "not": { "pattern": "[uU][rR][lL]\\(|[eE][xX][pP][rR][eE][sS][sS][iI][oO][nN]\\(|[jJ][aA][vV][aA][sS][cC][rR][iI][pP][tT]:" }
+        },
+        { "type": "number", "minimum": 0 },
+        { "type": "boolean" }
+      ]
+    },
+    "visualCue": {
+      "description": "CSS 变量 + WAAPI 视觉模板（§2.9；8 模板枚举 CUE-903、时长 CUE-904、params 形状/注入 CUE-906/905）",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["template"],
+      "properties": {
+        "template": { "enum": ["aurora", "embers", "rain", "snow", "starfield", "fog", "flash", "glitch"] },
+        "durationMs": { "type": "integer", "minimum": 120, "maximum": 5000 },
+        "easing": { "enum": ["linear", "easeOut", "easeInOut"] },
+        "params": {
+          "type": "object",
+          "maxProperties": 16,
+          "propertyNames": {
+            "allOf": [
+              { "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,23}$" },
+              { "not": { "enum": ["__proto__", "constructor", "prototype"] } }
+            ]
+          },
+          "additionalProperties": { "$ref": "#/$defs/visualCueParamsValue" }
+        }
+      }
+    },
+    "choice": {
+      "description": "StoryChoice（§2.10）。同节点内选项 id 唯一（REF-207）与 target 存在（REF-201）归运行时",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["id", "label", "target"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "label": { "$ref": "#/$defs/localizedLabel" },
+        "target": { "$ref": "#/$defs/nodeId" }
+      }
+    },
+    "blankSpec": {
+      "description": "玩家留白约束体（§2.7）。constraints/fallback 必带（BLK-501/502）；continuations 1..4（BLK-505）；\nminChars≤maxChars 的比较（BLK-508）归运行时",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["slotKind", "prompt", "constraints", "fallback", "continuations"],
+      "properties": {
+        "slotKind": { "enum": ["player_turn", "relay_round"] },
+        "prompt": { "$ref": "#/$defs/localized280" },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["minChars", "maxChars"],
+          "properties": {
+            "minChars": { "type": "integer", "minimum": 1, "maximum": 2000 },
+            "maxChars": { "type": "integer", "minimum": 1, "maximum": 2000 },
+            "tone": { "enum": ["any", "heroic", "comedic", "dark", "romantic"] },
+            "forbidden": {
+              "type": "array",
+              "maxItems": 8,
+              "items": { "type": "string", "minLength": 1, "maxLength": 20 }
+            }
+          }
+        },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["mode"],
+          "properties": {
+            "mode": { "enum": ["ghost_ai", "skip_to_next"] },
+            "ghostHint": { "$ref": "#/$defs/localized280" }
+          }
+        },
+        "continuations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/nodeId" }
+        }
+      }
+    },
+    "node": {
+      "description": "StoryNode 三形态（§2.6）。scene: text+choices≥1；ending: text+choices 空+禁 blankSpec（BLK-509/DAG-110）；\nblank: prompt+blankSpec+choices 空+禁 text。死端场景（choices 空，DAG-109）在此被 scene.choices.minItems 表达。\nprompt 键出现在 scene/ending、blankSpec 出现在 scene 为契约未赋码的冗余形态，schema 层不额外禁止（对齐 §4 权威草案）",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "choices"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "enum": ["scene", "ending", "blank"] },
+        "text": { "$ref": "#/$defs/localizedText" },
+        "prompt": { "$ref": "#/$defs/localized280" },
+        "choices": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/choice" }
+        },
+        "blankSpec": { "$ref": "#/$defs/blankSpec" },
+        "audioCue": { "$ref": "#/$defs/musicCue" },
+        "visualCue": { "$ref": "#/$defs/visualCue" },
+        "mediaRefs": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "castRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/noHazards" },
+        {
+          "if": { "properties": { "kind": { "const": "scene" } }, "required": ["kind"] },
+          "then": {
+            "required": ["text"],
+            "properties": { "choices": { "type": "array" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "ending" } }, "required": ["kind"] },
+          "then": {
+            "required": ["text"],
+            "not": { "required": ["blankSpec"] },
+            "properties": { "choices": { "type": "array", "maxItems": 0 } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "blank" } }, "required": ["kind"] },
+          "then": {
+            "required": ["prompt", "blankSpec"],
+            "not": { "required": ["text"] },
+            "properties": { "choices": { "type": "array", "maxItems": 0 } }
+          }
+        }
+      ]
+    },
+    "mediaAsset": {
+      "description": "MediaAsset（§2.3）。file 强制小写媒体路径且扩展名 ∈ 8 允许集（SVG 永禁 MED-301）；\n扩展名↔MIME 互证（MED-302）；单资产上限按 kind 条件化：illustration 307200 / stem 409600 / clip 819200（MED-305）",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "file", "mimeType", "sha256", "bytes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "kind": { "enum": ["illustration", "stem", "clip"] },
+        "file": {
+          "type": "string",
+          "pattern": "^media\\/[a-z0-9._-]+\\.(png|webp|jpe?g|mp3|ogg|wav|webm)$"
+        },
+        "mimeType": {
+          "enum": ["image/png", "image/webp", "image/jpeg", "audio/mpeg", "audio/ogg", "audio/wav", "video/webm"]
+        },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 819200 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/noHazards" },
+        {
+          "if": { "properties": { "kind": { "const": "illustration" } }, "required": ["kind"] },
+          "then": { "properties": { "bytes": { "type": "integer", "maximum": 307200 } } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "stem" } }, "required": ["kind"] },
+          "then": { "properties": { "bytes": { "type": "integer", "maximum": 409600 } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.png$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["image/png"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.webp$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["image/webp"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.jpe?g$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["image/jpeg"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.mp3$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["audio/mpeg"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.(ogg|oga)$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["audio/ogg"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.wav$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["audio/wav"] } } }
+        },
+        {
+          "if": { "properties": { "file": { "type": "string", "pattern": "\\.webm$" } }, "required": ["file"] },
+          "then": { "properties": { "mimeType": { "enum": ["video/webm"] } } }
+        }
+      ]
+    },
+    "embedding": {
+      "description": "EmbeddingRef（§2.4）。file 恒 vectors.bin（REF-212 路径逃逸在此被 const 拒绝）；dim=384（EMB-402）、\ndtype=int8（EMB-403）；additionalProperties:false 使任何内联数组无处可放（EMB-401 的 schema 表达）；\ncount 与节点数/文件字节的恒等（REF-210）归运行时",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["file", "dtype", "dim", "count", "sha256"],
+      "properties": {
+        "file": { "const": "vectors.bin" },
+        "dtype": { "const": "int8" },
+        "dim": { "const": 384 },
+        "count": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "graph": {
+      "description": "script/graph.json 顶层定义（§2.5）。rootId 缺失（DAG-104）、nodes 空（DAG-112）在此表达；\nroot 存在性/kind（105/106）、环（101/102）、可达性（107/108）、结局集恒等（111）、重复 id（206/207）、\n引用悬挂（201/202）归运行时 S11-S15",
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [{ "$ref": "#/$defs/noHazards" }],
+      "required": ["rootId", "endingIds", "nodes"],
+      "properties": {
+        "rootId": { "$ref": "#/$defs/nodeId" },
+        "endingIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/node" }
+        }
+      }
+    },
+    "manifest": {
+      "description": "manifest.json 顶层定义（§2.2）。白名单 additionalProperties:false（MAN-012）+ hazard 键双保险（MAN-013）；\nschemaVersion 锁 MAJOR=2（MAN-010/011/015）；分级×渠道×索引×年龄门政策（RAT-602/603/604）与 tier 包体上限\n（MED-306）、base 层资产 kind 白名单（MED-307）用 if/then 表达。默认语言覆盖（TXT-702/704）、stats/size 真值等式\n（REF-209/MAN-018）、向量条数（REF-210）、cast/lorebook 文件存在（REF-204/205）归运行时。\n注：embedding 允许显式 null（fixtures 以 null 表达「无嵌入」，语义等同缺省）",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "packId", "title", "summary", "language", "origin", "creator",
+        "contentRating", "ageGateRequired", "distribution", "tier", "genres", "tags", "stats", "size"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "description": "\"MAJOR.MINOR\" 字符串且 MAJOR=2（W1 冻结 2.x）",
+          "type": "string",
+          "pattern": "^2\\.[0-9]+$"
+        },
+        "packId": { "$ref": "#/$defs/packId" },
+        "title": { "$ref": "#/$defs/localizedTitle" },
+        "summary": { "$ref": "#/$defs/localized280" },
+        "language": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/locale" }
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["channel", "provenance"],
+          "properties": {
+            "channel": { "enum": ["official", "ugc"] },
+            "provenance": { "enum": ["ai", "human", "hybrid"] }
+          }
+        },
+        "creator": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+            "peerId": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
+        },
+        "license": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "contentRating": { "enum": ["all", "suggestive", "adult"] },
+        "ageGateRequired": { "type": "boolean" },
+        "distribution": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["channels", "publicIndex"],
+          "properties": {
+            "channels": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": ["desktop-web", "mobile-pwa"] }
+            },
+            "publicIndex": { "type": "boolean" }
+          }
+        },
+        "tier": { "enum": ["base", "curated"] },
+        "genres": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["fantasy", "scifi", "mystery", "romance", "horror", "slice-of-life"] }
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "type": "string", "minLength": 1, "maxLength": 24 }
+        },
+        "media": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mediaAsset" }
+        },
+        "cast": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^characters\\/[a-z0-9._-]+\\.json$" }
+        },
+        "lorebooks": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^lorebooks\\/[a-z0-9._-]+\\.json$" }
+        },
+        "embedding": {
+          "anyOf": [
+            { "$ref": "#/$defs/embedding" },
+            { "type": "null" }
+          ]
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["nodes", "endings", "blanks"],
+          "properties": {
+            "nodes": { "type": "integer", "minimum": 1 },
+            "endings": { "type": "integer", "minimum": 0 },
+            "blanks": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "size": {
+          "type": "object",
+          "additionalProperties": false,
+          "allOf": [{ "$ref": "#/$defs/noHazards" }],
+          "required": ["scriptBytes", "mediaBytes", "totalBytes"],
+          "properties": {
+            "scriptBytes": { "type": "integer", "minimum": 0 },
+            "mediaBytes": { "type": "integer", "minimum": 0 },
+            "totalBytes": { "type": "integer", "minimum": 1 }
+          }
+        }
+      },
+      "allOf": [
+        { "$ref": "#/$defs/noHazards" },
+        {
+          "description": "RAT-604：suggestive/adult 必须开年龄门",
+          "if": { "properties": { "contentRating": { "enum": ["suggestive", "adult"] } }, "required": ["contentRating"] },
+          "then": { "properties": { "ageGateRequired": { "const": true } } }
+        },
+        {
+          "description": "RAT-602/603：adult 仅 desktop-web 渠道 + 强制退出公共索引",
+          "if": { "properties": { "contentRating": { "const": "adult" } }, "required": ["contentRating"] },
+          "then": {
+            "properties": {
+              "ageGateRequired": { "const": true },
+              "distribution": {
+                "type": "object",
+                "properties": {
+                  "channels": { "type": "array", "items": { "enum": ["desktop-web"] } },
+                  "publicIndex": { "const": false }
+                }
+              }
+            }
+          }
+        },
+        {
+          "description": "MED-306/307：base 层包体 ≤500KiB 且媒体资产仅 illustration",
+          "if": { "properties": { "tier": { "const": "base" } }, "required": ["tier"] },
+          "then": {
+            "properties": {
+              "size": {
+                "type": "object",
+                "properties": {
+                  "mediaBytes": { "type": "integer", "maximum": 512000 },
+                  "totalBytes": { "type": "integer", "maximum": 512000 }
+                }
+              },
+              "media": {
+                "type": "array",
+                "items": { "type": "object", "properties": { "kind": { "enum": ["illustration"] } } }
+              }
+            }
+          }
+        },
+        {
+          "description": "MED-306：curated 层包体 ≤2MiB",
+          "if": { "properties": { "tier": { "const": "curated" } }, "required": ["tier"] },
+          "then": {
+            "properties": {
+              "size": {
+                "type": "object",
+                "properties": {
+                  "mediaBytes": { "type": "integer", "maximum": 2097152 },
+                  "totalBytes": { "type": "integer", "maximum": 2097152 }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
