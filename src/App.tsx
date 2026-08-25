@@ -16,6 +16,7 @@ import { P2PJoinPanel } from './components/p2p/P2PJoinPanel'
 import { P2PChatPanel } from './components/p2p/P2PChatPanel'
 import { LorebookPanel } from './components/LorebookPanel'
 import { StoryView } from './components/StoryView'
+import { StoryPackReader } from './components/StoryPackReader'
 import './App.css'
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
         <>
           {view === 'gallery' && <Gallery />}
           {view === 'chat' && <ChatTabEmpty />}
+          {view === 'storypack' && <div className="tab-page"><StoryPackReader /></div>}
           {view === 'lore' && <div className="tab-page"><LorebookPanel /></div>}
           {view === 'settings' && <SettingsTab />}
         </>
@@ -90,12 +92,13 @@ function TabBar() {
   const view = useStore((s) => s.view)
   const lang = useStore((s) => s.lang)
   const hasActiveChar = useStore((s) => s.characters.some((c) => c.id === s.activeCharId))
-  const { backToGallery, showChatTab, showLore, showSettings } = useStore.getState()
+  const { backToGallery, showChatTab, showStoryPack, showLore, showSettings } = useStore.getState()
 
-  // 顺序为镜面反转：设置 → 世界书 → 聊天 → 角色（老张 2026-08-02 指定）
+  // 顺序为镜面反转：设置 → 世界书 → 故事 → 聊天 → 角色（老张 2026-08-02 指定）
   const tabs: { key: string; icon: string; label: string; active: boolean; go: () => void }[] = [
     { key: 'settings', icon: '⚙️', label: t(lang, 'tab.settings'), active: view === 'settings', go: showSettings },
     { key: 'books', icon: '📚', label: t(lang, 'tab.books'), active: view === 'lore', go: showLore },
+    { key: 'storypack', icon: '📖', label: t(lang, 'sp.tab'), active: view === 'storypack', go: showStoryPack },
     { key: 'chat', icon: '💬', label: t(lang, 'tab.chat'), active: view === 'chat' && hasActiveChar, go: showChatTab },
     { key: 'chars', icon: '🎭', label: t(lang, 'tab.chars'), active: view === 'gallery', go: backToGallery },
   ]

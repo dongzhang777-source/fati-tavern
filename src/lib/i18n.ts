@@ -366,6 +366,21 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   p2pSendFailed: { zh: '消息加密失败，未发送', en: 'Message encryption failed, not sent', ja: '暗号化に失敗し、送信されませんでした', ko: '암호화 실패로 전송되지 않음' },
   // M-3：WebLLM 模型来源披露
   'webllm.modelSource': { zh: '模型权重从 huggingface.co/mlc-ai 下载，缓存于浏览器本地', en: 'Model weights are downloaded from huggingface.co/mlc-ai and cached locally in your browser', ja: 'モデルはhuggingface.co/mlc-aiからダウンロードし、ブラウザにローカルキャッシュされます', ko: '모델은 huggingface.co/mlc-ai에서 다운로드되어 브라우저에 로컬 캐시됩니다' },
+  // ── StoryPack 试玩阅读器 ──
+  'sp.tab': { zh: '故事', en: 'Stories', ja: 'ストーリー', ko: '스토리' },
+  'sp.subtitle': { zh: '纯文本互动故事 · 无需 API Key', en: 'Text adventures · No API key needed', ja: 'テキストアドベンチャー · APIキー不要', ko: '텍스트 어드벤처 · API 키 불필요' },
+  'sp.play': { zh: '开始游玩', en: 'Play', ja: 'プレイ', ko: '플레이' },
+  'sp.continue': { zh: '继续', en: 'Continue', ja: '続ける', ko: '계속' },
+  'sp.ending': { zh: '结局', en: 'Ending', ja: 'エンディング', ko: '엔딩' },
+  'sp.endingTitle': { zh: '故事结束', en: 'Story ended', ja: 'ストーリー終了', ko: '스토리 종료' },
+  'sp.restart': { zh: '重新开始', en: 'Restart', ja: 'やり直す', ko: '다시 시작' },
+  'sp.backToList': { zh: '返回故事列表', en: 'Back to stories', ja: 'ストーリー一覧に戻る', ko: '스토리 목록으로' },
+  'sp.nodes': { zh: '{n} 个场景', en: '{n} scenes', ja: '{n}シーン', ko: '{n}개 장면' },
+  'sp.endings': { zh: '{n} 个结局', en: '{n} endings', ja: '{n}エンディング', ko: '{n}개 엔딩' },
+  'sp.share': { zh: '分享结局', en: 'Share ending', ja: 'エンディングを共有', ko: '엔딩 공유' },
+  'sp.copyText': { zh: '复制文本', en: 'Copy text', ja: 'テキストをコピー', ko: '텍스트 복사' },
+  'sp.copied': { zh: '已复制', en: 'Copied', ja: 'コピーしました', ko: '복사됨' },
+  'sp.loadFail': { zh: '故事加载失败', en: 'Failed to load story', ja: 'ストーリーの読み込みに失敗', ko: '스토리 로드 실패' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {

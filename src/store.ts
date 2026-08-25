@@ -27,7 +27,7 @@ export interface ChatMessage {
   ts?: number
 }
 
-export type View = 'gallery' | 'chat' | 'story' | 'lore' | 'settings'
+export type View = 'gallery' | 'chat' | 'story' | 'lore' | 'settings' | 'storypack'
 
 // 用户 persona（全局单个）：名字填 {{user}} 宏，描述拼入 system prompt
 export interface UserPersona {
@@ -83,6 +83,7 @@ interface State {
   backToGallery: () => void
   enterStoryView: () => void
   showChatTab: () => void
+  showStoryPack: () => void
   showLore: () => void
   showSettings: () => void
 
@@ -333,6 +334,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   showChatTab: () => set({ view: 'chat' }),
+  showStoryPack: () => set({ view: 'storypack', activeConvId: null }),
   showLore: () => set({ view: 'lore', activeConvId: null }),
   showSettings: () => set({ view: 'settings', activeConvId: null }),
 
