@@ -159,6 +159,33 @@ describe('testChat', () => {
     fetchMock.mockResolvedValue(jsonResp('oops sk-abcdefgh12345678 leaked', false, 500))
     await expect(testChat(ep(), sig())).rejects.toThrow(/sk-\*\*\*/)
   })
+
+  // R4 新增：testChat 请求体必须携带 thinking 抑制双参数（与 streamChat 对齐）
+  it('请求体携带 enable_thinking:false 与 chat_template_kwargs', async () => {
+    const spy = vi.fn().mockResolvedValue(jsonResp({ choices: [{ message: { content: 'ok' } }] }))
+    vi.stubGlobal('fetch', spy)
+    await testChat(ep(), sig())
+    const body = JSON.parse(spy.mock.calls[0][1]!.body as string)
+    expect(body.enable_thinking).toBe(false)
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false })
+    expect(body.max_tokens).toBe(256)
+    vi.unstubAllGlobals()
+  })
+
+  // R4 新增：返回内容含 <think> 块时被 ThinkTagFilter 剥离
+  it('剥离响应中的 <think>...</think> 块', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResp({ choices: [{ message: { content: '<think>secret reasoning</think>visible reply' } }] }) as any,
+    )
+    const r = await testChat(ep(), sig())
+    expect(r).toBe('visible reply')
+  })
+
+  // R4 新增：极端全-think 场景（content 为空串）应抛错而非报成功
+  it('空内容抛错（全-think 极端场景）', async () => {
+    fetchMock.mockResolvedValue(jsonResp({ choices: [{ message: { content: '   ' } }] }) as any)
+    await expect(testChat(ep(), sig())).rejects.toThrow()
+  })
 })
 
 // ── validateBaseUrl ───────────────────────────────────

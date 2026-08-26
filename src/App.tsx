@@ -1122,7 +1122,10 @@ function SettingsPanel() {
     setChatStatus('loading')
     setChatMsg('')
     try {
-      await testChat(endpoint)
+      // 接收返回值并校验非空：极端全-think 场景下 HTTP 200 但 content 为空串，
+      // 不能算"测试成功"（cbc 审计 P1-4，R4 修复）
+      const reply = await testChat(endpoint)
+      if (!reply.trim()) throw new Error(t(lang, 'settings.chatEmpty'))
       setChatStatus('ok')
       setChatMsg(t(lang, 'settings.chatOk'))
     } catch (e: any) {

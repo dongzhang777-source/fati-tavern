@@ -167,6 +167,7 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'settings.sendTest': { zh: '发送测试消息', en: 'Send test message', ja: 'テストメッセージを送信', ko: '테스트 메시지 보내기' },
   'settings.sending': { zh: '发送中…', en: 'Sending…', ja: '送信中…', ko: '전송 중…' },
   'settings.chatOk': { zh: '聊天链路正常，模型有回复', en: 'Chat endpoint works — model replied', ja: 'チャット連携は正常 — モデルが応答しました', ko: '채팅 정상 — 모델이 응답했습니다' },
+  'settings.chatEmpty': { zh: '模型无回复（可能为思考型模型消耗了全部 token）', en: 'Model returned empty (thinking model may have consumed all tokens)', ja: 'モデルが空返答（思考モデルがトークンを消費した可能性）', ko: '모델 빈 응답（사고 모델이 토큰 소진 가능）' },
   'settings.chatFail': { zh: '测试失败', en: 'Test failed', ja: 'テスト失敗', ko: '테스트 실패' },
   'settings.corsHint': {
     zh: '⚠ 本地端点需开启 CORS 才能被网页访问：LM Studio 在 Server 设置中打开「Enable CORS」；Ollama 启动前设置环境变量 OLLAMA_ORIGINS=*。',

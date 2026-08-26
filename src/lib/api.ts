@@ -284,5 +284,8 @@ export async function testChat(endpoint: EndpointConfig, signal?: AbortSignal): 
   if (typeof raw !== 'string') throw new Error('响应格式异常')
   // 兜底剥离可能残留的 <think> 块（与流式路径同款过滤器，批量喂入）
   const filter = new ThinkTagFilter()
-  return (filter.push(raw) + filter.flush()).trim()
+  const reply = (filter.push(raw) + filter.flush()).trim()
+  // P1-4：剥离后仍空串（极端全-think 场景）视为失败，不让 UI 误报「测试成功」
+  if (!reply) throw new Error('模型返回空内容（可能为思考型模型消耗了全部 token）')
+  return reply
 }
