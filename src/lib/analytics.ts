@@ -1,6 +1,6 @@
 /**
- * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开、截图分享。
- * 不含任何聊天内容、Key、角色卡数据；隐私声明在落地页明示。
+ * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开、截图分享、首聊星级评分。
+ * 不含任何聊天内容、Key、角色卡数据；first_chat_rating 只带 1-5 星数值；隐私声明在落地页明示。
  *
  * 双通道：
  * - Vercel Analytics：pageview（Hobby 档仅支持 pageview）
@@ -23,7 +23,7 @@ function distinctId(): string {
   return id
 }
 
-function phCapture(event: string) {
+function phCapture(event: string, props?: Record<string, unknown>) {
   if (!PH_KEY) return
   fetch(`${PH_HOST}/capture/`, {
     method: 'POST',
@@ -32,7 +32,7 @@ function phCapture(event: string) {
       api_key: PH_KEY,
       event,
       distinct_id: distinctId(),
-      properties: { $current_url: location.origin }, // 只报域名，不报具体路径参数
+      properties: { $current_url: location.origin, ...props }, // 只报域名与数值型属性，不报路径参数/内容
     }),
   }).catch(() => { /* 埋点失败不影响任何功能 */ })
 }
@@ -55,12 +55,13 @@ export type AnalyticsEvent =
   | 'share_create'
   | 'share_open'
   | 'share_screenshot'
+  | 'first_chat_rating'
 
-export function trackOnce(event: AnalyticsEvent) {
+export function trackOnce(event: AnalyticsEvent, props?: Record<string, number>) {
   try {
     const key = `tavern-evt-${event}`
     if (localStorage.getItem(key)) return
     localStorage.setItem(key, '1')
-    phCapture(event)
+    phCapture(event, props)
   } catch { /* ignore */ }
 }

@@ -70,6 +70,20 @@ describe('t', () => {
     expect(t('zh', 'toast.imported', { n: 3 })).toBe('✓ 已导入 3 张角色卡')
     expect(t('en', 'toast.imported', { n: 3 })).toBe('✓ Imported 3 card(s)')
   })
+  it('冷启动新键（cs.*/rate.*）四语齐备且非空', () => {
+    const keys = [
+      'cs.cardChatT', 'cs.cardChatD', 'cs.cardFreeT', 'cs.cardFreeD',
+      'cs.cardPrivacyT', 'cs.cardPrivacyD', 'cs.exampleNote',
+      'cs.exampleUser', 'cs.exampleAI', 'rate.title', 'rate.skip',
+    ]
+    for (const key of keys) {
+      for (const lang of ['zh', 'en', 'ja', 'ko'] as const) {
+        const text = t(lang, key)
+        expect(text, `${key}.${lang}`).not.toBe(key)
+        expect(text.length, `${key}.${lang}`).toBeGreaterThan(0)
+      }
+    }
+  })
 })
 
 describe('localizeError', () => {

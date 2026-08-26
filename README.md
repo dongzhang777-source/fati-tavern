@@ -28,7 +28,7 @@ Drop a character card in and start chatting.
 - 🃏 **SillyTavern 卡片兼容**：v1/v2/v3 JSON、PNG（`chara`/`ccv3` 区块、gzip/zTXt 压缩）、世界书、`{{char}}`/`{{user}}` 宏
 - 🔑 **BYOK**：DeepSeek / Kimi / OpenAI / LM Studio / Ollama / 任意 OpenAI 兼容端点，Key 只存 localStorage
 - ⚡ **免 Key 体验档**：WebLLM 浏览器本地推理（WebGPU），无需任何 Key
-- 🔒 **隐私优先**：无后端、无内容上传、无账号；仅统计匿名功能使用计数（访问/导入/发消息/角色编辑/嘴替使用/二轮对话/分享创建/分享打开/截图分享）
+- 🔒 **隐私优先**：无后端、无内容上传、无账号；仅统计匿名功能使用计数（访问/导入/发消息/角色编辑/嘴替使用/二轮对话/分享创建/分享打开/截图分享/首聊评分）
 - 🔗 **角色卡分享**：生成 gzip + base64url 链接；数据只放在 URL `#` fragment 中，不经过本应用服务器
 - 📸 **对话截图分享**：端侧 Canvas 手绘对话长图，底部带品牌水印；系统分享或下载，全程不出设备
 - 🌐 **四语言**：中/英/日/韩，界面语言自动检测、可手动切换

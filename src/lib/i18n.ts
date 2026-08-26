@@ -79,10 +79,10 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   },
   'landing.privacyTitle': { zh: '🔒 隐私承诺', en: '🔒 Privacy promise', ja: '🔒 プライバシーの約束', ko: '🔒 프라이버시 약속' },
   'landing.privacyBody': {
-    zh: '你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有内容上传，没有账号注册；主动分享时，卡片数据只保存在链接 # 后面。我们仅统计匿名的功能使用计数（访问 / 导入 / 发消息 / 角色编辑 / 嘴替使用 / 二轮对话 / 分享创建 / 分享打开 / 截图分享），不含任何聊天内容、角色卡或 Key。',
-    en: 'Your API key, character cards and chats live only in your browser. No backend, no content uploads, no sign-up; when you choose to share, card data stays only after the link’s #. We only collect anonymous feature-usage counts (visit / import / message / character edit / reply helper / second round / share created / share opened / screenshot share) — never any chat content, cards or keys.',
-    ja: 'あなたのAPIキー、キャラクターカード、チャットはすべてブラウザ内にだけ保存されます。バックエンドサーバーも、コンテンツのアップロードも、アカウント登録もありません。共有を選択した場合、カードデータはリンクの#以降だけに保存されます。当サイトは匿名の機能利用回数（訪問／インポート／送信／キャラクター編集／返信アシスト／2回目の対話／共有作成／共有オープン／スクショ共有）のみを集計し、チャット内容・カード・キーは一切収集しません。',
-    ko: 'API 키, 캐릭터 카드, 채팅은 모두 브라우저에만 저장됩니다. 백엔드 서버도, 콘텐츠 업로드도, 회원가입도 없습니다. 공유를 선택하면 카드 데이터는 링크의 # 뒤에만 저장됩니다. 당사는 익명의 기능 사용 횟수(방문/가져오기/메시지/캐릭터 편집/답변 도우미/2차 대화/공유 생성/공유 열기/스크린샷 공유)만 집계하며, 채팅 내용·카드·키는 절대 수집하지 않습니다.',
+    zh: '你的 API Key、角色卡、聊天记录全部只存在你的浏览器中。没有后端服务器，没有内容上传，没有账号注册；主动分享时，卡片数据只保存在链接 # 后面。我们仅统计匿名的功能使用计数（访问 / 导入 / 发消息 / 角色编辑 / 嘴替使用 / 二轮对话 / 分享创建 / 分享打开 / 截图分享 / 首聊评分），不含任何聊天内容、角色卡或 Key。',
+    en: 'Your API key, character cards and chats live only in your browser. No backend, no content uploads, no sign-up; when you choose to share, card data stays only after the link’s #. We only collect anonymous feature-usage counts (visit / import / message / character edit / reply helper / second round / share created / share opened / screenshot share / first-chat rating) — never any chat content, cards or keys.',
+    ja: 'あなたのAPIキー、キャラクターカード、チャットはすべてブラウザ内にだけ保存されます。バックエンドサーバーも、コンテンツのアップロードも、アカウント登録もありません。共有を選択した場合、カードデータはリンクの#以降だけに保存されます。当サイトは匿名の機能利用回数（訪問／インポート／送信／キャラクター編集／返信アシスト／2回目の対話／共有作成／共有オープン／スクショ共有／初回会話評価）のみを集計し、チャット内容・カード・キーは一切収集しません。',
+    ko: 'API 키, 캐릭터 카드, 채팅은 모두 브라우저에만 저장됩니다. 백엔드 서버도, 콘텐츠 업로드도, 회원가입도 없습니다. 공유를 선택하면 카드 데이터는 링크의 # 뒤에만 저장됩니다. 당사는 익명의 기능 사용 횟수(방문/가져오기/메시지/캐릭터 편집/답변 도우미/2차 대화/공유 생성/공유 열기/스크린샷 공유/첫 대화 평가)만 집계하며, 채팅 내용·카드·키는 절대 수집하지 않습니다.',
   },
   'landing.feat1': { zh: '纯前端 PWA<br/>零安装零注册', en: 'Pure frontend PWA<br/>No install, no sign-up', ja: '完全フロントエンドPWA<br/>インストール不要・登録不要', ko: '완전 프론트엔드 PWA<br/>설치·가입 불필요' },
   'landing.feat2': { zh: 'BYOK 自带 Key<br/>DeepSeek / Kimi / OpenAI / 本地', en: 'BYOK — bring your key<br/>DeepSeek / Kimi / OpenAI / local', ja: 'BYOK — 自分のキーを持ち込み<br/>DeepSeek / Kimi / OpenAI / ローカル', ko: 'BYOK — 본인 키 지참<br/>DeepSeek / Kimi / OpenAI / 로컬' },
@@ -381,6 +381,18 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'sp.copyText': { zh: '复制文本', en: 'Copy text', ja: 'テキストをコピー', ko: '텍스트 복사' },
   'sp.copied': { zh: '已复制', en: 'Copied', ja: 'コピーしました', ko: '복사됨' },
   'sp.loadFail': { zh: '故事加载失败', en: 'Failed to load story', ja: 'ストーリーの読み込みに失敗', ko: '스토리 로드 실패' },
+  // ── 冷启动体验（§2.4：下载等待期玩法卡片 / 示例对话 / 首聊微调查）──
+  'cs.cardChatT': { zh: '拖卡即聊', en: 'Drop a card, chat', ja: 'カードを入れるだけ', ko: '카드를 놓고 대화' },
+  'cs.cardChatD': { zh: '把角色卡 PNG 拖进页面，立刻开始对话', en: 'Drag a character card PNG onto the page to start chatting', ja: 'キャラカードのPNGをドラッグしてすぐ会話', ko: '캐릭터 카드 PNG를 끌어다 놓으면 바로 대화' },
+  'cs.cardFreeT': { zh: '免 Key 试玩', en: 'No key needed', ja: 'キー不要で試玩', ko: '키 없이 즐기기' },
+  'cs.cardFreeD': { zh: '内置故事无需 API Key，本地模型免费用', en: 'Built-in stories need no key; local models are free', ja: '内蔵ストーリーはAPIキー不要、ローカルモデルも無料', ko: '내장 스토리는 API 키가 필요 없고 로컬 모델도 무료' },
+  'cs.cardPrivacyT': { zh: '隐私承诺', en: 'Privacy promise', ja: 'プライバシー保証', ko: '프라이버시 약속' },
+  'cs.cardPrivacyD': { zh: '聊天只存本机，Key 不上传，无后端', en: 'Chats stay on-device · keys never uploaded · no server', ja: 'チャットは端末内のみ・キー送信なし・サーバーなし', ko: '대화는 기기에만 · 키 미전송 · 서버 없음' },
+  'cs.exampleNote': { zh: '示例对话 · 和角色聊天是这种感觉', en: 'Example · what chatting here feels like', ja: '例 ・ キャラとの会話はこんな感じ', ko: '예시 대화 · 캐릭터와 이런 대화를 나눠요' },
+  'cs.exampleUser': { zh: '今晚有什么推荐的酒？', en: 'Anything you would recommend tonight?', ja: '今夜のおすすめはありますか？', ko: '오늘 밤 추천할 만한 술이 있나요?' },
+  'cs.exampleAI': { zh: '试试「猫尾薄荷」吧——喝过的人都说，能听见自己的心跳。第一次来？那这杯算我请。', en: 'Try the Catmint Breeze—regulars say you can hear your own heartbeat after it. First time here? This one is on me.', ja: '「キャットミント風」はいかが？常連は心臓の音が聞こえると言いますよ。初めてですか？では私のおごりです。', ko: '「캣민트 브리즈」를 드셔보세요—단골들은 심장 소리가 들린다고 하죠. 처음 오셨나요? 그럼 이 잔은 제가 살게요.' },
+  'rate.title': { zh: '第一次对话体验如何？', en: 'How was your first chat?', ja: '最初の会話はどうでしたか？', ko: '첫 대화는 어땠나요?' },
+  'rate.skip': { zh: '跳过', en: 'Skip', ja: 'スキップ', ko: '건너뛰기' },
 }
 
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {
