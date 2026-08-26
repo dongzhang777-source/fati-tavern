@@ -263,6 +263,10 @@ export async function testChat(endpoint: EndpointConfig, signal?: AbortSignal): 
       messages: [{ role: 'user', content: 'Hi' }],
       stream: false,
       max_tokens: 8,
+      // 抑制推理输出（与 streamChat 同款双保险）：Ollama+qwen3 等推理型模型
+      // 非流式曾把 max_tokens 全烧在思考上致 content 读空（M13-1/M9-3 根因，R3 修复）
+      enable_thinking: false,
+      chat_template_kwargs: { enable_thinking: false },
     }),
     // L-8：补超时与可取消 signal
     signal: withTimeout(signal, REQUEST_TIMEOUT_MS),
@@ -274,7 +278,9 @@ export async function testChat(endpoint: EndpointConfig, signal?: AbortSignal): 
   }
   const data = await res.json()
   if (data.error) throw new Error(sanitizeErrorText(String(data.error.message || '模型返回错误')))
-  const text = data.choices?.[0]?.message?.content
-  if (typeof text !== 'string') throw new Error('响应格式异常')
-  return text
+  const raw = data.choices?.[0]?.message?.content
+  if (typeof raw !== 'string') throw new Error('响应格式异常')
+  // 兜底剥离可能残留的 <think> 块（与流式路径同款过滤器，批量喂入）
+  const filter = new ThinkTagFilter()
+  return (filter.push(raw) + filter.flush()).trim()
 }
