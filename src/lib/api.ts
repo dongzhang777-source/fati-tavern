@@ -262,9 +262,11 @@ export async function testChat(endpoint: EndpointConfig, signal?: AbortSignal): 
       model: endpoint.model,
       messages: [{ role: 'user', content: 'Hi' }],
       stream: false,
-      max_tokens: 8,
-      // 抑制推理输出（与 streamChat 同款双保险）：Ollama+qwen3 等推理型模型
-      // 非流式曾把 max_tokens 全烧在思考上致 content 读空（M13-1/M9-3 根因，R3 修复）
+      // 256：思考型模型（如 Ollama 上的 qwen3:8b）思考段常 >8 token，
+      // 原 max_tokens:8 会把额度全烧在思考上致 content 读空（M13-1/M9-3 根因之一）
+      max_tokens: 256,
+      // 抑制推理输出（与 streamChat 同款双保险）：vLLM/Qwen-native 服务器生效；
+      // Ollama OpenAI-compat 层忽略此键（其原生 /api/chat 用 think:false），属无害兜底
       enable_thinking: false,
       chat_template_kwargs: { enable_thinking: false },
     }),
