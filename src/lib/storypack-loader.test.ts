@@ -22,6 +22,10 @@ describe('resolveLocalizedText', () => {
   it('ko 返回 ko 文本', () => {
     expect(resolveLocalizedText({ en: 'Hello', ko: '안녕하세요' }, 'ko')).toBe('안녕하세요')
   })
+  it('异常入参（null/undefined）安全返回空串不抛错', () => {
+    expect(resolveLocalizedText(null, 'zh')).toBe('')
+    expect(resolveLocalizedText(undefined, 'en')).toBe('')
+  })
 })
 
 describe('loadPackIndex and loadPack with mock fetch', () => {
@@ -96,5 +100,22 @@ describe('loadPackIndex and loadPack with mock fetch', () => {
   it('不存在的包返回错误', async () => {
     const result = await loadPack('nonexistent-pack')
     expect(result.ok).toBe(false)
+  })
+
+  it('非法目录名直接拒绝且不发起网络请求', async () => {
+    const result = await loadPack('../evil')
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('SP-MAN-001')
+    }
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled()
+  })
+
+  it('含路径穿越或特殊字符的目录名同样拒绝', async () => {
+    for (const dir of ['..%2fetc', 'a/b', '.hidden', 'pack name with spaces']) {
+      const result = await loadPack(dir)
+      expect(result.ok).toBe(false)
+    }
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled()
   })
 })

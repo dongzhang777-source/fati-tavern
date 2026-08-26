@@ -609,6 +609,13 @@ function ChatView() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, messages[messages.length - 1]?.content])
 
+  // 卸载时清掉截图提示的悬挂定时器
+  useEffect(() => {
+    return () => {
+      if (shotTimer.current) clearTimeout(shotTimer.current)
+    }
+  }, [])
+
   function handleSend() {
     const text = input.trim()
     if (!text || streaming) return

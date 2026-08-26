@@ -70,6 +70,13 @@ export function StoryPackReader() {
     }
   }, [visitedPath.length, activePack])
 
+  // 卸载时清掉悬挂的复制 toast 定时器
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+    }
+  }, [])
+
   async function handleOpenPack(dir: string) {
     setPackLoading(true)
     setPackError(null)
@@ -183,7 +190,9 @@ export function StoryPackReader() {
                   {t(lang, 'story.sceneNo', { n: idx + 1 })}
                 </span>
                 <div className="storypack-scene-text">
-                  {'text' in node ? resolveLocalizedText(node.text, lang) : ''}
+                  {'text' in node
+                    ? resolveLocalizedText(node.text, lang)
+                    : resolveLocalizedText(node.prompt, lang)}
                 </div>
 
                 {isLast && !isEnding && node.choices && node.choices.length > 0 && (

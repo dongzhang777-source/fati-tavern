@@ -2,6 +2,17 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.12.1] - 2026-08-25
+
+agy 外部审查（gemini-3.7-flash，论断经主 agent 逐条核验）P1 四项加固。
+
+### Fixed
+
+- **resolveLocalizedText 入参判空**：文本对象为空时安全返回空串，第三方包字段缺失不再触发 TypeError
+- **定时器卸载清理**：StoryPackReader 复制 toast 与聊天截图提示的悬挂 setTimeout 在组件卸载时清除
+- **blank 留白节点兜底渲染**：静态阅读器遇到留白节点回显其提示词，不再渲染空白
+- **loadPack 目录白名单**：目录名先过 `PACK_DIR_PATTERN` 校验再拼 URL，非法目录不发请求直接返回 `SP-MAN-001`
+
 ## [0.12.0] - 2026-08-25
 
 增长冲刺 Sprint T-A 首批特性：截图分享与免 Key 试玩内容层。

@@ -11,6 +11,9 @@ export interface PackIndex {
   packs: PackIndexItem[]
 }
 
+/** 包目录名白名单：先校验再拼 URL，防路径穿越与非法字符 */
+const PACK_DIR_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/i
+
 export async function loadPackIndex(): Promise<PackIndex> {
   const baseUrl = import.meta.env.BASE_URL ?? '/'
   const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
@@ -20,6 +23,9 @@ export async function loadPackIndex(): Promise<PackIndex> {
 }
 
 export async function loadPack(dir: string): Promise<StoryPackResult> {
+  if (!PACK_DIR_PATTERN.test(dir)) {
+    return { ok: false, code: 'SP-MAN-001', file: dir, pointer: '' }
+  }
   try {
     const baseUrl = import.meta.env.BASE_URL ?? '/'
     const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
@@ -38,8 +44,9 @@ export async function loadPack(dir: string): Promise<StoryPackResult> {
   }
 }
 
-/** 按用户语言解析 LocalizedText：zh→zh-Hans，缺失回退 en，再回退首值 */
-export function resolveLocalizedText(text: LocalizedText, lang: Lang): string {
+/** 按用户语言解析 LocalizedText：zh→zh-Hans，缺失回退 en，再回退首值；异常入参安全返回空串 */
+export function resolveLocalizedText(text: LocalizedText | undefined | null, lang: Lang): string {
+  if (!text || typeof text !== 'object') return ''
   const locale = lang === 'zh' ? 'zh-Hans' : lang === 'en' ? 'en' : lang === 'ja' ? 'ja' : 'ko'
   return text[locale] ?? text.en ?? Object.values(text)[0] ?? ''
 }
