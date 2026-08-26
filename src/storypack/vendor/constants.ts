@@ -96,7 +96,8 @@ export const EMBEDDING_DIM = 384
 export const EMBEDDING_DTYPE = 'int8'
 export const EMBEDDING_FILE = 'vectors.bin'
 
-export const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/
+// eslint-disable-next-line no-control-regex — 有意匹配控制字符做输入清理
+export const CONTROL_CHAR_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/
 export const CUE_INJECTION_PATTERN = /url\(|expression\(|javascript:/i
 export const PARAM_KEY_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]{0,23}$/
 
