@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { useP2PStore, loadRelayUrl } from '../../store/slices/p2p'
 import { t } from '../../lib/i18n'
@@ -10,6 +10,12 @@ export function P2PInvitePanel() {
   const [token, setToken] = useState('')
   const [copied, setCopied] = useState(false)
   const [err, setErr] = useState('')
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 卸载时清理复制提示定时器（与 StoryPackReader toastTimer 同类加固）
+  useEffect(() => () => {
+    if (copyTimer.current !== null) clearTimeout(copyTimer.current)
+  }, [])
 
   const generate = async () => {
     setErr('')
@@ -26,7 +32,8 @@ export function P2PInvitePanel() {
     try {
       await navigator.clipboard.writeText(token)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      if (copyTimer.current !== null) clearTimeout(copyTimer.current)
+      copyTimer.current = setTimeout(() => setCopied(false), 1500)
     } catch { /* ignore */ }
   }
 
