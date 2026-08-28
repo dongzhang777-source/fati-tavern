@@ -34,6 +34,7 @@ export default defineConfig({
         name: 'FATI Tavern',
         short_name: 'Tavern',
         description: '肥猫酒馆 · Drop a character card in and chat',
+        lang: 'zh-CN',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
         display: 'standalone',

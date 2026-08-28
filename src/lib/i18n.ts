@@ -116,6 +116,31 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'catalog.free': { zh: '免费', en: 'Free', ja: '無料', ko: '무료' },
   'toast.imported': { zh: '✓ 已导入 {n} 张角色卡', en: '✓ Imported {n} card(s)', ja: '✓ {n}枚のカードをインポートしました', ko: '✓ 카드 {n}장을 가져왔습니다' },
 
+  // ── PWA 安装引导 / 离线提示 / 消息分页 ──
+  'install.banner': {
+    zh: '把肥猫酒馆安装到设备——随时一键打开，离线也能用',
+    en: 'Install FATI Tavern — one tap away, works offline',
+    ja: 'FATI Tavernをインストール — ワンタップで起動、オフラインでも使えます',
+    ko: 'FATI Tavern 설치 — 한 번의 탭으로 실행, 오프라인에서도 사용 가능',
+  },
+  'install.action': { zh: '安装', en: 'Install', ja: 'インストール', ko: '설치' },
+  'install.dismiss': { zh: '以后再说', en: 'Later', ja: '後で', ko: '나중에' },
+  'install.iosHint': {
+    zh: 'iOS 安装方法：点浏览器底部「分享」按钮，选择「添加到主屏幕」',
+    en: 'To install on iOS: tap the Share button in the browser bar, then choose "Add to Home Screen"',
+    ja: 'iOSでのインストール：ブラウザの「共有」ボタンをタップし、「ホーム画面に追加」を選択',
+    ko: 'iOS 설치 방법: 브라우저의 공유 버튼을 탭한 후 "홈 화면에 추가"를 선택하세요',
+  },
+  'offline.bar': {
+    zh: '当前无网络——历史记录仍可查看，发送需联网',
+    en: 'You’re offline — history is still readable, sending needs a connection',
+    ja: 'オフライン — 履歴は閲覧できます。送信には接続が必要です',
+    ko: '오프라인 상태 — 지난 대화는 볼 수 있고, 보내려면 연결이 필요합니다',
+  },
+  'chat.loadEarlier': {
+    zh: '加载更早的消息', en: 'Load earlier messages', ja: '以前のメッセージを読み込む', ko: '이전 메시지 불러오기',
+  },
+
   // ── 聊天 ──
   'chat.back': { zh: '← 角色库', en: '← Library', ja: '← ライブラリ', ko: '← 라이브러리' },
   'chat.convList': { zh: '对话列表', en: 'Conversations', ja: '会話一覧', ko: '대화 목록' },

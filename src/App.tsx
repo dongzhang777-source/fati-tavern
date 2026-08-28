@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { useStore } from './store'
 import { parseCharacterJson, parsePngCard, parseLorebookJson, detectImportKind, passesContentFilter, deriveBookRating, type TavernCard } from './lib/tavern'
 import { PRESETS, fetchModels, testChat, WEBLLM_MODELS, TIER_DEFAULT_MODEL, EDIT_RECOMMENDED, type EndpointConfig } from './lib/api'
@@ -19,6 +19,16 @@ import { StoryView } from './components/StoryView'
 import { StoryPackReader } from './components/StoryPackReader'
 import './App.css'
 
+// ─── PWA 安装事件捕获（模块加载即注册）───
+// Chrome/Edge/Android 会派发 beforeinstallprompt；iOS Safari 不会，另行图文引导
+type BeforeInstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> }
+let deferredInstall: BeforeInstallPromptEvent | null = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  deferredInstall = e as BeforeInstallPromptEvent
+  window.dispatchEvent(new Event('tavern-install-ready'))
+})
+
 export default function App() {
   const store = useStore()
   const { view, lang } = store
@@ -38,6 +48,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <OfflineBanner />
       {inStory ? <StoryView /> : inChat ? <ChatView /> : (
         <>
           {view === 'gallery' && <Gallery />}
@@ -48,6 +59,7 @@ export default function App() {
         </>
       )}
       {showTabBar && <TabBar />}
+      {showTabBar && <InstallBanner />}
     </div>
   )
 }
@@ -113,6 +125,67 @@ function TabBar() {
       ))}
     </nav>
   )
+}
+
+// ─── PWA 安装引导横幅 ──────────────────────────────────
+// 有 beforeinstallprompt（Chrome/Edge/Android）→ 一键安装；
+// iOS Safari 无此事件 → 图文引导「分享 → 添加到主屏幕」。
+// 已安装（standalone）或用户关闭后本机不再提示
+function InstallBanner() {
+  const lang = useStore((s) => s.lang)
+  const [ready, setReady] = useState(() => deferredInstall !== null)
+  const [hidden, setHidden] = useState(() => localStorage.getItem('tavern-install-dismissed') === '1')
+
+  useEffect(() => {
+    const onReady = () => setReady(true)
+    window.addEventListener('tavern-install-ready', onReady)
+    return () => window.removeEventListener('tavern-install-ready', onReady)
+  }, [])
+
+  const standalone = window.matchMedia('(display-mode: standalone)').matches
+    || (navigator as unknown as { standalone?: boolean }).standalone === true
+  if (hidden || standalone) return null
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  if (!ready && !ios) return null
+
+  function dismiss() {
+    try { localStorage.setItem('tavern-install-dismissed', '1') } catch { /* ignore */ }
+    setHidden(true)
+  }
+
+  async function install() {
+    if (!deferredInstall) return
+    try {
+      await deferredInstall.prompt()
+      await deferredInstall.userChoice
+    } catch { /* ignore */ }
+    deferredInstall = null
+    setHidden(true)
+  }
+
+  return (
+    <div className="install-banner">
+      <span className="install-text">{ios && !ready ? t(lang, 'install.iosHint') : t(lang, 'install.banner')}</span>
+      {ready && <button className="install-go" onClick={() => void install()}>{t(lang, 'install.action')}</button>}
+      <button className="install-dismiss" onClick={dismiss}>{ready ? t(lang, 'install.dismiss') : '✕'}</button>
+    </div>
+  )
+}
+
+// ─── 离线指示条 ───────────────────────────────────────
+// 断网时非阻断提示；SW 已缓存应用壳与历史数据，仅发送不可用
+function OfflineBanner() {
+  const lang = useStore((s) => s.lang)
+  const [offline, setOffline] = useState(() => !navigator.onLine)
+  useEffect(() => {
+    const on = () => setOffline(false)
+    const off = () => setOffline(true)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  if (!offline) return null
+  return <div className="offline-bar">📴 {t(lang, 'offline.bar')}</div>
 }
 
 // 「聊天」tab：还没有可恢复的聊天时的占位页
@@ -557,6 +630,9 @@ function CharacterEditor({ character, onSave, onClose }: {
 }
 
 // ─── 聊天视图 ───────────────────────────────────────────
+// 消息窗口化：长对话只渲染最近 80 条，更早的按需加载（移动端 DOM/内存预算）
+const MSG_WINDOW = 80
+
 function ChatView() {
   const {
     characters, activeCharId, conversations, activeConvId,
@@ -583,6 +659,11 @@ function ChatView() {
   const p2pSafetyNotice = useP2PStore(s => s.p2pSafetyNotice)
   const dismissP2PSafetyNotice = useP2PStore(s => s.dismissP2PSafetyNotice)
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const messagesBoxRef = useRef<HTMLDivElement>(null)
+  // 点击瞬间的滚动快照：浏览器在 DOM 前插时会把 scrollTop 归零，只能在点击时记录
+  const scrollSnapRef = useRef<{ top: number; height: number } | null>(null)
+  // 长对话只渲染最近 MSG_WINDOW 条，顶部按需加载更早（移动端 DOM 预算）
+  const [visibleCount, setVisibleCount] = useState(MSG_WINDOW)
 
   // BYOK 隐私提示：非固定、可关闭，关闭后本机不再显示
   const [byokNoteDismissed, setByokNoteDismissed] = useState(() => localStorage.getItem('tavern-byok-note-dismissed') === '1')
@@ -594,6 +675,26 @@ function ChatView() {
   const char = characters.find((c) => c.id === activeCharId)
   const conv = conversations.find((c) => c.id === activeConvId)
   const messages = conv?.messages ?? []
+
+  // 窗口化：只显示最近 visibleCount 条，切换会话时重置
+  const hiddenCount = Math.max(0, messages.length - visibleCount)
+  const visibleMsgs = messages.slice(hiddenCount)
+  useEffect(() => { setVisibleCount(MSG_WINDOW) }, [activeConvId])
+
+  function loadEarlier() {
+    const el = messagesBoxRef.current
+    if (el) scrollSnapRef.current = { top: el.scrollTop, height: el.scrollHeight }
+    setVisibleCount((c) => c + MSG_WINDOW)
+  }
+  // 顶部插入更早消息后用绝对值恢复滚动位置（相对补偿不可靠，见 scrollSnapRef 注释）
+  useLayoutEffect(() => {
+    const el = messagesBoxRef.current
+    const snap = scrollSnapRef.current
+    if (snap && el) {
+      el.scrollTop = snap.top + (el.scrollHeight - snap.height)
+      scrollSnapRef.current = null
+    }
+  }, [visibleCount])
 
   // 首聊后一次性星级微调查（§2.4）：匿名只报星值；提交或跳过后本机不再显示
   const [ratingDone, setRatingDone] = useState(() => localStorage.getItem('tavern-rating-done') === '1')
@@ -800,7 +901,7 @@ function ChatView() {
           <P2PChatPanel />
         ) : (
         <>
-        <div className="messages">
+        <div className="messages" ref={messagesBoxRef}>
           {messages.length === 0 && !streaming && (
             <div className="chat-example">
               <span className="chat-example-note">💬 {t(lang, 'cs.exampleNote')}</span>
@@ -808,12 +909,18 @@ function ChatView() {
               <div className="msg assistant"><div className="msg-content">{t(lang, 'cs.exampleAI')}</div></div>
             </div>
           )}
-          {messages.map((m, i) => (
-            <div key={i} className={`msg ${m.role}`}>
-              <div className="msg-content">{m.content || (streaming && i === messages.length - 1 ? '…' : '')}</div>
-              {m.ts && <span className="msg-time">{new Date(m.ts).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
-            </div>
-          ))}
+          {hiddenCount > 0 && (
+            <button className="load-earlier" onClick={loadEarlier}>↑ {t(lang, 'chat.loadEarlier')}（{hiddenCount}）</button>
+          )}
+          {visibleMsgs.map((m, i) => {
+            const idx = hiddenCount + i
+            return (
+              <div key={idx} className={`msg ${m.role}`}>
+                <div className="msg-content">{m.content || (streaming && idx === messages.length - 1 ? '…' : '')}</div>
+                {m.ts && <span className="msg-time">{new Date(m.ts).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
+              </div>
+            )
+          })}
           <div ref={chatEndRef} />
         </div>
 
