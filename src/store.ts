@@ -221,15 +221,16 @@ export const useStore = create<State>((set, get) => ({
   impExpansion: loadImpExpansion(),
 
   init: async () => {
-    // 加载用户导入的角色（IndexedDB）
-    const userChars = await dbGetCharacters()
     // 分享链接导入：URL fragment 不离开浏览器；解析失败静默回正常目录
+    // 必须先于 dbGetCharacters，否则最后 set({characters}) 会用旧列表覆盖刚导入的卡
     const shared = await readSharedCard()
     if (shared) {
       await get().importCard(shared)
       trackOnce('share_open')
       history.replaceState(null, '', location.pathname + location.search)
     }
+    // 加载用户导入的角色（IndexedDB）
+    const userChars = await dbGetCharacters()
     // 加载内置角色目录（不写 IndexedDB，标记 builtin: true）
     const builtinChars: StoredCharacter[] = BUILTIN_CHARACTERS.map((c) => ({
       id: c._id,

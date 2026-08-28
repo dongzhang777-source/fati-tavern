@@ -694,20 +694,26 @@ function ChatView() {
     <div className="chat-layout">
       {/* 会话侧边栏 */}
       {showConvList && (
-        <aside className="conv-sidebar">
-          <div className="conv-header">
-            <h3>{t(lang, 'chat.convHeader')}</h3>
-            <button onClick={() => newConversation()}>{t(lang, 'chat.newConv')}</button>
-          </div>
-          <ul className="conv-list">
-            {conversations.map((c) => (
-              <ConvItem key={c.id} conv={c} active={c.id === activeConvId}
-                onSelect={() => selectConversation(c.id)}
-                onDelete={() => deleteConversation(c.id)}
-              />
-            ))}
-          </ul>
-        </aside>
+        <>
+          <div className="conv-backdrop" onClick={() => setShowConvList(false)} />
+          <aside className="conv-sidebar">
+            <div className="conv-header">
+              <h3>{t(lang, 'chat.convHeader')}</h3>
+              <button onClick={() => newConversation()}>{t(lang, 'chat.newConv')}</button>
+            </div>
+            <ul className="conv-list">
+              {conversations.map((c) => (
+                <ConvItem key={c.id} conv={c} active={c.id === activeConvId}
+                  onSelect={() => {
+                    selectConversation(c.id)
+                    if (window.matchMedia('(max-width: 640px)').matches) setShowConvList(false)
+                  }}
+                  onDelete={() => deleteConversation(c.id)}
+                />
+              ))}
+            </ul>
+          </aside>
+        </>
       )}
 
       {/* 主聊天区 */}
