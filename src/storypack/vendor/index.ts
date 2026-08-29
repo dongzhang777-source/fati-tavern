@@ -12,6 +12,5 @@ export type {
 } from './types'
 export { lookupNode, outgoingEdges, reachableFromRoot, endingSet } from './graph-api'
 export { adaptScene } from './scene-adapter'
-export { toRuntimeScene } from './types'
 export { parseManifest, parseGraph, isRecord } from './json'
 export type { StoryPackError, StoryPackErrorCode } from './errors'

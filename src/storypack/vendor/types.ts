@@ -1,5 +1,3 @@
-import type { Choice, Scene } from './runtime-types'
-
 export type Locale =
   | 'en'
   | 'zh-Hans'
@@ -159,27 +157,4 @@ export interface StoryPackFiles {
   graph?: unknown
   exists?(path: string): boolean
   readFile?(path: string): Promise<Uint8Array>
-}
-
-export interface SceneAdapterOptions {
-  createdAt?: number
-  imageUrl?: string
-}
-
-export function toRuntimeScene(
-  node: Extract<StoryNode, { kind: 'scene' }>,
-  options: SceneAdapterOptions = {},
-): Scene {
-  const choices: Choice[] = node.choices.map((choice) => ({
-    id: choice.id,
-    text: choice.label.en ?? Object.values(choice.label)[0] ?? '',
-  }))
-
-  return {
-    id: node.id,
-    text: node.text.en ?? Object.values(node.text)[0] ?? '',
-    choices,
-    createdAt: options.createdAt ?? Date.now(),
-    ...(options.imageUrl ? { imageUrl: options.imageUrl } : {}),
-  }
 }
