@@ -2,6 +2,42 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.14.0] - 2026-08-29
+
+移动端适配专项：触控、键盘、离线与 PWA 安装体验全面对齐桌面（P0-P3 四批，17 项任务全部完成；iPhone 真 Safari + 安卓真 Chrome 双端 23/23 复核通过）。
+
+### Added
+
+- **PWA 安装引导横幅**：Chrome/Android 一键安装，iOS 显示"添加到主屏幕"手动指引；可关闭且选择持久化
+- **离线指示条**：在线/离线事件驱动，断网时明确提示而非静默
+- **画廊卡片长按底部操作菜单**：长按 500ms 弹出聊天/编辑/分享/删除操作条，移动超 10px 自动取消，带震动反馈
+- **会话列表左滑删除**：跟手位移 + 半程吸附 + 同时只展开一行，移动端收起行内 × 按钮
+- **PWA maskable 图标**：生成安全区版本主屏幕图标（192/512 双尺寸），manifest 补 `purpose` 声明，iOS 补 `apple-mobile-web-app-title`
+- i18n 新增 `gallery.menuChat` 等 7 键四语文案
+
+### Changed
+
+- **键盘弹起适配**：`visualViewport` 高度实时同步为 `--vv-height`，body 随键盘收缩，输入框不再被盖住；viewport 补 `interactive-widget=resizes-content`
+- **消息列表窗口化**：只渲染最近 80 条，点击"加载更早"并用绝对偏移恢复滚动位置，长会话滚动不再卡顿
+- **无障碍缩放解禁**：移除 `user-scalable=no`/`maximum-scale=1.0`，改交互元素 `touch-action: manipulation`——可捏合缩放、无点击延迟
+- **平板/宽屏聊天列限宽**：≥768px 时消息列与输入条限宽 860px 居中，气泡不被拉横
+- **会话侧边栏**：加遮罩支持点击外部关闭，选中会话自动收起
+- **移动端输入框统一 16px**：防 iOS 聚焦时页面自动缩放
+- **卡片操作按钮触屏常显**：移动端不依赖 hover，编辑/分享按钮拆分消除重叠
+
+### Fixed
+
+- **分享链接导入首屏不显示卡片**：store 初始化用旧列表覆盖刚导入的卡，需刷新才可见；现按正确顺序读取
+- **长按菜单需点两次才关闭**：iOS WebKit 长按抬手不补发合成 click，原布尔吞点击标志泄漏；改为抬手后 400ms 时间戳窗口拦截、超时自愈（iPhone 真机实测暴露）
+- **左滑松手永远收起**：touchend 读闭包旧值导致吸附判定失效，改用实时位置判定（3a69893）
+- **testChat 对思考型模型误报成功/失败**：Ollama 思考型模型（如 qwen3）会烧光 8 token 预算致 content 读空；max_tokens 提至 256 + thinking 抑制 + `<think>` 标签剥离三重兜底
+- **PWA 预缓存补 SVG**：logo.svg 是 index.html favicon 却不在预缓存清单，离线首启丢标签页图标；补 `**/*.svg` 后 18 项清单与构建产物逐项比对无遗漏
+
+### Chore
+
+- 同步 fati v0.44.5 vendor（stats.nodes minimum 1→0）
+- 补交架构建模产物与模拟器验机台账
+
 ## [0.13.0] - 2026-08-26
 
 冷启动体验强化（Sprint T-A §2.4）。
