@@ -426,7 +426,7 @@
           "allOf": [{ "$ref": "#/$defs/noHazards" }],
           "required": ["nodes", "endings", "blanks"],
           "properties": {
-            "nodes": { "type": "integer", "minimum": 1 },
+            "nodes": { "type": "integer", "minimum": 0 },
             "endings": { "type": "integer", "minimum": 0 },
             "blanks": { "type": "integer", "minimum": 0 }
           }
