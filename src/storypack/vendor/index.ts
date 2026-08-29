@@ -8,7 +8,6 @@ export type {
   StoryPackV2, StoryNode, StoryGraph, StoryChoice,
   Manifest, LocalizedText, Locale, ContentRating,
   StoryPackFiles, BlankSpec, MusicCue, VisualCue, SceneMood,
-  SceneAdapterOptions,
 } from './types'
 export { lookupNode, outgoingEdges, reachableFromRoot, endingSet } from './graph-api'
 export { adaptScene } from './scene-adapter'
