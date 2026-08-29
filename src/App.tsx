@@ -38,6 +38,24 @@ export default function App() {
   // 中文=肥猫酒馆，其他语言=FATI Tavern
   useEffect(() => { document.title = docTitle(lang) }, [lang])
 
+  // 移动端键盘弹起时布局视口(100dvh)不收缩、输入框会被键盘盖住；
+  // 把 visualViewport 实际可见高度同步成 CSS 变量，让应用容器跟着收缩
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const sync = () => {
+      document.documentElement.style.setProperty('--vv-height', `${Math.round(vv.height)}px`)
+    }
+    vv.addEventListener('resize', sync)
+    vv.addEventListener('scroll', sync)
+    sync()
+    return () => {
+      vv.removeEventListener('resize', sync)
+      vv.removeEventListener('scroll', sync)
+      document.documentElement.style.removeProperty('--vv-height')
+    }
+  }, [])
+
   // 首启年龄确认门：未确认前不展示任何内容
   if (store.ageGate === 'unset') return <AgeGate />
 
@@ -319,6 +337,44 @@ function Gallery() {
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // 触屏长按出操作菜单：500ms 定时，移动 >10px 取消；触发后吞掉后续 click 防误开聊天
+  const [menuChar, setMenuChar] = useState<StoredCharacter | null>(null)
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pressStart = useRef({ x: 0, y: 0 })
+  const pressFired = useRef(false)
+
+  function cardPressStart(c: StoredCharacter, e: React.TouchEvent) {
+    pressFired.current = false
+    pressStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    pressTimer.current = setTimeout(() => {
+      pressFired.current = true
+      navigator.vibrate?.(10)
+      setMenuChar(c)
+    }, 500)
+  }
+  function cardPressMove(e: React.TouchEvent) {
+    if (!pressTimer.current) return
+    const dx = e.touches[0].clientX - pressStart.current.x
+    const dy = e.touches[0].clientY - pressStart.current.y
+    if (dx * dx + dy * dy > 100) {
+      clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
+  function cardPressEnd() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
+  function cardOpen(c: StoredCharacter) {
+    if (pressFired.current) {
+      pressFired.current = false
+      return
+    }
+    openCharacter(c.id)
+  }
+
   // 区分内置角色和用户导入角色
   const userChars = characters.filter((c) => !c.builtin)
   const showCatalog = userChars.length === 0 // 没导入过卡 → 显示内置目录
@@ -440,7 +496,13 @@ function Gallery() {
 
           <div className="card-grid">
             {characters.filter((c) => c.builtin && passesSafeMode(c)).map((c) => (
-              <div key={c.id} className="char-card" onClick={() => openCharacter(c.id)}>
+            <div key={c.id} className="char-card"
+              onClick={() => cardOpen(c)}
+              onTouchStart={(e) => cardPressStart(c, e)}
+              onTouchMove={cardPressMove}
+              onTouchEnd={cardPressEnd}
+              onTouchCancel={cardPressEnd}
+            >
                 <div className="card-avatar">
                   <span className="avatar-placeholder">{c.card.name[0]}</span>
                 </div>
@@ -468,7 +530,13 @@ function Gallery() {
       ) : (
         <div className="card-grid">
           {characters.filter(passesSafeMode).map((c) => (
-            <div key={c.id} className="char-card" onClick={() => openCharacter(c.id)}>
+            <div key={c.id} className="char-card"
+              onClick={() => cardOpen(c)}
+              onTouchStart={(e) => cardPressStart(c, e)}
+              onTouchMove={cardPressMove}
+              onTouchEnd={cardPressEnd}
+              onTouchCancel={cardPressEnd}
+            >
               <div className="card-avatar">
                 {c.avatarUrl
                   ? <img src={c.avatarUrl} alt={c.card.name} />
@@ -542,6 +610,26 @@ function Gallery() {
           }}
           onClose={() => setEditingChar(null)}
         />
+      )}
+
+      {/* 触屏长按操作菜单（底部弹层） */}
+      {menuChar && (
+        <>
+          <div className="card-menu-backdrop" onClick={() => setMenuChar(null)} />
+          <div className="card-menu" role="menu">
+            <div className="card-menu-title">{menuChar.card.name}</div>
+            <button onClick={() => { openCharacter(menuChar.id); setMenuChar(null) }}>{t(lang, 'gallery.menuChat')}</button>
+            <button onClick={() => { setEditingChar(menuChar); setMenuChar(null) }}>
+              {menuChar.builtin ? t(lang, 'gallery.copyEdit') : t(lang, 'gallery.edit')}
+            </button>
+            {!menuChar.builtin && (
+              <button onClick={() => { void handleShare(menuChar); setMenuChar(null) }}>{t(lang, 'gallery.share')}</button>
+            )}
+            {!menuChar.builtin && (
+              <button className="danger" onClick={() => { removeCharacter(menuChar.id); setMenuChar(null) }}>{t(lang, 'gallery.delete')}</button>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
@@ -718,6 +806,15 @@ function ChatView() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, messages[messages.length - 1]?.content])
+
+  // 键盘弹起/收起改变可见区域——保持最新消息可见
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  }, [])
 
   // 卸载时清掉截图提示的悬挂定时器
   useEffect(() => {

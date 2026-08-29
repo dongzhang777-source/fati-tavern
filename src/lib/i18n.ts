@@ -45,6 +45,9 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'gallery.delete': {
     zh: '删除', en: 'Delete', ja: '削除', ko: '삭제',
   },
+  'gallery.menuChat': {
+    zh: '开始聊天', en: 'Start chatting', ja: 'チャットを開始', ko: '채팅 시작',
+  },
   'chat.byokNote': {
     zh: 'BYOK · 你的 Key 和聊天记录不离开你的设备', en: 'BYOK · Your key and chats never leave your device',
     ja: 'BYOK · あなたのキーとチャットは端末の外に出ません', ko: 'BYOK · 키와 채팅은 기기 밖으로 나가지 않습니다',

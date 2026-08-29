@@ -8,7 +8,7 @@
   --muted: #888;
   --radius: 10px;
 }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; height: var(--vv-height, 100dvh); overflow: hidden; }
 #root { height: 100%; }
 .app { height: 100%; display: flex; flex-direction: column; }
 
@@ -312,7 +312,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .gallery-header { margin-bottom: 12px; }
   .gallery-header h1 { font-size: 1.2rem; }
   .card-grid { grid-template-columns: 1fr; gap: 10px; }
-  .char-card { padding: 12px; gap: 10px; }
+  .char-card { padding: 12px; gap: 10px; -webkit-touch-callout: none; }
   .card-desc { -webkit-line-clamp: 3; word-break: break-word; overflow-wrap: break-word; }
   .card-name { font-size: 0.88rem; word-break: break-word; }
   .conv-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
@@ -492,6 +492,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 /* ─── 消息窗口化：加载更早消息 ─── */
 .load-earlier { align-self: center; flex-shrink: 0; background: var(--surface); border: 1px solid rgba(255,255,255,0.12); color: var(--muted); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.75rem; }
 .load-earlier:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+
+/* ── 画廊卡片长按操作菜单（底部弹层，大触控目标） ── */
+.card-menu-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
+.card-menu { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 201; background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.card-menu-title { text-align: center; font-size: 0.78rem; color: var(--muted); padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-menu button { background: none; border: none; color: var(--text); font-size: 0.95rem; padding: 13px; border-radius: 8px; cursor: pointer; text-align: center; }
+.card-menu button:active { background: rgba(255,255,255,0.08); }
+.card-menu button.danger { color: var(--accent); }
 
 /* ─── StoryPack 试玩阅读器 ─────────────────────────── */
 .tab-page > .storypack-panel { max-width: 960px; margin-left: auto; margin-right: auto; }
