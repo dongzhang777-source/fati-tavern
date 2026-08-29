@@ -337,11 +337,16 @@ function Gallery() {
   const fileRef = useRef<HTMLInputElement>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 触屏长按出操作菜单：500ms 定时，移动 >10px 取消；触发后吞掉后续 click 防误开聊天
+  // 触屏长按出操作菜单：500ms 定时，移动 >10px 取消
+  // 真机坑：安卓抬手后必发一个合成 click（落点被刚挂载的遮罩盖住会瞬间关菜单）；iOS 则不一定发。
+  // 用布尔标志会在 iOS 上泄漏（没 click 来清标志 → 下次真实点击被误吞）。
+  // 改用时间戳窗口：抬手后 400ms 内的 click 视为补发忽略，超时自愈，两端都不会误吞用户的下一次真实操作。
   const [menuChar, setMenuChar] = useState<StoredCharacter | null>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pressStart = useRef({ x: 0, y: 0 })
   const pressFired = useRef(false)
+  const pressEndAt = useRef(0)
+  const isSyntheticClick = () => Date.now() - pressEndAt.current < 400
 
   function cardPressStart(c: StoredCharacter, e: React.TouchEvent) {
     pressFired.current = false
@@ -366,12 +371,11 @@ function Gallery() {
       clearTimeout(pressTimer.current)
       pressTimer.current = null
     }
+    // 已触发的长按：标记抬手时刻，短窗口内的 click 当作补发吞掉
+    if (pressFired.current) pressEndAt.current = Date.now()
   }
   function cardOpen(c: StoredCharacter) {
-    if (pressFired.current) {
-      pressFired.current = false
-      return
-    }
+    if (isSyntheticClick()) return
     openCharacter(c.id)
   }
 
@@ -615,7 +619,7 @@ function Gallery() {
       {/* 触屏长按操作菜单（底部弹层） */}
       {menuChar && (
         <>
-          <div className="card-menu-backdrop" onClick={() => setMenuChar(null)} />
+          <div className="card-menu-backdrop" onClick={() => { if (isSyntheticClick()) return; setMenuChar(null) }} />
           <div className="card-menu" role="menu">
             <div className="card-menu-title">{menuChar.card.name}</div>
             <button onClick={() => { openCharacter(menuChar.id); setMenuChar(null) }}>{t(lang, 'gallery.menuChat')}</button>
