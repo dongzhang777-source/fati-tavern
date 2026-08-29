@@ -736,6 +736,8 @@ function ChatView() {
 
   const [input, setInput] = useState('')
   const [showConvList, setShowConvList] = useState(false)
+  // 左滑删除：当前展开的行（同时只允许一行）
+  const [openConvSwipe, setOpenConvSwipe] = useState<string | null>(null)
   const [impOpen, setImpOpen] = useState(false)
   const [showLorePicker, setShowLorePicker] = useState(false)
   const [shotBusy, setShotBusy] = useState(false)
@@ -902,6 +904,8 @@ function ChatView() {
             <ul className="conv-list">
               {conversations.map((c) => (
                 <ConvItem key={c.id} conv={c} active={c.id === activeConvId}
+                  openSwipe={openConvSwipe === c.id}
+                  onSwipeOpen={(open) => setOpenConvSwipe(open ? c.id : null)}
                   onSelect={() => {
                     selectConversation(c.id)
                     if (window.matchMedia('(max-width: 640px)').matches) setShowConvList(false)
@@ -1111,18 +1115,27 @@ function ChatView() {
 }
 
 // ─── 会话列表项（双击编辑标题）───────────────────────
-function ConvItem({ conv, active, onSelect, onDelete }: {
+function ConvItem({ conv, active, onSelect, onDelete, openSwipe, onSwipeOpen }: {
   conv: { id: string; title: string }
   active: boolean
   onSelect: () => void
   onDelete: () => void
+  openSwipe: boolean
+  onSwipeOpen: (open: boolean) => void
 }) {
-  const { renameConversation } = useStore()
+  const { renameConversation, lang } = useStore()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(conv.title)
   const inputRef = useRef<HTMLInputElement>(null)
+  // 左滑露出删除：跟手位移，松手按半程阈值吸附（-72 展开 / 0 收起）
+  const [swipeX, setSwipeX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const dragRef = useRef<{ x: number; y: number; start: number; active: boolean } | null>(null)
+  const swipedRef = useRef(false)
 
   useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
+  // 同一时间只允许一行展开：别的行打开时收起自己
+  useEffect(() => { if (!openSwipe) setSwipeX(0) }, [openSwipe])
 
   function commit() {
     const t = draft.trim()
@@ -1130,22 +1143,71 @@ function ConvItem({ conv, active, onSelect, onDelete }: {
     setEditing(false)
   }
 
+  function onTouchStart(e: React.TouchEvent) {
+    dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, start: swipeX, active: false }
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const d = dragRef.current
+    if (!d) return
+    const dx = e.touches[0].clientX - d.x
+    const dy = e.touches[0].clientY - d.y
+    if (!d.active) {
+      // 横向为主且超过阈值才认定为滑动手势，否则让位给列表纵向滚动
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+      d.active = true
+      setDragging(true)
+    }
+    setSwipeX(Math.max(-88, Math.min(0, d.start + dx)))
+  }
+  function onTouchEnd() {
+    const d = dragRef.current
+    dragRef.current = null
+    setDragging(false)
+    if (!d?.active) return
+    swipedRef.current = true
+    const open = swipeX < -36
+    setSwipeX(open ? -72 : 0)
+    onSwipeOpen(open)
+  }
+
+  function handleClick() {
+    // 滑动结束后的合成 click 不算选择
+    if (swipedRef.current) {
+      swipedRef.current = false
+      return
+    }
+    if (swipeX !== 0) {
+      setSwipeX(0)
+      onSwipeOpen(false)
+      return
+    }
+    onSelect()
+  }
+
   return (
-    <li className={active ? 'active' : ''} onClick={onSelect} onDoubleClick={() => { setDraft(conv.title); setEditing(true) }}>
-      {editing ? (
-        <input
-          ref={inputRef}
-          className="conv-rename"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <span>{conv.title}</span>
-      )}
-      <button className="btn-del" onClick={(e) => { e.stopPropagation(); onDelete() }}>×</button>
+    <li onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+      <button className="conv-swipe-del" onClick={(e) => { e.stopPropagation(); onDelete() }}>{t(lang, 'gallery.delete')}</button>
+      <div
+        className={`conv-row ${active ? 'active' : ''} ${dragging ? 'dragging' : ''}`}
+        style={{ transform: `translateX(${swipeX}px)` }}
+        onClick={handleClick}
+        onDoubleClick={() => { setDraft(conv.title); setEditing(true) }}
+      >
+        {editing ? (
+          <input
+            ref={inputRef}
+            className="conv-rename"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span>{conv.title}</span>
+        )}
+        <button className="btn-del" onClick={(e) => { e.stopPropagation(); onDelete() }}>×</button>
+      </div>
     </li>
   )
 }

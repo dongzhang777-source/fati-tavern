@@ -13,6 +13,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .app { height: 100%; display: flex; flex-direction: column; }
 
 /* ─── 通用 ─── */
+/* viewport 不再禁缩放（无障碍）；交互元素禁双击缩放，消除点击延迟 */
+button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action: manipulation; }
 .btn-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; opacity: 0; transition: opacity 0.2s; }
 *:hover > .btn-del { opacity: 1; }
 .btn-del:hover { color: var(--accent); }
@@ -203,10 +205,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .conv-header h3 { font-size: 0.85rem; color: var(--muted); }
 .conv-header button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.8rem; }
 .conv-list { list-style: none; flex: 1; overflow-y: auto; padding: 8px; }
-.conv-list li { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--muted); }
-.conv-list li:hover { background: rgba(255,255,255,0.04); }
-.conv-list li.active { background: rgba(233,69,96,0.15); color: var(--text); }
-.conv-list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-list li { position: relative; border-radius: 6px; overflow: hidden; touch-action: pan-y; margin-bottom: 2px; }
+.conv-row { padding: 8px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--muted); background: var(--surface); transition: transform 0.15s ease; }
+.conv-row.dragging { transition: none; }
+.conv-row:hover { background: color-mix(in srgb, #fff 4%, var(--surface)); }
+.conv-row.active { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); color: var(--text); }
+.conv-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-swipe-del { position: absolute; top: 0; right: 0; bottom: 0; width: 72px; border: none; background: var(--accent); color: #fff; font-size: 0.78rem; cursor: pointer; }
 .conv-rename { background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font-size: 0.8rem; padding: 3px 6px; width: 100%; outline: none; }
 
 .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
@@ -349,6 +354,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .persona-section textarea, .conv-rename, .story-input-row input { font-size: 16px; }
   /* 侧边栏遮罩：点击外部关闭 */
   .conv-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
+  /* 会话行删除改左滑手势，收起 × 减少视觉噪音 */
+  .conv-list .btn-del { display: none; }
+}
+
+/* ── 平板/宽屏（≥768px）：聊天内容列居中限宽，避免气泡被拉横 ── */
+@media (min-width: 768px) {
+  .messages, .input-bar { width: 100%; max-width: 860px; align-self: center; }
 }
 
 /* ── WebLLM 模型卡片选择器 ── */
