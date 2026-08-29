@@ -1130,8 +1130,8 @@ function ConvItem({ conv, active, onSelect, onDelete, openSwipe, onSwipeOpen }: 
   // 左滑露出删除：跟手位移，松手按半程阈值吸附（-72 展开 / 0 收起）
   const [swipeX, setSwipeX] = useState(0)
   const [dragging, setDragging] = useState(false)
-  const dragRef = useRef<{ x: number; y: number; start: number; active: boolean } | null>(null)
-  const swipedRef = useRef(false)
+  const dragRef = useRef<{ x: number; y: number; start: number; current: number; active: boolean } | null>(null)
+  const touchEndAt = useRef(0)
 
   useEffect(() => { if (editing) inputRef.current?.focus() }, [editing])
   // 同一时间只允许一行展开：别的行打开时收起自己
@@ -1144,7 +1144,7 @@ function ConvItem({ conv, active, onSelect, onDelete, openSwipe, onSwipeOpen }: 
   }
 
   function onTouchStart(e: React.TouchEvent) {
-    dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, start: swipeX, active: false }
+    dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, start: swipeX, current: swipeX, active: false }
   }
   function onTouchMove(e: React.TouchEvent) {
     const d = dragRef.current
@@ -1157,25 +1157,23 @@ function ConvItem({ conv, active, onSelect, onDelete, openSwipe, onSwipeOpen }: 
       d.active = true
       setDragging(true)
     }
-    setSwipeX(Math.max(-88, Math.min(0, d.start + dx)))
+    d.current = Math.max(-88, Math.min(0, d.start + dx))
+    setSwipeX(d.current)
   }
   function onTouchEnd() {
     const d = dragRef.current
     dragRef.current = null
     setDragging(false)
     if (!d?.active) return
-    swipedRef.current = true
-    const open = swipeX < -36
+    touchEndAt.current = Date.now()
+    const open = d.current < -36
     setSwipeX(open ? -72 : 0)
     onSwipeOpen(open)
   }
 
   function handleClick() {
-    // 滑动结束后的合成 click 不算选择
-    if (swipedRef.current) {
-      swipedRef.current = false
-      return
-    }
+    // 刚结束滑动手势：浏览器补发的 click 不算选择
+    if (Date.now() - touchEndAt.current < 400) return
     if (swipeX !== 0) {
       setSwipeX(0)
       onSwipeOpen(false)
