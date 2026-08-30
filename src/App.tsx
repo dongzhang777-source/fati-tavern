@@ -54,11 +54,15 @@ export default function App() {
   // 中文=肥猫酒馆，其他语言=FATI Tavern
   useEffect(() => { document.title = docTitle(lang) }, [lang])
 
-  // 移动端键盘弹起时布局视口(100dvh)不收缩、输入框会被键盘盖住；
-  // 把 visualViewport 实际可见高度同步成 CSS 变量，让应用容器跟着收缩；
-  // 同时夹回 window 滚动，防止 iOS WKWebView 聚焦输入框时顶起文档导致顶部 header 挤入状态栏
+  // 移动端键盘适配，分平台两种模型：
+  // - iOS：键盘悬浮不收缩布局视口，WebKit 会自动平移页面让聚焦输入框可见。
+  //   body 恒定全高（--app-height 钉死实测像素，防 dvh 滞后），聚焦期间禁止夹回滚动
+  //   （与 WebKit 平移打架会把输入条顶到屏幕顶端），失焦后统一复位。
+  // - Android（viewport 带 interactive-widget=resizes-content）：布局视口原生收缩，
+  //   --vv-height 兜底；滚动夹回逻辑同失焦时机。
   useEffect(() => {
     const vv = window.visualViewport
+    const iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
     const isTextInputFocused = () => {
       const t = document.activeElement?.tagName
       return t === 'INPUT' || t === 'TEXTAREA'
@@ -68,16 +72,17 @@ export default function App() {
       if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
     }
     const sync = () => {
-      // 键盘收缩高度只在输入框聚焦期间维护。iOS 真机键盘收起后 visualViewport.height
-      // 可能停留在缩小值且不再派发 resize，仅靠事件会把 body 永久压矮——底边抬起露黑条；
-      // 失焦即视为键盘已收起，立即交还 100dvh。键盘未聚焦时 vv.height 偏小（standalone
-      // 底部安全区不计入等）也不收缩。
-      const targetHeight = vv && isTextInputFocused() ? computeVvHeight(vv.height, window.innerHeight) : null
       const root = document.documentElement
+      if (iOS) {
+        root.style.removeProperty('--vv-height')
+        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+        // 聚焦期间让 WebKit 自己平移，不夹回；失焦（含键盘收起后事件缺失）才复位
+        if (!isTextInputFocused()) resetScroll()
+        return
+      }
+      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
       if (targetHeight === null) {
         root.style.removeProperty('--vv-height')
-        // iOS 26 PWA 键盘收起后 dvh 可能停留在缩小值不恢复（动态视口单位滞后 bug），
-        // 用布局视口实测像素钉死高度，不再依赖 CSS 视口单位自愈
         root.style.setProperty('--app-height', `${window.innerHeight}px`)
       } else {
         root.style.setProperty('--vv-height', `${targetHeight}px`)
@@ -91,11 +96,9 @@ export default function App() {
       sync()
     }
     window.addEventListener('resize', sync)
-    window.addEventListener('scroll', resetScroll)
+    window.addEventListener('scroll', () => { if (!isTextInputFocused()) resetScroll() })
     const onFocusChange = () => {
-      // 聚焦/失焦都重算：失焦后 iOS 派发事件不可靠，多级延时兜底（平滑收起动画各阶段+极端慢恢复）
-      resetScroll()
-      requestAnimationFrame(resetScroll)
+      // 失焦后 iOS 派发事件不可靠，多级延时兜底（平滑收起动画各阶段+极端慢恢复）
       setTimeout(sync, 120)
       setTimeout(sync, 400)
       setTimeout(sync, 1000)
