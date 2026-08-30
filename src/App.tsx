@@ -82,14 +82,29 @@ export default function App() {
     // 不吃主屏幕 Web App 的原生视口收缩，故壳与安卓用 --vv-height 收缩模型；
     // iOS PWA/浏览器用悬浮键盘模型（body 恒定全高）
     const capShell = !!(window as unknown as { Capacitor?: unknown })?.Capacitor
+    let focusAt = 0
+    // Gboard 等第三方键盘在 iOS PWA 会把页面过量平移（实测约两倍键盘高，头部/角标全被推出屏），
+    // 系统无 API 关闭该行为（VirtualKeyboard API Safari 不支持，fixed 元素也会被拖走）。
+    // 对策：聚焦稳定后自测输入框应在位置（键盘正上方），偏差超死区一次性纠偏；
+    // 苹果键盘偏差天然为零，此函数不动作
+    const panCheck = () => {
+      const el = document.activeElement
+      if (!vv || !el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return
+      if (Date.now() - focusAt < 400) return
+      const rect = el.getBoundingClientRect()
+      const desired = vv.height - rect.height - 12
+      const delta = Math.round(rect.top - desired)
+      if (Math.abs(delta) > 12) window.scrollBy(0, delta)
+    }
     const sync = () => {
       const root = document.documentElement
       const focused = isTextInputFocused()
       if (iOS && !capShell) {
         root.style.removeProperty('--vv-height')
         root.style.setProperty('--app-height', `${fullScreenHeight ? window.screen.height : window.innerHeight}px`)
-        // 聚焦期间让 WebKit 自己平移，不夹回；失焦（含键盘收起后事件缺失）才复位
+        // 聚焦期间让 WebKit 自己平移，不夹回；稳定后过量平移纠偏；失焦才整体复位
         if (!focused) resetScroll()
+        else panCheck()
         return
       }
       const targetHeight = vv && focused ? computeVvHeight(vv.height, window.innerHeight) : null
@@ -113,6 +128,7 @@ export default function App() {
     window.addEventListener('resize', sync)
     window.addEventListener('scroll', () => { if (!isTextInputFocused()) resetScroll() })
     const onFocusChange = () => {
+      focusAt = Date.now()
       // 失焦后 iOS 派发事件不可靠，多级延时兜底（平滑收起动画各阶段+极端慢恢复）
       setTimeout(sync, 120)
       setTimeout(sync, 400)
