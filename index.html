@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      // interactive-widget=resizes-content 是安卓键盘行为指令（键盘收缩布局视口）；
+      // iOS 26 疑似实现了该指令但键盘收起后布局视口不复位（底边抬升露底色），
+      // 故仅安卓动态加回；iOS 键盘适配走 JS visualViewport 钉高（App.tsx），不依赖此指令
+      if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        var m = document.querySelector('meta[name=viewport]')
+        m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
+      }
+    </script>
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
