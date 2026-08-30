@@ -71,11 +71,18 @@ export default function App() {
       if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
       if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
     }
+    // iOS standalone/壳：真机实测键盘收起后 innerHeight/dvh 会卡在缩小值不恢复
+    // （webview 满屏、html 底色铺满，仅视口数值撒谎），改用物理屏幕高度钉死。
+    // 仅 standalone/壳可用——浏览器标签页有工具栏，screen.height 会超出可视区。
+    // iPhone 仅竖屏（Info.plist），screen.height 恒等全屏高，无旋转失真。
+    const fullScreenHeight = window.matchMedia?.('(display-mode: standalone)').matches
+      || (navigator as unknown as { standalone?: boolean }).standalone === true
+      || !!(window as unknown as { Capacitor?: unknown })?.Capacitor
     const sync = () => {
       const root = document.documentElement
       if (iOS) {
         root.style.removeProperty('--vv-height')
-        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+        root.style.setProperty('--app-height', `${fullScreenHeight ? window.screen.height : window.innerHeight}px`)
         // 聚焦期间让 WebKit 自己平移，不夹回；失焦（含键盘收起后事件缺失）才复位
         if (!isTextInputFocused()) resetScroll()
         return
