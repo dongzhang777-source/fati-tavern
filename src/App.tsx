@@ -128,6 +128,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <VpDebugHud />
       <OfflineBanner />
       {inStory ? <StoryView /> : inChat ? <ChatView /> : (
         <>
@@ -253,6 +254,47 @@ function InstallBanner() {
 
 // ─── 离线指示条 ───────────────────────────────────────
 // 断网时非阻断提示；SW 已缓存应用壳与历史数据，仅发送不可用
+// ─── 临时诊断角标：真机键盘收起后视口数值抓取（定因后删除）───
+function VpDebugHud() {
+  const [vals, setVals] = useState({ ih: 0, vv: 0, dvh: 0, scr: 0, app: '', vvh: '' })
+  useEffect(() => {
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:fixed;top:0;height:100dvh;visibility:hidden;pointer-events:none'
+    document.body.appendChild(probe)
+    const read = () => {
+      const vv = window.visualViewport
+      setVals({
+        ih: Math.round(window.innerHeight),
+        vv: vv ? Math.round(vv.height) : -1,
+        dvh: Math.round(probe.getBoundingClientRect().height),
+        scr: window.screen.height,
+        app: document.documentElement.style.getPropertyValue('--app-height').trim(),
+        vvh: document.documentElement.style.getPropertyValue('--vv-height').trim(),
+      })
+    }
+    let raf = 0
+    const onEv = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(read) }
+    vv?.addEventListener('resize', onEv)
+    vv?.addEventListener('scroll', onEv)
+    window.addEventListener('resize', onEv)
+    const t = setInterval(read, 500)
+    read()
+    return () => {
+      vv?.removeEventListener('resize', onEv)
+      vv?.removeEventListener('scroll', onEv)
+      window.removeEventListener('resize', onEv)
+      clearInterval(t)
+      cancelAnimationFrame(raf)
+      probe.remove()
+    }
+  }, [])
+  return (
+    <div style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 2px)', right: 2, zIndex: 9999, pointerEvents: 'none', font: '10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace', color: '#4cff4c', background: 'rgba(0,0,0,.75)', padding: '4px 6px', borderRadius: 6, whiteSpace: 'pre', textAlign: 'left' }}>
+      {`inner ${vals.ih}\nvv    ${vals.vv}\ndvh   ${vals.dvh}\nscr   ${vals.scr}\napp ${vals.app || '-'} vvh ${vals.vvh || '-'}`}
+    </div>
+  )
+}
+
 function OfflineBanner() {
   const lang = useStore((s) => s.lang)
   const [offline, setOffline] = useState(() => !navigator.onLine)
