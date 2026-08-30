@@ -73,10 +73,15 @@ export default function App() {
       // 失焦即视为键盘已收起，立即交还 100dvh。键盘未聚焦时 vv.height 偏小（standalone
       // 底部安全区不计入等）也不收缩。
       const targetHeight = vv && isTextInputFocused() ? computeVvHeight(vv.height, window.innerHeight) : null
+      const root = document.documentElement
       if (targetHeight === null) {
-        document.documentElement.style.removeProperty('--vv-height')
+        root.style.removeProperty('--vv-height')
+        // iOS 26 PWA 键盘收起后 dvh 可能停留在缩小值不恢复（动态视口单位滞后 bug），
+        // 用布局视口实测像素钉死高度，不再依赖 CSS 视口单位自愈
+        root.style.setProperty('--app-height', `${window.innerHeight}px`)
       } else {
-        document.documentElement.style.setProperty('--vv-height', `${targetHeight}px`)
+        root.style.setProperty('--vv-height', `${targetHeight}px`)
+        root.style.removeProperty('--app-height')
       }
       resetScroll()
     }
