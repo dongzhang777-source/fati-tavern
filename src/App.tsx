@@ -71,10 +71,6 @@ export default function App() {
       if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
       if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
     }
-    // Capacitor 壳的 WKWebView 键盘走原生滚动视图平移（会把头部推出屏幕），
-    // 不吃主屏幕 Web App 的原生视口收缩，故壳与安卓用 --vv-height 收缩模型；
-    // iOS PWA/浏览器用悬浮键盘模型（body 恒定全高）
-    const capShell = !!(window as unknown as { Capacitor?: unknown })?.Capacitor
     let focusAt = 0
     // Gboard 等第三方键盘在 iOS PWA 会把页面过量平移（实测约两倍键盘高，头部/角标全被推出屏），
     // 系统无 API 关闭该行为（VirtualKeyboard API Safari 不支持，fixed 元素也会被拖走）。
@@ -89,20 +85,25 @@ export default function App() {
       const delta = Math.round(rect.top - desired)
       if (Math.abs(delta) > 12) window.scrollBy(0, delta)
     }
+    // 全平台统一收缩模型（聚焦期 body 收缩到可视视口高度，头部锚定、输入框贴键盘上方）：
+    // - iOS 26 PWA 系统键盘：原生收缩布局视口，innerHeight≈vv.height，computeVvHeight 判 null
+    //   → body=innerHeight，与原生收缩一致（勿改 screen.height 钉死：body 高于收缩后的视口
+    //   会触发 WebKit 整页过量上推，输入框顶到屏幕顶端，1db3941 教训）
+    // - iOS 26 PWA + Gboard 等第三方键盘：不收缩只平移，vv.height 缩小 → body 收缩，
+    //   头部锚定、输入框贴键盘上方；panCheck 兜底纠残余偏移
+    // - iOS Capacitor 壳：原生滚动平移（innerHeight 不卡），收缩+始终夹回撤销平移
+    // - Android（resizes-content 原生收缩）：同系统键盘路径
     const sync = () => {
       const root = document.documentElement
       const focused = isTextInputFocused()
-      if (iOS && !capShell) {
+      if (!focused) {
+        // 键盘收起/未聚焦：交还全高 + 滚动复位（iOS 失焦派发不可靠，靠 focusout 多级延时兜底）
         root.style.removeProperty('--vv-height')
         root.style.setProperty('--app-height', `${window.innerHeight}px`)
-        // body 跟随 innerHeight：键盘弹起时 iOS 26 PWA 原生收缩布局视口，输入框自然贴键盘上方
-        // （勿改 screen.height 钉死：原生收缩后 body 高于视口，WebKit 整页过量上推，1db3941 教训）
-        // 聚焦期间让 WebKit 自己平移，不夹回；稳定后过量平移纠偏；失焦才整体复位
-        if (!focused) resetScroll()
-        else panCheck()
+        resetScroll()
         return
       }
-      const targetHeight = vv && focused ? computeVvHeight(vv.height, window.innerHeight) : null
+      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
       if (targetHeight === null) {
         root.style.removeProperty('--vv-height')
         root.style.setProperty('--app-height', `${window.innerHeight}px`)
@@ -110,9 +111,7 @@ export default function App() {
         root.style.setProperty('--vv-height', `${targetHeight}px`)
         root.style.removeProperty('--app-height')
       }
-      // 壳里必须始终夹回：WKWebView 聚焦时会原生平移整个页面（头部被推出屏幕），
-      // body 收缩到 vv.height 后输入框已在键盘上方，把平移撤掉才不双补偿；
-      // 实测（5:00 壳轮）此路径聚焦期夹回是干净的
+      if (iOS) panCheck()
       resetScroll()
     }
     if (vv) {
