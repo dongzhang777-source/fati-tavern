@@ -176,7 +176,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .settings-disclaimer p { font-size: 0.68rem; color: var(--muted); line-height: 1.6; opacity: 0.85; }
 
 /* 首启年龄确认门 */
-.age-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.age-gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
 .age-gate-card { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 28px 24px; }
 .age-gate-card h2 { font-size: 1.2rem; }
 .age-gate-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
@@ -268,7 +268,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .btn-edit:hover { color: #4caf50; border-color: rgba(76,175,80,0.4); }
 
 /* ─── 角色卡编辑器弹窗 ─── */
-.editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
 .editor-modal { background: var(--surface); border-radius: var(--radius); width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
 .editor-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .editor-header h3 { font-size: 1rem; font-weight: 500; }
@@ -322,7 +322,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
   .char-card { padding: 12px; gap: 10px; -webkit-touch-callout: none; }
   .card-desc { -webkit-line-clamp: 3; word-break: break-word; overflow-wrap: break-word; }
   .card-name { font-size: 0.88rem; word-break: break-word; }
-  .conv-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+  .conv-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 220px; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,0.5); padding-top: env(safe-area-inset-top, 0px); }
   .chat-header { padding: 8px 10px; gap: 8px; }
   .chat-title { min-width: 0; }
   .chat-title-text { min-width: 0; }
@@ -530,7 +530,8 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .btn-sp-play { align-self: flex-end; margin-top: 6px; }
 
 .storypack-reader { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: flex; flex-direction: column; }
-.storypack-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: var(--surface); flex-shrink: 0; }
+/* fixed 覆盖层不经过 .app，需自带顶部安全区（真机刘海/灵动岛下 header 会被状态栏压住） */
+.storypack-header { display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); background: var(--surface); flex-shrink: 0; }
 .storypack-title-box { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; flex: 1; }
 .storypack-title-box strong { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .storypack-meta { font-size: 0.68rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
