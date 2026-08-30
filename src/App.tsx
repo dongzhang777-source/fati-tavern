@@ -59,14 +59,20 @@ export default function App() {
   // 同时夹回 window 滚动，防止 iOS WKWebView 聚焦输入框时顶起文档导致顶部 header 挤入状态栏
   useEffect(() => {
     const vv = window.visualViewport
+    const isTextInputFocused = () => {
+      const t = document.activeElement?.tagName
+      return t === 'INPUT' || t === 'TEXTAREA'
+    }
     const resetScroll = () => {
       if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
       if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
     }
     const sync = () => {
-      // iOS standalone 下键盘未弹起时 vv.height 也可能小于整屏（底部安全区不计入/键盘收回后不复位），
-      // 此时若把 body 压矮会在底部露出一条底色。只在键盘明显顶起（比布局视口矮一截）时才收缩。
-      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
+      // 键盘收缩高度只在输入框聚焦期间维护。iOS 真机键盘收起后 visualViewport.height
+      // 可能停留在缩小值且不再派发 resize，仅靠事件会把 body 永久压矮——底边抬起露黑条；
+      // 失焦即视为键盘已收起，立即交还 100dvh。键盘未聚焦时 vv.height 偏小（standalone
+      // 底部安全区不计入等）也不收缩。
+      const targetHeight = vv && isTextInputFocused() ? computeVvHeight(vv.height, window.innerHeight) : null
       if (targetHeight === null) {
         document.documentElement.style.removeProperty('--vv-height')
       } else {
@@ -80,22 +86,23 @@ export default function App() {
       sync()
     }
     window.addEventListener('scroll', resetScroll)
-    const onFocusIn = (e: Event) => {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') {
-        resetScroll()
-        requestAnimationFrame(resetScroll)
-        setTimeout(resetScroll, 100)
-      }
+    const onFocusChange = () => {
+      // 聚焦/失焦都重算：失焦后 iOS 派发事件不可靠，延时双触发兜底（平滑收起动画结束前后各一次）
+      resetScroll()
+      requestAnimationFrame(resetScroll)
+      setTimeout(sync, 120)
+      setTimeout(sync, 400)
     }
-    window.addEventListener('focusin', onFocusIn)
+    window.addEventListener('focusin', onFocusChange)
+    window.addEventListener('focusout', onFocusChange)
     return () => {
       if (vv) {
         vv.removeEventListener('resize', sync)
         vv.removeEventListener('scroll', sync)
       }
       window.removeEventListener('scroll', resetScroll)
-      window.removeEventListener('focusin', onFocusIn)
+      window.removeEventListener('focusin', onFocusChange)
+      window.removeEventListener('focusout', onFocusChange)
       document.documentElement.style.removeProperty('--vv-height')
     }
   }, [])
