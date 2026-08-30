@@ -258,11 +258,11 @@ function InstallBanner() {
 function VpDebugHud() {
   const [vals, setVals] = useState({ ih: 0, vv: 0, dvh: 0, scr: 0, app: '', vvh: '' })
   useEffect(() => {
+    const vv = window.visualViewport
     const probe = document.createElement('div')
     probe.style.cssText = 'position:fixed;top:0;height:100dvh;visibility:hidden;pointer-events:none'
     document.body.appendChild(probe)
     const read = () => {
-      const vv = window.visualViewport
       setVals({
         ih: Math.round(window.innerHeight),
         vv: vv ? Math.round(vv.height) : -1,
