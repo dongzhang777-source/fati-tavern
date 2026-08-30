@@ -1098,8 +1098,7 @@ function ChatView() {
             const idx = hiddenCount + i
             return (
               <div key={idx} className={`msg ${m.role}`}>
-                <div className="msg-content">{m.content || (streaming && idx === messages.length - 1 ? '…' : '')}</div>
-                {m.ts && <span className="msg-time">{new Date(m.ts).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
+                <div className="msg-content">{(m.content || '').trim() || (streaming && idx === messages.length - 1 ? '…' : '')}</div>
               </div>
             )
           })}
