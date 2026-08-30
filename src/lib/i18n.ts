@@ -286,10 +286,10 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   // ── WebLLM 免 Key 体验档 ──
   'webllm.preset': { zh: '免 Key 体验', en: 'Free demo (local)', ja: 'キー不要デモ（ローカル）', ko: '키 무료 체험(로컬)' },
   'webllm.hint': {
-    zh: '⚡ 免 Key 体验：模型完全在你的浏览器本地运行，无需任何 API Key。首次使用需下载约 900MB 模型（之后有缓存），需要支持 WebGPU 的浏览器（Chrome / Edge 113+）。',
-    en: '⚡ Free demo: the model runs entirely in your browser — no API key needed. First use downloads ~900MB (cached afterwards). Requires a WebGPU-capable browser (Chrome / Edge 113+).',
-    ja: '⚡ キー不要デモ：モデルは完全にブラウザ内で動作し、APIキーは不要です。初回利用時は約900MBをダウンロード（以降はキャッシュ）。WebGPU対応ブラウザ（Chrome / Edge 113+）が必要です。',
-    ko: '⚡ 키 무료 체험: 모델은 완전히 브라우저 안에서 실행되며 API 키가 필요 없습니다. 첫 사용 시 약 900MB를 내려받습니다(이후 캐시됨). WebGPU 지원 브라우저(Chrome / Edge 113+)가 필요합니다.',
+    zh: '⚡ 免 Key 体验：模型完全在你的浏览器本地运行，无需任何 API Key。首次使用需下载 300–900MB 模型（按设备档位，之后有缓存），需要支持 WebGPU 的浏览器（Chrome / Edge 113+）。',
+    en: '⚡ Free demo: the model runs entirely in your browser — no API key needed. First use downloads 300–900MB depending on device tier (cached afterwards). Requires a WebGPU-capable browser (Chrome / Edge 113+).',
+    ja: '⚡ キー不要デモ：モデルは完全にブラウザ内で動作し、APIキーは不要です。初回利用時はデバイス階層に応じて300〜900MBをダウンロード（以降はキャッシュ）。WebGPU対応ブラウザ（Chrome / Edge 113+）が必要です。',
+    ko: '⚡ 키 무료 체험: 모델은 완전히 브라우저 안에서 실행되며 API 키가 필요 없습니다. 첫 사용 시 기기 등급에 따라 300–900MB를 내려받습니다(이후 캐시됨). WebGPU 지원 브라우저(Chrome / Edge 113+)가 필요합니다.',
   },
   'webllm.unsupported': {
     zh: '当前浏览器不支持 WebGPU，免 Key 体验档无法运行。请改用 Chrome / Edge 113+，或配置 BYOK 端点。',
