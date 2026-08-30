@@ -71,13 +71,6 @@ export default function App() {
       if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
       if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
     }
-    // iOS standalone/壳：真机实测键盘收起后 innerHeight/dvh 会卡在缩小值不恢复
-    // （webview 满屏、html 底色铺满，仅视口数值撒谎），改用物理屏幕高度钉死。
-    // 仅 standalone/壳可用——浏览器标签页有工具栏，screen.height 会超出可视区。
-    // iPhone 仅竖屏（Info.plist），screen.height 恒等全屏高，无旋转失真。
-    const fullScreenHeight = window.matchMedia?.('(display-mode: standalone)').matches
-      || (navigator as unknown as { standalone?: boolean }).standalone === true
-      || !!(window as unknown as { Capacitor?: unknown })?.Capacitor
     // Capacitor 壳的 WKWebView 键盘走原生滚动视图平移（会把头部推出屏幕），
     // 不吃主屏幕 Web App 的原生视口收缩，故壳与安卓用 --vv-height 收缩模型；
     // iOS PWA/浏览器用悬浮键盘模型（body 恒定全高）
@@ -101,7 +94,9 @@ export default function App() {
       const focused = isTextInputFocused()
       if (iOS && !capShell) {
         root.style.removeProperty('--vv-height')
-        root.style.setProperty('--app-height', `${fullScreenHeight ? window.screen.height : window.innerHeight}px`)
+        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+        // body 跟随 innerHeight：键盘弹起时 iOS 26 PWA 原生收缩布局视口，输入框自然贴键盘上方
+        // （勿改 screen.height 钉死：原生收缩后 body 高于视口，WebKit 整页过量上推，1db3941 教训）
         // 聚焦期间让 WebKit 自己平移，不夹回；稳定后过量平移纠偏；失焦才整体复位
         if (!focused) resetScroll()
         else panCheck()
