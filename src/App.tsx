@@ -85,13 +85,15 @@ export default function App() {
       vv.addEventListener('scroll', sync)
       sync()
     }
+    window.addEventListener('resize', sync)
     window.addEventListener('scroll', resetScroll)
     const onFocusChange = () => {
-      // 聚焦/失焦都重算：失焦后 iOS 派发事件不可靠，延时双触发兜底（平滑收起动画结束前后各一次）
+      // 聚焦/失焦都重算：失焦后 iOS 派发事件不可靠，多级延时兜底（平滑收起动画各阶段+极端慢恢复）
       resetScroll()
       requestAnimationFrame(resetScroll)
       setTimeout(sync, 120)
       setTimeout(sync, 400)
+      setTimeout(sync, 1000)
     }
     window.addEventListener('focusin', onFocusChange)
     window.addEventListener('focusout', onFocusChange)
@@ -100,6 +102,7 @@ export default function App() {
         vv.removeEventListener('resize', sync)
         vv.removeEventListener('scroll', sync)
       }
+      window.removeEventListener('resize', sync)
       window.removeEventListener('scroll', resetScroll)
       window.removeEventListener('focusin', onFocusChange)
       window.removeEventListener('focusout', onFocusChange)

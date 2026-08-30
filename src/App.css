@@ -1,5 +1,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
+  color-scheme: dark;
   --bg: #1a1a2e;
   --surface: #16213e;
   --surface2: #0f3460;
