@@ -23,11 +23,27 @@ import './App.css'
 // Chrome/Edge/Android 会派发 beforeinstallprompt；iOS Safari 不会，另行图文引导
 type BeforeInstallPromptEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> }
 let deferredInstall: BeforeInstallPromptEvent | null = null
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  deferredInstall = e as BeforeInstallPromptEvent
-  window.dispatchEvent(new Event('tavern-install-ready'))
-})
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    deferredInstall = e as BeforeInstallPromptEvent
+    window.dispatchEvent(new Event('tavern-install-ready'))
+  })
+}
+
+// 键盘收缩高度计算：差值 >= 100px 视为键盘弹起并收缩 body，否则返回 null 避免 iOS standalone/Capacitor 底部漏黑条
+export function computeVvHeight(vvHeight: number, innerHeight: number): number | null {
+  return vvHeight >= innerHeight - 100 ? null : Math.round(vvHeight)
+}
+
+// 探测是否处于已安装/独立应用模式（PWA standalone、iOS standalone 或 Capacitor 原生壳）
+export function isStandaloneApp(): boolean {
+  if (typeof window === 'undefined') return false
+  const match = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+  const nav = (navigator as unknown as { standalone?: boolean })?.standalone === true
+  const cap = !!(window as unknown as { Capacitor?: unknown })?.Capacitor
+  return match || nav || cap
+}
 
 export default function App() {
   const store = useStore()
@@ -39,25 +55,47 @@ export default function App() {
   useEffect(() => { document.title = docTitle(lang) }, [lang])
 
   // 移动端键盘弹起时布局视口(100dvh)不收缩、输入框会被键盘盖住；
-  // 把 visualViewport 实际可见高度同步成 CSS 变量，让应用容器跟着收缩
+  // 把 visualViewport 实际可见高度同步成 CSS 变量，让应用容器跟着收缩；
+  // 同时夹回 window 滚动，防止 iOS WKWebView 聚焦输入框时顶起文档导致顶部 header 挤入状态栏
   useEffect(() => {
     const vv = window.visualViewport
-    if (!vv) return
+    const resetScroll = () => {
+      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0)
+      if (document.scrollingElement && document.scrollingElement.scrollTop !== 0) document.scrollingElement.scrollTop = 0
+    }
     const sync = () => {
       // iOS standalone 下键盘未弹起时 vv.height 也可能小于整屏（底部安全区不计入/键盘收回后不复位），
       // 此时若把 body 压矮会在底部露出一条底色。只在键盘明显顶起（比布局视口矮一截）时才收缩。
-      if (vv.height >= window.innerHeight - 100) {
+      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
+      if (targetHeight === null) {
         document.documentElement.style.removeProperty('--vv-height')
       } else {
-        document.documentElement.style.setProperty('--vv-height', `${Math.round(vv.height)}px`)
+        document.documentElement.style.setProperty('--vv-height', `${targetHeight}px`)
+      }
+      resetScroll()
+    }
+    if (vv) {
+      vv.addEventListener('resize', sync)
+      vv.addEventListener('scroll', sync)
+      sync()
+    }
+    window.addEventListener('scroll', resetScroll)
+    const onFocusIn = (e: Event) => {
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        resetScroll()
+        requestAnimationFrame(resetScroll)
+        setTimeout(resetScroll, 100)
       }
     }
-    vv.addEventListener('resize', sync)
-    vv.addEventListener('scroll', sync)
-    sync()
+    window.addEventListener('focusin', onFocusIn)
     return () => {
-      vv.removeEventListener('resize', sync)
-      vv.removeEventListener('scroll', sync)
+      if (vv) {
+        vv.removeEventListener('resize', sync)
+        vv.removeEventListener('scroll', sync)
+      }
+      window.removeEventListener('scroll', resetScroll)
+      window.removeEventListener('focusin', onFocusIn)
       document.documentElement.style.removeProperty('--vv-height')
     }
   }, [])
@@ -154,7 +192,7 @@ function TabBar() {
 // ─── PWA 安装引导横幅 ──────────────────────────────────
 // 有 beforeinstallprompt（Chrome/Edge/Android）→ 一键安装；
 // iOS Safari 无此事件 → 图文引导「分享 → 添加到主屏幕」。
-// 已安装（standalone）或用户关闭后本机不再提示
+// 已安装（standalone / Capacitor 壳）或用户关闭后本机不再提示
 function InstallBanner() {
   const lang = useStore((s) => s.lang)
   const [ready, setReady] = useState(() => deferredInstall !== null)
@@ -166,8 +204,7 @@ function InstallBanner() {
     return () => window.removeEventListener('tavern-install-ready', onReady)
   }, [])
 
-  const standalone = window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as unknown as { standalone?: boolean }).standalone === true
+  const standalone = isStandaloneApp()
   if (hidden || standalone) return null
   const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent)
   if (!ready && !ios) return null

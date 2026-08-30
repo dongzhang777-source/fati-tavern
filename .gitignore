@@ -18,3 +18,4 @@ test-results/
 
 # Vercel CLI 临时文件
 .vercel-tmp/
+.verify-logs/
