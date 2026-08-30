@@ -35,6 +35,13 @@ export const WEBLLM_MODELS: WebLLMModelCard[] = [
     sizeGB: 0.4,
   },
   {
+    id: 'Qwen3-0.6B-q4f16_1-MLC',
+    name: 'Qwen3 0.6B',
+    desc: '新一代小模型，质量优于 Qwen2.5 0.5B，iOS 可用试点档',
+    tier: 'phone',
+    sizeGB: 0.7,
+  },
+  {
     id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
     name: 'Qwen2.5 1.5B',
     desc: '稳定可靠，手机/电脑均可流畅运行，角色扮演首选',

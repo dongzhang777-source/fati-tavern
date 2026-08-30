@@ -19,6 +19,8 @@ describe('modelBlocked 设备分档拦截', () => {
   it('iOS 仅放行 0.5B（防白屏崩溃）', () => {
     setNavigator({ userAgent: 'iPhone', hardwareConcurrency: 6, deviceMemory: 4 })
     expect(modelBlocked('Qwen2.5-0.5B-Instruct-q4f16_1-MLC').blocked).toBe(false)
+    // Qwen3-0.6B 与 0.5B 同档试点开放（真机长对话烧机验证中）
+    expect(modelBlocked('Qwen3-0.6B-q4f16_1-MLC').blocked).toBe(false)
     const r = modelBlocked('Qwen2.5-1.5B-Instruct-q4f16_1-MLC')
     expect(r.blocked).toBe(true)
     expect(r.reason).toMatch(/iOS/)

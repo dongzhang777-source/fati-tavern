@@ -52,6 +52,10 @@ export function isIOS(): boolean {
 /** 模型内存等级（数字越大越吃内存） */
 const MODEL_MEM_RANK: Record<string, number> = {
   'Qwen2.5-0.5B-Instruct-q4f16_1-MLC': 1,
+  // Qwen3-0.6B 与 0.5B 同档（rank 1）向 iOS 开放试点：权重 ~680MB、KV-cache 每 token
+  // 开销小于 1.5B，理论离 1.5GB 页面上限有余量；长对话白屏风险须真机烧机验证，
+  // 白屏则回退此行（0.5B 默认不受影响）
+  'Qwen3-0.6B-q4f16_1-MLC': 1,
   'Qwen2.5-1.5B-Instruct-q4f16_1-MLC': 2,
   'Qwen3-1.7B-q4f16_1-MLC': 3,
   'Qwen3-4B-q4f16_1-MLC': 4,
