@@ -1,6 +1,6 @@
 /**
- * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开、截图分享、首聊星级评分。
- * 不含任何聊天内容、Key、角色卡数据；first_chat_rating 只带 1-5 星数值；隐私声明在落地页明示。
+ * 匿名计数埋点——访问、导入、发消息、角色编辑、嘴替使用、二轮对话、分享创建/打开、截图分享。
+ * 不含任何聊天内容、Key、角色卡数据；隐私声明在落地页明示。
  *
  * 双通道：
  * - Vercel Analytics：pageview（Hobby 档仅支持 pageview）
@@ -55,7 +55,6 @@ export type AnalyticsEvent =
   | 'share_create'
   | 'share_open'
   | 'share_screenshot'
-  | 'first_chat_rating'
 
 export function trackOnce(event: AnalyticsEvent, props?: Record<string, number>) {
   try {

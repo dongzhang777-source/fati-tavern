@@ -833,15 +833,6 @@ function ChatView() {
     }
   }, [visibleCount])
 
-  // 首聊后一次性星级微调查（§2.4）：匿名只报星值；提交或跳过后本机不再显示
-  const [ratingDone, setRatingDone] = useState(() => localStorage.getItem('tavern-rating-done') === '1')
-  const hasAssistantReply = messages.some((m) => m.role === 'assistant' && !!m.content)
-  function finishRating(stars: number | null) {
-    if (stars !== null) trackOnce('first_chat_rating', { stars })
-    try { localStorage.setItem('tavern-rating-done', '1') } catch { /* ignore */ }
-    setRatingDone(true)
-  }
-
   // 当前生效的世界书（与 sendMessage 注入优先级一致：角色绑定 > 卡自带 > 全局激活）
   // safeMode：adult 世界书视为不生效（与注入端一致）
   const effectiveBook = char
@@ -1071,19 +1062,6 @@ function ChatView() {
           })}
           <div ref={chatEndRef} />
         </div>
-
-        {/* 首聊后一次性星级微调查（可跳过，提交后不再出现） */}
-        {!ratingDone && !streaming && hasAssistantReply && (
-          <div className="rate-bar">
-            <span>{t(lang, 'rate.title')}</span>
-            <span className="rate-stars">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => finishRating(n)} aria-label={`${n}`}>★</button>
-              ))}
-            </span>
-            <button className="rate-skip" onClick={() => finishRating(null)}>{t(lang, 'rate.skip')}</button>
-          </div>
-        )}
 
         {/* WebLLM 模型下载/编译进度 + 等待期玩法介绍（§2.4，静态卡片不放任何推广） */}
         {webllmProgress !== null && (
