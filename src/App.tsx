@@ -78,16 +78,21 @@ export default function App() {
     const fullScreenHeight = window.matchMedia?.('(display-mode: standalone)').matches
       || (navigator as unknown as { standalone?: boolean }).standalone === true
       || !!(window as unknown as { Capacitor?: unknown })?.Capacitor
+    // Capacitor 壳的 WKWebView 键盘走原生滚动视图平移（会把头部推出屏幕），
+    // 不吃主屏幕 Web App 的原生视口收缩，故壳与安卓用 --vv-height 收缩模型；
+    // iOS PWA/浏览器用悬浮键盘模型（body 恒定全高）
+    const capShell = !!(window as unknown as { Capacitor?: unknown })?.Capacitor
     const sync = () => {
       const root = document.documentElement
-      if (iOS) {
+      const focused = isTextInputFocused()
+      if (iOS && !capShell) {
         root.style.removeProperty('--vv-height')
         root.style.setProperty('--app-height', `${fullScreenHeight ? window.screen.height : window.innerHeight}px`)
         // 聚焦期间让 WebKit 自己平移，不夹回；失焦（含键盘收起后事件缺失）才复位
-        if (!isTextInputFocused()) resetScroll()
+        if (!focused) resetScroll()
         return
       }
-      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
+      const targetHeight = vv && focused ? computeVvHeight(vv.height, window.innerHeight) : null
       if (targetHeight === null) {
         root.style.removeProperty('--vv-height')
         root.style.setProperty('--app-height', `${window.innerHeight}px`)
@@ -95,6 +100,9 @@ export default function App() {
         root.style.setProperty('--vv-height', `${targetHeight}px`)
         root.style.removeProperty('--app-height')
       }
+      // 壳里必须始终夹回：WKWebView 聚焦时会原生平移整个页面（头部被推出屏幕），
+      // body 收缩到 vv.height 后输入框已在键盘上方，把平移撤掉才不双补偿；
+      // 实测（5:00 壳轮）此路径聚焦期夹回是干净的
       resetScroll()
     }
     if (vv) {
