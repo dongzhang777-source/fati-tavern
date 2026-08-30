@@ -44,7 +44,13 @@ export default function App() {
     const vv = window.visualViewport
     if (!vv) return
     const sync = () => {
-      document.documentElement.style.setProperty('--vv-height', `${Math.round(vv.height)}px`)
+      // iOS standalone 下键盘未弹起时 vv.height 也可能小于整屏（底部安全区不计入/键盘收回后不复位），
+      // 此时若把 body 压矮会在底部露出一条底色。只在键盘明显顶起（比布局视口矮一截）时才收缩。
+      if (vv.height >= window.innerHeight - 100) {
+        document.documentElement.style.removeProperty('--vv-height')
+      } else {
+        document.documentElement.style.setProperty('--vv-height', `${Math.round(vv.height)}px`)
+      }
     }
     vv.addEventListener('resize', sync)
     vv.addEventListener('scroll', sync)

@@ -8,9 +8,11 @@
   --muted: #888;
   --radius: 10px;
 }
+html { background: var(--bg); }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; height: var(--vv-height, 100dvh); overflow: hidden; }
 #root { height: 100%; }
-.app { height: 100%; display: flex; flex-direction: column; }
+/* iOS standalone（viewport-fit=cover）下内容会顶到状态栏/刘海底下，顶部让出安全区 */
+.app { height: 100%; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
 
 /* ─── 通用 ─── */
 /* viewport 不再禁缩放（无障碍）；交互元素禁双击缩放，消除点击延迟 */
