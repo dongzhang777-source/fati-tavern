@@ -1411,7 +1411,7 @@ function WebLLMModelPicker({
 
 // ─── 设置面板 ───────────────────────────────────────────
 function SettingsPanel() {
-  const { endpoint, setEndpoint, clearEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode, ageGate } = useStore()
+  const { endpoint, setEndpoint, clearEndpoint, lang, setLang, persona, setPersona, safeMode, setSafeMode, ageGate, chatFontScale, setChatFontScale } = useStore()
   // 未成年：安全模式锁定开启
   const safeLocked = ageGate === 'minor'
   const [models, setModels] = useState<string[]>([])
@@ -1489,6 +1489,24 @@ function SettingsPanel() {
           <span>{t(lang, 'settings.safeMode')}</span>
         </label>
         <span className="safe-mode-hint">{safeLocked ? t(lang, 'settings.safeModeLocked') : t(lang, 'settings.safeModeDesc')}</span>
+      </div>
+      {/* 聊天字体大小：滑杆实时调节气泡字号，作用域含群聊面板 */}
+      <div className="font-size-row">
+        <span className="font-size-label">{t(lang, 'settings.chatFontSize')}</span>
+        <div className="font-size-controls">
+          <span className="font-size-min">A</span>
+          <input
+            type="range" min="0.85" max="1.5" step="0.05"
+            value={chatFontScale}
+            aria-label={t(lang, 'settings.chatFontSize')}
+            onChange={(e) => setChatFontScale(parseFloat(e.target.value))}
+          />
+          <span className="font-size-max">A</span>
+          <span className="font-size-value">{Math.round(chatFontScale * 100)}%</span>
+          {chatFontScale !== 1 && (
+            <button className="font-size-reset" onClick={() => setChatFontScale(1)}>{t(lang, 'settings.chatFontReset')}</button>
+          )}
+        </div>
       </div>
       <div className="presets">
         {PRESETS.map((p) => (

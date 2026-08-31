@@ -319,6 +319,8 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'gallery.copyEdit': { zh: '副本编辑', en: 'Copy & Edit', ja: 'コピーして編集', ko: '복사 후 편집' },
   'toast.builtinCopied': { zh: '✓ 已创建内置角色副本「{name}」', en: '✓ Created personal copy "{name}"', ja: '✓ 内蔵キャラクターのコピー「{name}」を作成しました', ko: '✓ 내장 캐릭터 사본 "{name}"을(를) 만들었습니다' },
   'settings.safeMode': { zh: '安全模式', en: 'Safe mode', ja: 'セーフモード', ko: '세이프 모드' },
+  'settings.chatFontSize': { zh: '聊天字体大小', en: 'Chat font size', ja: 'チャット文字サイズ', ko: '채팅 글자 크기' },
+  'settings.chatFontReset': { zh: '默认', en: 'Default', ja: '標準', ko: '기본' },
   'settings.safeModeDesc': { zh: '开启后隐藏标记为 18+ 的角色卡', en: 'Hide character cards marked as 18+ when enabled', ja: '有効にすると18+とマークされたカードを非表示にします', ko: '활성화하면 18+로 표시된 카드를 숨깁니다' },
   'settings.safeModeLocked': { zh: '未满 18 岁，安全模式已锁定开启', en: 'Locked on because you are under 18', ja: '18歳未満のためセーフモードはロックされています', ko: '18세 미만이므로 세이프 모드가 잠겨 있습니다' },
   'age.title': { zh: '年龄确认', en: 'Age Check', ja: '年齢確認', ko: '연령 확인' },

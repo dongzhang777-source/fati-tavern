@@ -63,6 +63,16 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .safe-mode-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text); }
 .safe-mode-label input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
 .safe-mode-hint { font-size: 0.72rem; color: var(--muted); padding-left: 23px; }
+/* 聊天字体大小调节行 */
+.font-size-row { display: flex; flex-direction: column; gap: 4px; }
+.font-size-label { font-size: 0.85rem; color: var(--text); }
+.font-size-controls { display: flex; align-items: center; gap: 8px; }
+.font-size-controls input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); cursor: pointer; }
+.font-size-min { font-size: 0.7rem; color: var(--muted); }
+.font-size-max { font-size: 1rem; color: var(--muted); font-weight: 700; }
+.font-size-value { font-size: 0.75rem; color: var(--muted); min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+.font-size-reset { background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--muted); padding: 2px 8px; border-radius: 6px; cursor: pointer; font-size: 0.72rem; }
+.font-size-reset:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ─── 画廊 ─── */
 .gallery { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 24px 32px 0; position: relative; overflow: hidden; }
@@ -224,7 +234,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .chat-actions button:hover { opacity: 1; }
 
 .messages { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
-.msg { max-width: 72%; padding: 10px 14px; border-radius: var(--radius); line-height: 1.6; white-space: pre-wrap; word-break: break-word; font-size: 0.88rem; position: relative; }
+.msg { max-width: 72%; padding: 10px 14px; border-radius: var(--radius); line-height: 1.6; white-space: pre-wrap; word-break: break-word; font-size: calc(0.88rem * var(--chat-font-scale, 1)); position: relative; }
 .msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
 .msg.assistant { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 3px; }
 .msg-time { display: block; font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 4px; text-align: right; }
@@ -326,7 +336,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
   .chat-title-text strong { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
   .ai-disclosure { font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .messages { padding: 12px 10px; gap: 10px; }
-  .msg { max-width: 88%; font-size: 0.84rem; padding: 9px 12px; word-break: break-word; overflow-wrap: break-word; }
+  .msg { max-width: 88%; font-size: calc(0.84rem * var(--chat-font-scale, 1)); padding: 9px 12px; word-break: break-word; overflow-wrap: break-word; }
   .input-bar { padding: 8px 10px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
   .input-bar input { padding: 10px 12px; font-size: 16px; min-width: 0; }
   .btn-send { padding: 10px 14px; flex-shrink: 0; }

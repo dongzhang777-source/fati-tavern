@@ -65,6 +65,9 @@ interface State {
   // 用户 persona（我在故事里扮演谁）
   persona: UserPersona
 
+  // 聊天气泡字号缩放（0.85–1.5，1=默认），作用于所有 .msg（单聊/示例/群聊）
+  chatFontScale: number
+
   // 嘴替（帮我接话）：建议只供填入输入框，不入聊天记录
   impSuggestions: string[]
   impLoading: boolean
@@ -102,6 +105,7 @@ interface State {
   /** M-2：清除端点与 API Key（共用设备离开前），恢复本地默认 */
   clearEndpoint: () => void
   setLang: (lang: Lang) => void
+  setChatFontScale: (v: number) => void
   setSafeMode: (v: boolean) => void
   confirmAge: (age: number) => void
   setPersona: (p: Partial<UserPersona>) => void
@@ -196,6 +200,26 @@ function loadImpExpansion(): number {
   return 0.3
 }
 
+const LS_CHAT_FONT_KEY = 'tavern-chat-font-scale'
+export const CHAT_FONT_MIN = 0.85
+export const CHAT_FONT_MAX = 1.5
+
+function applyChatFontScale(v: number) {
+  try { document.documentElement.style.setProperty('--chat-font-scale', String(v)) } catch { /* ignore */ }
+}
+
+function loadChatFontScale(): number {
+  try {
+    const v = parseFloat(localStorage.getItem(LS_CHAT_FONT_KEY) || '')
+    if (!Number.isNaN(v)) {
+      const clamped = Math.min(CHAT_FONT_MAX, Math.max(CHAT_FONT_MIN, v))
+      applyChatFontScale(clamped)
+      return clamped
+    }
+  } catch { /* ignore */ }
+  return 1
+}
+
 let abortController: AbortController | null = null
 // 嘴替独立 abort：不与聊天流式互相干扰
 let impAbort: AbortController | null = null
@@ -215,6 +239,7 @@ export const useStore = create<State>((set, get) => ({
   ageGate: loadAgeGate(),
   endpoint: loadEndpoint(),
   persona: loadPersona(),
+  chatFontScale: loadChatFontScale(),
   impSuggestions: [],
   impLoading: false,
   impRefining: false,
@@ -602,6 +627,13 @@ export const useStore = create<State>((set, get) => ({
   setLang: (lang) => {
     saveLang(lang)
     set({ lang })
+  },
+
+  setChatFontScale: (v) => {
+    const clamped = Math.min(CHAT_FONT_MAX, Math.max(CHAT_FONT_MIN, v))
+    try { localStorage.setItem(LS_CHAT_FONT_KEY, String(clamped)) } catch { /* ignore */ }
+    applyChatFontScale(clamped)
+    set({ chatFontScale: clamped })
   },
 
   setSafeMode: (v) => {
