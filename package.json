@@ -15,6 +15,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
     "@mlc-ai/web-llm": "0.2.84",
     "@vercel/analytics": "^2.0.1",
     "react": "^19.2.7",

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FATI Tavern</string>
+    <string name="title_activity_main">FATI Tavern</string>
+    <string name="package_name">ai.atwork.fatitavern</string>
+    <string name="custom_url_scheme">ai.atwork.fatitavern</string>
+</resources>
