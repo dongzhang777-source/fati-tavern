@@ -6,11 +6,15 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <script>
-      // interactive-widget=resizes-content 是安卓键盘行为指令（键盘收缩布局视口）；
-      // iOS 26 疑似实现了该指令但键盘收起后布局视口不复位（底边抬升露底色），
-      // 故仅安卓动态加回；iOS 键盘适配走 JS visualViewport 钉高（App.tsx），不依赖此指令
-      if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        var m = document.querySelector('meta[name=viewport]')
+      // interactive-widget 是键盘行为指令。安卓用 resizes-content（布局视口原生收缩）。
+      // iPhone Air / iOS 26 standalone 实测：默认与 resizes-content 下，键盘弹起都把布局视口
+      // 从 912 收缩到 844（=912-sat）且收起后不复位（6a8834c 的 meta 重写自愈真机证伪）。
+      // 故 iOS 改用 resizes-visual：键盘只收缩视觉视口，布局视口恒 912，无从卡死；
+      // 聚焦期 body 高度由 JS visualViewport 钉高（App.tsx computeVvHeight）
+      var m = document.querySelector('meta[name=viewport]')
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-visual'
+      } else {
         m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
       }
     </script>

@@ -179,20 +179,28 @@ export default function App() {
       setTimeout(sync, 400)
       setTimeout(sync, 1000)
       setTimeout(recoverStuckViewport, 1200)
+      setTimeout(recoverStuckViewport, 3000)
     }
     // iPhone Air 真机实测：键盘弹起后原生布局视口从 912 卡到 844（=912-sat），
-    // 收起键盘也不恢复（innerHeight/dvh 同卡），底部露空条、顶部安全区被系统玻璃接管。
-    // JS 无法直接改原生 frame，但重写 viewport meta 可强制 WebKit 重解析视口复位。
-    // 语义不变（initial-scale 本就是 1.0），仅 iOS 且仅卡死态动作
+    // 收起键盘也不恢复（innerHeight/dvh 同卡），底部露空条。主防线在 index.html：
+    // iOS 声明 interactive-widget=resizes-visual 让键盘只收缩视觉视口、布局视口恒 912。
+    // 本兜底针对指令被无视的极端情形：重写 meta 强制 WebKit 重解析。
+    // 2026-08-31 真机证伪「追加重复 initial-scale=1.0」（语义不变不触发复位）→
+    // 改为剥离再还原 interactive-widget（真语义变化）；无指令时才退回追加写法
     const recoverStuckViewport = () => {
       if (!iOS || isTextInputFocused()) return
       if (window.innerHeight >= window.screen.height - 40) return
       const m = document.querySelector('meta[name=viewport]')
       if (!m) return
       const c = m.getAttribute('content') || ''
-      if (/, initial-scale=1\.0$/.test(c)) return
-      m.setAttribute('content', `${c}, initial-scale=1.0`)
-      setTimeout(() => m.setAttribute('content', c), 80)
+      const stripped = c.replace(/,\s*interactive-widget=[a-z-]+/, '')
+      if (stripped !== c) {
+        m.setAttribute('content', stripped)
+        setTimeout(() => m.setAttribute('content', c), 80)
+      } else if (!/, initial-scale=1\.0$/.test(c)) {
+        m.setAttribute('content', `${c}, initial-scale=1.0`)
+        setTimeout(() => m.setAttribute('content', c), 80)
+      }
     }
     window.addEventListener('focusin', onFocusChange)
     window.addEventListener('focusout', onFocusChange)
