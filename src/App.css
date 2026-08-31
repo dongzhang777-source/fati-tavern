@@ -60,8 +60,10 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .lang-toggle button { background: var(--bg); border: 1px solid rgba(255,255,255,0.12); color: var(--muted); padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 0.72rem; }
 .lang-toggle button.active { border-color: var(--accent); color: var(--accent); }
 .safe-mode-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.safe-mode-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text); }
-.safe-mode-label input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+/* 特异性须压过 .settings-panel label 的 flex-direction: column，否则文字掉到选择框下方 */
+.settings-panel .safe-mode-label { display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text); }
+/* 同步抵消 .settings-panel input 泄漏到 checkbox 上的 padding/border/background */
+.settings-panel .safe-mode-label input { width: 15px; height: 15px; flex: none; padding: 0; border: none; background: none; cursor: pointer; accent-color: var(--accent); }
 .safe-mode-hint { font-size: 0.72rem; color: var(--muted); padding-left: 23px; }
 /* 聊天字体大小调节行 */
 .font-size-row { display: flex; flex-direction: column; gap: 4px; }
