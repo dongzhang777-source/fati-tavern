@@ -178,6 +178,21 @@ export default function App() {
       setTimeout(sync, 120)
       setTimeout(sync, 400)
       setTimeout(sync, 1000)
+      setTimeout(recoverStuckViewport, 1200)
+    }
+    // iPhone Air 真机实测：键盘弹起后原生布局视口从 912 卡到 844（=912-sat），
+    // 收起键盘也不恢复（innerHeight/dvh 同卡），底部露空条、顶部安全区被系统玻璃接管。
+    // JS 无法直接改原生 frame，但重写 viewport meta 可强制 WebKit 重解析视口复位。
+    // 语义不变（initial-scale 本就是 1.0），仅 iOS 且仅卡死态动作
+    const recoverStuckViewport = () => {
+      if (!iOS || isTextInputFocused()) return
+      if (window.innerHeight >= window.screen.height - 40) return
+      const m = document.querySelector('meta[name=viewport]')
+      if (!m) return
+      const c = m.getAttribute('content') || ''
+      if (/, initial-scale=1\.0$/.test(c)) return
+      m.setAttribute('content', `${c}, initial-scale=1.0`)
+      setTimeout(() => m.setAttribute('content', c), 80)
     }
     window.addEventListener('focusin', onFocusChange)
     window.addEventListener('focusout', onFocusChange)
