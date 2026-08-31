@@ -51,16 +51,21 @@ function DiagBadge() {
   useEffect(() => {
     const sat = document.createElement('div')
     sat.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;'
+    const sab = document.createElement('div')
+    sab.style.cssText = 'position:fixed;bottom:0;left:0;width:2px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;'
     const dvh = document.createElement('div')
     dvh.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:100dvh;visibility:hidden;pointer-events:none;'
-    document.documentElement.append(sat, dvh)
+    document.documentElement.append(sat, dvh, sab)
     const tick = () => {
       const vv = window.visualViewport
       const rs = document.documentElement.style
+      const app = document.querySelector('.app')?.getBoundingClientRect()
+      const ib = document.querySelector('.input-bar')?.getBoundingClientRect()
       setTxt([
         `in=${window.innerHeight} vv=${vv ? Math.round(vv.height) : -1} vTop=${vv ? Math.round(vv.offsetTop) : -1}`,
-        `scr=${window.screen.height} dvh=${Math.round(dvh.getBoundingClientRect().height)} sat=${Math.round(sat.getBoundingClientRect().height)}`,
-        `body=${Math.round(document.body.getBoundingClientRect().height)} y=${Math.round(window.scrollY)} foc=${document.activeElement?.tagName ?? '-'}`,
+        `scr=${window.screen.height} dvh=${Math.round(dvh.getBoundingClientRect().height)} sat=${Math.round(sat.getBoundingClientRect().height)} sab=${Math.round(sab.getBoundingClientRect().height)}`,
+        `body=${Math.round(document.body.getBoundingClientRect().height)} dch=${document.documentElement.clientHeight} y=${Math.round(window.scrollY)} foc=${document.activeElement?.tagName ?? '-'}`,
+        `app=${app ? Math.round(app.height) : -1}@${app ? Math.round(app.top) : -1} ib=${ib ? Math.round(ib.bottom) : -1}`,
         `vvH=${rs.getPropertyValue('--vv-height').trim() || '-'} appH=${rs.getPropertyValue('--app-height').trim() || '-'}`,
       ].join('\n'))
     }
@@ -81,6 +86,7 @@ function DiagBadge() {
       window.removeEventListener('focusout', tick)
       sat.remove()
       dvh.remove()
+      sab.remove()
     }
   }, [])
   return (
