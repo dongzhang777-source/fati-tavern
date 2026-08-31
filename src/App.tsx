@@ -45,6 +45,51 @@ export function isStandaloneApp(): boolean {
   return match || nav || cap
 }
 
+// 临时视口诊断角标（iPhone Air 毛玻璃/空条定因后删除）
+function DiagBadge() {
+  const [txt, setTxt] = useState('')
+  useEffect(() => {
+    const sat = document.createElement('div')
+    sat.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;'
+    const dvh = document.createElement('div')
+    dvh.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:100dvh;visibility:hidden;pointer-events:none;'
+    document.documentElement.append(sat, dvh)
+    const tick = () => {
+      const vv = window.visualViewport
+      const rs = document.documentElement.style
+      setTxt([
+        `in=${window.innerHeight} vv=${vv ? Math.round(vv.height) : -1} vTop=${vv ? Math.round(vv.offsetTop) : -1}`,
+        `scr=${window.screen.height} dvh=${Math.round(dvh.getBoundingClientRect().height)} sat=${Math.round(sat.getBoundingClientRect().height)}`,
+        `body=${Math.round(document.body.getBoundingClientRect().height)} y=${Math.round(window.scrollY)} foc=${document.activeElement?.tagName ?? '-'}`,
+        `vvH=${rs.getPropertyValue('--vv-height').trim() || '-'} appH=${rs.getPropertyValue('--app-height').trim() || '-'}`,
+      ].join('\n'))
+    }
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', tick)
+    vv?.addEventListener('scroll', tick)
+    window.addEventListener('resize', tick)
+    window.addEventListener('focusin', tick)
+    window.addEventListener('focusout', tick)
+    const iv = setInterval(tick, 500)
+    tick()
+    return () => {
+      clearInterval(iv)
+      vv?.removeEventListener('resize', tick)
+      vv?.removeEventListener('scroll', tick)
+      window.removeEventListener('resize', tick)
+      window.removeEventListener('focusin', tick)
+      window.removeEventListener('focusout', tick)
+      sat.remove()
+      dvh.remove()
+    }
+  }, [])
+  return (
+    <pre style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 4px)', right: 4, zIndex: 9999, margin: 0, padding: '4px 6px', font: '10px/1.5 monospace', color: '#7CFC00', background: 'rgba(0,0,0,0.78)', borderRadius: 6, pointerEvents: 'none', whiteSpace: 'pre', textAlign: 'left' }}>
+      {txt}
+    </pre>
+  )
+}
+
 export default function App() {
   const store = useStore()
   const { view, lang } = store
@@ -153,6 +198,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <DiagBadge />
       <OfflineBanner />
       {inStory ? <StoryView /> : inChat ? <ChatView /> : (
         <>
