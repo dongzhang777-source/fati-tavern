@@ -1032,7 +1032,10 @@ function ChatView() {
             <button onClick={clearChat} title={t(lang, 'chat.clear')}>🗑</button>
           </div>
           {showLorePicker && char && (
-            <div className="chat-lore-picker">
+            <>
+              {/* 透明全屏捕获层（z-39 低于面板 z-40）：点面板外任意区域收起 */}
+              <div className="chat-lore-backdrop" onClick={() => setShowLorePicker(false)} />
+              <div className="chat-lore-picker">
               <p className="chat-lore-picker-label">{t(lang, 'chat.lorePick')}</p>
               <p className="chat-lore-picker-current">
                 {effectiveBook
@@ -1053,7 +1056,8 @@ function ChatView() {
                   {char.boundLorebookId === lb.id && <span className="lore-badge-active">{t(lang, 'lore.active')}</span>}
                 </button>
               ))}
-            </div>
+              </div>
+            </>
           )}
           {p2pActive && (
             <div className="chat-tabs">

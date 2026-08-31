@@ -474,6 +474,8 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .chat-lore-btn { position: relative; }
 .chat-lore-btn.has-book { color: #ffc94d; }
 .chat-lore-picker { position: absolute; top: 100%; right: 8px; z-index: 40; background: var(--surface2); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius); padding: 12px; width: min(90vw, 300px); box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 6px; }
+/* 透明全屏捕获层：点面板外任意区域收起（z-39 必须低于面板 z-40） */
+.chat-lore-backdrop { position: fixed; inset: 0; z-index: 39; background: transparent; }
 .chat-lore-picker-label { font-size: 0.72rem; color: var(--muted); }
 .chat-lore-picker-current { font-size: 0.72rem; color: var(--text); opacity: 0.8; margin-bottom: 4px; }
 .chat-lore-option { background: var(--bg); border: 1px solid rgba(255,255,255,0.1); color: var(--text); border-radius: 6px; padding: 7px 10px; cursor: pointer; font-size: 0.78rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
