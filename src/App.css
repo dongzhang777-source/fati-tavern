@@ -247,8 +247,10 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .shot-notice { padding: 8px 16px; background: rgba(120,190,120,0.14); border-top: 1px solid rgba(120,190,120,0.35); color: #b9dfb9; font-size: 0.8rem; }
 
 .input-bar { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 8px; flex-shrink: 0; }
-.input-bar input { flex: 1; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 11px 14px; color: var(--text); font-size: 0.9rem; outline: none; }
-.input-bar input:focus { border-color: var(--accent); }
+.input-bar input, .input-bar textarea { flex: 1; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 11px 14px; color: var(--text); font-size: 0.9rem; outline: none; font-family: inherit; }
+/* textarea 是 P2P 群聊输入框：禁用右下角拖拽手柄，避免撑破 flex 行 */
+.input-bar textarea { resize: none; }
+.input-bar input:focus, .input-bar textarea:focus { border-color: var(--accent); }
 .btn-send { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500; }
 .btn-send:disabled { opacity: 0.4; cursor: default; }
 .btn-stop { background: var(--surface2); color: var(--text); border: 1px solid rgba(255,255,255,0.15); padding: 10px 16px; border-radius: var(--radius); cursor: pointer; }
@@ -340,7 +342,7 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
   .messages { padding: 12px 10px; gap: 10px; }
   .msg { max-width: 88%; font-size: calc(0.84rem * var(--chat-font-scale, 1)); padding: 9px 12px; word-break: break-word; overflow-wrap: break-word; }
   .input-bar { padding: 8px 10px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
-  .input-bar input { padding: 10px 12px; font-size: 16px; min-width: 0; }
+  .input-bar input, .input-bar textarea { padding: 10px 12px; font-size: 16px; min-width: 0; }
   .btn-send { padding: 10px 14px; flex-shrink: 0; }
   .btn-stop { padding: 10px 12px; flex-shrink: 0; }
   .btn-imp { padding: 10px; }
@@ -360,9 +362,10 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
   /* 触屏无 hover：卡片操作按钮常显（同 .lore-del 模式） */
   .btn-del, .btn-edit { opacity: 1; }
   .char-card .btn-share { opacity: 1; }
-  /* iOS 聚焦 <16px 输入框会自动缩放页面 */
+  /* iOS 聚焦 <16px 输入框会自动缩放页面（P2P 群聊 textarea 也在列） */
   .settings-panel input, .editor-field input, .editor-field textarea,
-  .persona-section textarea, .conv-rename, .story-input-row input { font-size: 16px; }
+  .persona-section textarea, .conv-rename, .story-input-row input,
+  .input-bar textarea { font-size: 16px; }
   /* 侧边栏遮罩：点击外部关闭 */
   .conv-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
   /* 会话行删除改左滑手势，收起 × 减少视觉噪音 */
