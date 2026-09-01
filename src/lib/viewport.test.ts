@@ -9,10 +9,13 @@ describe('computeVvHeight 视口高度收缩计算', () => {
   it('iOS standalone 底部安全区微小偏差（差值 < 100px）返回 null，防止底部漏黑条', () => {
     expect(computeVvHeight(760, 844)).toBeNull()
     expect(computeVvHeight(745, 844)).toBeNull()
+    // iPhone 912 屏幕键盘收起后 WebKit vvHeight 恢复到 844（差值 68px < 100px），返回 null 交给全屏 screen.height 接管
+    expect(computeVvHeight(844, 912)).toBeNull()
   })
 
   it('键盘明显弹起（差值 >= 100px）时返回四舍五入后的像素高度', () => {
     expect(computeVvHeight(500, 844)).toBe(500)
+    expect(computeVvHeight(489, 912)).toBe(489)
     expect(computeVvHeight(450.4, 844)).toBe(450)
     expect(computeVvHeight(450.6, 844)).toBe(451)
   })

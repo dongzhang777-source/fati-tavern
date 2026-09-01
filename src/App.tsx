@@ -96,17 +96,23 @@ export default function App() {
     const sync = () => {
       const root = document.documentElement
       const focused = isTextInputFocused()
+      const isStandalone = isStandaloneApp()
+      // 全屏独立应用模式（iOS PWA standalone / 桌面快捷方式 / Capacitor 壳）：
+      // 真机 WebKit 键盘收起后 innerHeight 会卡在 912 - sat(68) = 844 不复位；
+      // 全屏高度取 window.screen.height（如 912px），普通浏览器标签页取 window.innerHeight
+      const fullHeight = (isStandalone && iOS) ? window.screen.height : window.innerHeight
+
       if (!focused) {
         // 键盘收起/未聚焦：交还全高 + 滚动复位（iOS 失焦派发不可靠，靠 focusout 多级延时兜底）
         root.style.removeProperty('--vv-height')
-        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+        root.style.setProperty('--app-height', `${fullHeight}px`)
         resetScroll()
         return
       }
-      const targetHeight = vv ? computeVvHeight(vv.height, window.innerHeight) : null
+      const targetHeight = vv ? computeVvHeight(vv.height, fullHeight) : null
       if (targetHeight === null) {
         root.style.removeProperty('--vv-height')
-        root.style.setProperty('--app-height', `${window.innerHeight}px`)
+        root.style.setProperty('--app-height', `${fullHeight}px`)
       } else {
         root.style.setProperty('--vv-height', `${targetHeight}px`)
         root.style.removeProperty('--app-height')
