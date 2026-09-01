@@ -7,20 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <script>
       // interactive-widget 是键盘行为指令。安卓用 resizes-content（布局视口原生收缩）。
-      // iPhone Air / iOS 26 standalone 实测：默认与 resizes-content 下，键盘弹起都把布局视口
-      // 从 912 收缩到 844（=912-sat）且收起后不复位（6a8834c 的 meta 重写自愈真机证伪）。
-      // 故 iOS 改用 resizes-visual：键盘只收缩视觉视口，布局视口恒 912，无从卡死；
-      // 聚焦期 body 高度由 JS visualViewport 钉高（App.tsx computeVvHeight）
-      var m = document.querySelector('meta[name=viewport]')
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-visual'
-      } else {
-        m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
+      // iOS PWA 依靠 apple-mobile-web-app-status-bar-style=black-translucent 沉浸式铺满视口
+      if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        var m = document.querySelector('meta[name=viewport]')
+        if (m) m.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content'
       }
     </script>
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="肥猫酒馆" />
     <meta name="description" content="肥猫酒馆 FATI Tavern：拖一张角色卡进来，和 TA 聊天。BYOK，隐私不离开你的设备。Drop a character card in and chat." />
     <!-- M-6：CSP 纵深防线（当前渲染层无 XSS sink，防未来引入注入点/依赖投毒后无限制执行）。
