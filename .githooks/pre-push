@@ -1,8 +1,12 @@
 #!/bin/sh
 # pre-push 门禁（AGENTS.md「提交约定」+ 多方协作 SOP 铁律 3 的机械闸门）：
-# 1) 待推 commit 作者必须为 dongzhang777-source（Vercel team 只认该身份；
+# 1) 工作区必须干净（有未提交改动 = 有遗漏文件，拒绝推送）。
+# 2) npm run build 必须通过（tsc -b && vite build）。
+# 3) npm test 必须通过（vitest run）。
+#    2/3 的依据：AGENTS.md「推 main 即触发 Vercel 生产部署，坏构建会直接上线」，
+#    本地 push 前是唯一能拦住坏构建/坏测试的机械闸门（仓库无 CI）。
+# 4) 待推 commit 作者必须为 dongzhang777-source（Vercel team 只认该身份；
 #    aiatwork 身份推送会被部署拦截）。
-# 2) 工作区必须干净（有未提交改动 = 有遗漏文件，拒绝推送）。
 # 逃生通道：git push --no-verify（仅用户手动操作时使用）。
 # 本目录为 hooksPath（core.hooksPath=.githooks），文件放进来自动生效。
 REQUIRED_EMAIL="292045917+dongzhang777-source@users.noreply.github.com"
@@ -16,7 +20,56 @@ if [ -n "$DIRTY" ]; then
   exit 1
 fi
 
-# ── 检查 2：待推 commit 作者身份（防错身份上线）──────────────
+# ── 检查 2 & 3：构建 + 测试（防坏构建/坏测试直接上线）───────
+# 产物 dist/ 与 node_modules/.tmp/*.tsbuildinfo 均在 .gitignore 内，
+# 跑完不会污染工作区，不会让检查 1 在下次推送时误报。
+cd "$(git rev-parse --show-toplevel)" || {
+  echo "❌ pre-push: 无法进入仓库根目录"
+  exit 1
+}
+
+# GUI/IDE 触发的 push 常常拿不到登录 shell 的 PATH（本机 npm 装在 ~/.local/bin），
+# 这里补一圈常见 Node 安装位置，避免把「找不到 npm」误报成「构建失败」。
+if ! command -v npm >/dev/null 2>&1; then
+  for NODE_BIN in "$HOME/.local/bin" /opt/homebrew/bin /usr/local/bin \
+                  "$HOME"/.nvm/versions/node/*/bin "$HOME/.volta/bin" \
+                  "$HOME"/.fnm/*/bin "$HOME/.asdf/shims"; do
+    [ -x "$NODE_BIN/npm" ] && PATH="$NODE_BIN:$PATH"
+  done
+  export PATH
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo "❌ pre-push: PATH 里找不到 npm，无法执行构建/测试门禁"
+  echo "   → 换到终端里推送（PATH 完整），或 git push --no-verify 强行推"
+  exit 1
+fi
+
+if [ ! -d node_modules ]; then
+  echo "❌ pre-push: 缺少 node_modules，无法执行构建/测试门禁"
+  echo "   → 先 npm install 再推，或 git push --no-verify 强行推"
+  exit 1
+fi
+
+echo "▶ pre-push 检查 2/4：npm run build（tsc -b && vite build）"
+if ! npm run build; then
+  echo ""
+  echo "❌ pre-push: 构建失败，拒绝推送（推 main 会把坏构建直接部署上线）"
+  echo "   → 修好构建后重推，或 git push --no-verify 强行推（仅用户手动操作）"
+  exit 1
+fi
+
+echo "▶ pre-push 检查 3/4：npm test（vitest run）"
+if ! npm test; then
+  echo ""
+  echo "❌ pre-push: 测试失败，拒绝推送"
+  echo "   → 修好测试后重推，或 git push --no-verify 强行推（仅用户手动操作）"
+  exit 1
+fi
+
+echo "✓ pre-push: 构建 + 测试通过"
+
+# ── 检查 4：待推 commit 作者身份（防错身份上线）──────────────
 # 用 fetch 后的 origin/<branch> 作为 base（remote_sha 是 push 前的旧 ref 值，
 # 可能指向已经合入远程的历史提交，导致误报已在线上的坏身份 commit）。
 BAD=""
