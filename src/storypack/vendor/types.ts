@@ -33,6 +33,10 @@ export interface Manifest {
   origin: { channel: 'official' | 'ugc'; provenance: 'ai' | 'human' | 'hybrid' }
   creator: { name: string; peerId?: string }
   license?: string
+  /** 2026-09-04 仲裁规范升级：fati-server 进化链路的包→人格关联（反馈→bandit 键） */
+  personaId?: string
+  sourceTrendId?: string
+  references?: string[]
   contentRating: ContentRating
   ageGateRequired: boolean
   distribution: {

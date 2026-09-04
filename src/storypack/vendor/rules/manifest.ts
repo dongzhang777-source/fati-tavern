@@ -46,6 +46,12 @@ const MANIFEST_KEYS = [
   'embedding',
   'stats',
   'size',
+  // 2026-09-04 仲裁规范升级：fati-server 生产管线注入的进化/溯源关联字段
+  //（pipeline.ts：personaId=反馈→bandit 键、sourceTrendId/references=trend 溯源）。
+  // 缺省合法；存在时经 buildSafeManifest 白名单重建透传，类型校验见下方 license 同款。
+  'personaId',
+  'sourceTrendId',
+  'references',
 ] as const
 
 export function validateManifestStructure(
@@ -182,6 +188,23 @@ export function validateManifestStructure(
     }
     if (raw.license.length > LICENSE_MAX_LENGTH) {
       return packError('SP-MAN-017', 'manifest.json', '/license')
+    }
+  }
+
+  // personaId / sourceTrendId（2026-09-04 仲裁规范升级，类型校验沿 license 先例）
+  if ('personaId' in raw && raw.personaId !== undefined) {
+    if (typeof raw.personaId !== 'string' || raw.personaId.length === 0) {
+      return packError('SP-MAN-015', 'manifest.json', '/personaId')
+    }
+  }
+  if ('sourceTrendId' in raw && raw.sourceTrendId !== undefined) {
+    if (typeof raw.sourceTrendId !== 'string' || raw.sourceTrendId.length === 0) {
+      return packError('SP-MAN-015', 'manifest.json', '/sourceTrendId')
+    }
+  }
+  if ('references' in raw && raw.references !== undefined) {
+    if (!Array.isArray(raw.references) || raw.references.some(r => typeof r !== 'string')) {
+      return packError('SP-MAN-015', 'manifest.json', '/references')
     }
   }
 
@@ -499,6 +522,10 @@ export function buildSafeManifest(raw: Record<string, unknown>): Manifest {
       ...(creatorRaw.peerId !== undefined ? { peerId: String(creatorRaw.peerId) } : {}),
     },
     ...(raw.license !== undefined ? { license: String(raw.license) } : {}),
+    // 2026-09-04 仲裁规范升级：进化/溯源关联字段透传（白名单同批扩展，类型已校验）
+    ...(raw.personaId !== undefined ? { personaId: String(raw.personaId) } : {}),
+    ...(raw.sourceTrendId !== undefined ? { sourceTrendId: String(raw.sourceTrendId) } : {}),
+    ...(Array.isArray(raw.references) ? { references: (raw.references as unknown[]).map(String) } : {}),
     contentRating: raw.contentRating as ContentRating,
     ageGateRequired: Boolean(raw.ageGateRequired),
     distribution: {
