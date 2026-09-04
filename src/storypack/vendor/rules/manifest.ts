@@ -191,20 +191,30 @@ export function validateManifestStructure(
     }
   }
 
-  // personaId / sourceTrendId（2026-09-04 仲裁规范升级，类型校验沿 license 先例）
+  // personaId / sourceTrendId / references（2026-09-04 仲裁规范升级：类型沿 SP-MAN-015、
+  // 长度沿 license 的 SP-MAN-017 先例；上限与 schema.json $defs.manifest 同批对齐）
   if ('personaId' in raw && raw.personaId !== undefined) {
     if (typeof raw.personaId !== 'string' || raw.personaId.length === 0) {
       return packError('SP-MAN-015', 'manifest.json', '/personaId')
+    }
+    if (raw.personaId.length > 48) {
+      return packError('SP-MAN-017', 'manifest.json', '/personaId')
     }
   }
   if ('sourceTrendId' in raw && raw.sourceTrendId !== undefined) {
     if (typeof raw.sourceTrendId !== 'string' || raw.sourceTrendId.length === 0) {
       return packError('SP-MAN-015', 'manifest.json', '/sourceTrendId')
     }
+    if (raw.sourceTrendId.length > 64) {
+      return packError('SP-MAN-017', 'manifest.json', '/sourceTrendId')
+    }
   }
   if ('references' in raw && raw.references !== undefined) {
-    if (!Array.isArray(raw.references) || raw.references.some(r => typeof r !== 'string')) {
+    if (!Array.isArray(raw.references) || raw.references.length > 16 || raw.references.some(r => typeof r !== 'string')) {
       return packError('SP-MAN-015', 'manifest.json', '/references')
+    }
+    if (raw.references.some(r => r.length === 0 || r.length > 256)) {
+      return packError('SP-MAN-017', 'manifest.json', '/references')
     }
   }
 

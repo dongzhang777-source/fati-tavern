@@ -372,6 +372,9 @@
           }
         },
         "license": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "personaId": { "type": "string", "minLength": 1, "maxLength": 48 },
+        "sourceTrendId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "references": { "type": "array", "maxItems": 16, "items": { "type": "string", "minLength": 1, "maxLength": 256 } },
         "contentRating": { "enum": ["all", "suggestive", "adult"] },
         "ageGateRequired": { "type": "boolean" },
         "distribution": {
