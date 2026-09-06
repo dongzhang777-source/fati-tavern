@@ -36,4 +36,14 @@ describe('share link', () => {
   it('ignores malformed fragments', async () => {
     await expect(readSharedCard('#card=not-gzip')).resolves.toBeNull()
   })
+
+  it('拒绝解压炸弹：输出超过 20MB 上限返回 null（安全审查 X-2）', async () => {
+    const { gzipSync } = await import('node:zlib')
+    // 25MB 全零：压缩后仅 ~25KB，可合法通过 32KB 链接上限；旧实现会全量解压入内存
+    const bomb = new Uint8Array(gzipSync(Buffer.alloc(25 * 1024 * 1024, 0)))
+    let binary = ''
+    for (const b of bomb) binary += String.fromCharCode(b)
+    const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    await expect(readSharedCard(`${SHARE_CARD_PREFIX}${encoded}`)).resolves.toBeNull()
+  })
 })

@@ -171,6 +171,24 @@ export default function App() {
       )}
       {showTabBar && <TabBar />}
       {showTabBar && <InstallBanner />}
+      {/* 分享链接卡片导入确认（安全审查 X-2）：唯一远程投递面，入库前必须经用户同意 */}
+      {store.pendingSharedCard && (
+        <>
+          <div className="share-confirm-backdrop" />
+          <div className="share-confirm" role="dialog" aria-modal="true">
+            <h3>{t(lang, 'share.confirmTitle')}</h3>
+            <p>{t(lang, 'share.confirmBody', { name: store.pendingSharedCard.name })}</p>
+            <div className="share-confirm-actions">
+              <button className="share-confirm-cancel" onClick={() => store.dismissSharedCard()}>
+                {t(lang, 'share.confirmCancel')}
+              </button>
+              <button className="share-confirm-ok" onClick={() => { void store.confirmSharedCard() }}>
+                {t(lang, 'share.confirmOk')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -217,7 +235,7 @@ function TabBar() {
   const hasActiveChar = useStore((s) => s.characters.some((c) => c.id === s.activeCharId))
   const { backToGallery, showChatTab, showStoryPack, showLore, showSettings } = useStore.getState()
 
-  // 顺序为镜面反转：设置 → 世界书 → 故事 → 聊天 → 角色（老张 2026-08-02 指定）
+  // 顺序为镜面反转：设置 → 世界书 → 故事 → 聊天 → 角色（产品指定顺序）
   const tabs: { key: string; icon: string; label: string; active: boolean; go: () => void }[] = [
     { key: 'settings', icon: '⚙️', label: t(lang, 'tab.settings'), active: view === 'settings', go: showSettings },
     { key: 'books', icon: '📚', label: t(lang, 'tab.books'), active: view === 'lore', go: showLore },

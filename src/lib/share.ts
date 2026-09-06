@@ -75,9 +75,20 @@ export async function readSharedCard(hash = location.hash): Promise<TavernCard |
 }
 
 async function decompressToString(bytes: Uint8Array): Promise<string> {
+  // 解压输出上限（安全审查 X-2）：32KB 压缩流可解出远超 20MB 的输出（gzip 比率可达 1000:1+），
+  // 与 tavern.ts 文件路径的解压炸弹防护同级；超限 throw 由 readSharedCard 的 catch 吞为 null
+  const maxDecompressed = 20 * 1024 * 1024
   const stream = new Blob([bytes as BlobPart]).stream()
     .pipeThrough(new DecompressionStream('gzip')) as ReadableStream<Uint8Array>
   const chunks: Uint8Array[] = []
-  for await (const chunk of stream) chunks.push(chunk)
+  let total = 0
+  const reader = stream.getReader()
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > maxDecompressed) throw new Error('shared card decompressed output exceeds limit')
+    chunks.push(value)
+  }
   return new TextDecoder().decode(concatBytes(chunks))
 }

@@ -188,11 +188,17 @@ function extractPngTextChunks(buf: ArrayBuffer): PngTextChunk[] | null {
 
   const chunks: PngTextChunk[] = []
   let offset = 8
+  // 迭代上限双保险：每轮 offset 至少 +12（len 校验保证非负），上限远超任何合法 PNG
+  let guard = 0
   while (offset < bytes.length - 12) {
+    if (++guard > 100_000) return null
     const len = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]
     const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7])
 
     if (type === 'IEND') break
+    // len 为 32 位有符号读取，恶意文件可为负：offset += 8+len+4 会原地踏步/倒退成死循环（安全审查 X-1）；
+    // 负长度或越界 chunk 一律拒绝整个文件
+    if (len < 0 || offset + 12 + len > bytes.length) return null
     if (type === 'tEXt' || type === 'zTXt') {
       // data: keyword\0(压缩方法字节，仅 zTXt)value
       const dataStart = offset + 8

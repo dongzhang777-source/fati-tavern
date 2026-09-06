@@ -529,6 +529,16 @@ button, input, textarea, select, .char-card, .conv-row, .imp-card { touch-action
 .card-menu button:active { background: rgba(255,255,255,0.08); }
 .card-menu button.danger { color: var(--accent); }
 
+/* ── 分享链接卡片导入确认（安全审查 X-2：唯一远程投递面） ── */
+.share-confirm-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; }
+.share-confirm { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 48px)); z-index: 301; background: var(--surface2); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.share-confirm h3 { margin: 0 0 10px; font-size: 1rem; color: var(--text); }
+.share-confirm p { margin: 0 0 16px; font-size: 0.85rem; line-height: 1.5; color: var(--muted); overflow-wrap: break-word; }
+.share-confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.share-confirm-actions button { border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.85rem; cursor: pointer; }
+.share-confirm-cancel { background: rgba(255,255,255,0.08); color: var(--text); }
+.share-confirm-ok { background: var(--accent); color: #fff; }
+
 /* ─── StoryPack 试玩阅读器 ─────────────────────────── */
 .tab-page > .storypack-panel { max-width: 960px; margin-left: auto; margin-right: auto; }
 .storypack-panel { display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px; }

@@ -154,6 +154,25 @@ describe('parsePngCard', () => {
     const png = makePng([pngChunk('tEXt', tEXtData('chara', new TextEncoder().encode('!!!not-base64!!!')))])
     await expect(parsePngCard(png)).rejects.toThrow('base64')
   })
+
+  // 安全审查 X-1：len 为 32 位有符号读取，恶意 PNG 可构造负长度 chunk 使 offset 原地踏步死循环
+  it('负长度 chunk（len=-12）整体拒绝，不死循环', async () => {
+    const evil = new Uint8Array(24) // >20 字节保证进入 while 循环（条件 offset < len-12）
+    evil.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0)
+    const dv = new DataView(evil.buffer)
+    dv.setUint32(8, 0xfffffff4) // 有符号 -12：修复前 offset += 0 恒定，while 永真
+    evil.set([0x74, 0x45, 0x58, 0x74], 12) // 'tEXt'
+    await expect(parsePngCard(evil.buffer)).rejects.toThrow('不是有效的 PNG 文件')
+  })
+
+  it('越界长度 chunk 整体拒绝', async () => {
+    const evil = new Uint8Array(24)
+    evil.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0)
+    const dv = new DataView(evil.buffer)
+    dv.setUint32(8, 0x7fffffff) // 正向巨大长度，data+CRC 远超文件尾
+    evil.set([0x74, 0x45, 0x58, 0x74], 12)
+    await expect(parsePngCard(evil.buffer)).rejects.toThrow('不是有效的 PNG 文件')
+  })
 })
 
 // ─── 宏替换 ───────────────────────────────────────────────

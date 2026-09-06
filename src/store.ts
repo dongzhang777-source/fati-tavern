@@ -73,6 +73,7 @@ interface State {
   impLoading: boolean
   impRefining: boolean
   impExpansion: number // 拓展度 0-1：低=顺着剧情，高=大胆推进
+  pendingSharedCard: TavernCard | null // 分享链接待确认卡（安全审查 X-2：入库前需用户确认）
 
   // 端点配置
   endpoint: EndpointConfig
@@ -80,6 +81,8 @@ interface State {
   // actions
   init: () => Promise<void>
   importCard: (card: TavernCard, file?: File) => Promise<void>
+  confirmSharedCard: () => Promise<void>
+  dismissSharedCard: () => void
   removeCharacter: (id: string) => Promise<void>
   updateCharacter: (id: string, card: TavernCard) => Promise<StoredCharacter | undefined>
   openCharacter: (id: string) => Promise<void>
@@ -244,14 +247,14 @@ export const useStore = create<State>((set, get) => ({
   impLoading: false,
   impRefining: false,
   impExpansion: loadImpExpansion(),
+  pendingSharedCard: null,
 
   init: async () => {
     // 分享链接导入：URL fragment 不离开浏览器；解析失败静默回正常目录
-    // 必须先于 dbGetCharacters，否则最后 set({characters}) 会用旧列表覆盖刚导入的卡
+    // 安全审查 X-2：不再静默入库——暂存待确认，用户同意后才写角色库；URL 立即清理防刷新重弹
     const shared = await readSharedCard()
     if (shared) {
-      await get().importCard(shared)
-      trackOnce('share_open')
+      set({ pendingSharedCard: shared })
       history.replaceState(null, '', location.pathname + location.search)
     }
     // 加载用户导入的角色（IndexedDB）
@@ -270,6 +273,16 @@ export const useStore = create<State>((set, get) => ({
     void useLoreStore.getState().initLore()
     void useStoryStore.getState().initStories()
   },
+
+  confirmSharedCard: async () => {
+    const card = get().pendingSharedCard
+    if (!card) return
+    set({ pendingSharedCard: null })
+    await get().importCard(card)
+    trackOnce('share_open')
+  },
+
+  dismissSharedCard: () => set({ pendingSharedCard: null }),
 
   importCard: async (card, file) => {
     const avatarUrl = file?.name.toLowerCase().endsWith('.png')
