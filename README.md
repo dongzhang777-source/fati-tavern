@@ -45,7 +45,7 @@ npm run lint     # oxlint
 npm run build    # 生产构建（tsc + vite + PWA）
 ```
 
-技术栈：React 19 + TypeScript + Zustand + Vite + vite-plugin-pwa。运行时依赖仅 4 个，PNG 解析 / SSE 流式 / IndexedDB 全部手写。
+技术栈：React 19 + TypeScript + Zustand + Vite + vite-plugin-pwa。运行时依赖仅 5 个（WebGPU 引擎独立分包、按需懒加载），PNG 解析 / SSE 流式 / IndexedDB 全部手写。
 
 模块边界：`tavern.ts`（解析）→ `api.ts`（网络）→ `db.ts`（持久化）→ `store.ts`（状态）→ UI，单向依赖。
 

@@ -7,7 +7,7 @@
 - **fati-tavern（肥猫酒馆）**：浏览器端 AI 角色扮演聊天室，**纯 PWA、零后端**。React 19 + TypeScript + Zustand + Vite + vite-plugin-pwa。
 - 线上地址：https://fati-tavern.vercel.app （推 `main` 即自动发布）。
 - 模块边界（单向依赖，不要反向引用）：`src/lib/tavern.ts`（角色卡解析）→ `src/lib/api.ts`（网络/SSE）→ `src/lib/db.ts`（IndexedDB 持久化）→ `src/store.ts`（Zustand 状态）→ UI（`App.tsx`）。
-- 运行时依赖刻意保持极少（当前 4 个）：PNG 解析、SSE 流式、IndexedDB 均为手写实现，**新增运行时依赖前必须先开 issue 讨论**。
+- 运行时依赖刻意保持极少（当前 5 个，其中 WebGPU 引擎按需懒加载）：PNG 解析、SSE 流式、IndexedDB 均为手写实现，**新增运行时依赖前必须先开 issue 讨论**。
 - 与 `fati` 桌面应用的关系：独立产品、独立仓库，共享部分设计（如 ModelPicker 借鉴）但**不共享代码**；关系声明见 README「生态关系」一节。
 
 ## 构建与测试
