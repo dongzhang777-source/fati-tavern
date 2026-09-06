@@ -1,0 +1,41 @@
+name: Bug 报告 / Bug report
+description: 报告一个可复现的问题 / Report a reproducible problem
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！中文或英文都可以。Thanks! Chinese or English, either works.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么？/ What happened?
+      description: 同时说明你期望的行为。Also tell us what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: 1. 打开… 2. 导入… 3. 点击…
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 使用模式 / Mode
+      options:
+        - BYOK（自己的 API Key）
+        - 免 Key 体验档（WebLLM 浏览器推理）
+        - P2P 群聊
+        - StoryPack 故事
+        - 其他 / Other
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 设备与浏览器 / Device & browser
+      placeholder: 例：iPhone Safari 26 / Windows 11 Chrome
+    validations:
+      required: true

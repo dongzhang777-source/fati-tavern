@@ -76,5 +76,6 @@ npm run build    # 生产构建（tsc + vite + PWA）
 
 - [用户使用说明](docs/USER-GUIDE.md)
 - [技术架构](docs/ARCHITECTURE.md)
-- [改进工作计划](docs/IMPROVEMENT-PLAN.md)
+- [P2P 群聊使用指南](docs/P2P_USAGE.md)
+- [贡献指南](CONTRIBUTING.md)
 - [更新日志](CHANGELOG.md)
