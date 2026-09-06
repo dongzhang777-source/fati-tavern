@@ -1,6 +1,37 @@
 # Changelog
 
-本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。自 0.16.0 起，`package.json` 的 `version`、本文件、git tag 三处同步对齐。
+
+## [0.16.0] - 2026-09-06
+
+开源首发版：仓库转公开。`docs/` 内部工作文档剥离至私有档案，公开面保留用户/架构/贡献文档；补齐 CONTRIBUTING、SECURITY、issue 模板与 OG/social meta。
+
+### Added
+
+- **Capacitor 8 安卓壳**：appId `ai.atwork.fatitavern`，与 iOS 壳同构；PWA 品牌资源生成五档密度启动图标与自适应前景，Pixel 6 模拟器（Android 14）安装→启动→年龄门→主画廊全链路实测
+- **pre-push 门禁**：push 前自动执行 build + test，坏构建无法进入 `main`
+- **开源社区面板**：`CONTRIBUTING.md`、`SECURITY.md`（私密漏洞报告渠道）、bug/feature issue 模板
+
+### Changed
+
+- iOS PWA 恢复沉浸式全屏配置，修正状态栏毛玻璃遮盖与输入框底部空白；全屏模式钉高取 `screen.height`，修复键盘收起后 `innerHeight` 撒谎导致的底边黑条
+- iPhone Air 键盘收起后原生视口卡死自愈：iOS 改声明 `interactive-widget=resizes-visual` 从源头防卡死，另加卡死态检测复位兜底（安卓维持 `resizes-content`，见 `index.html`）
+- StoryPack vendor 同步：manifest 长度上限 + schema.json 放行 `personaId`/`sourceTrendId`/`references`（对齐上游仲裁）
+- 免 Key 体验档体积文案改为按设备档位 300–900MB 表述（四语言同步）
+
+## [0.15.1] - 2026-08-31
+
+### Fixed
+
+- **世界书选择器支持点击面板外收起**：补透明全屏捕获层（elementFromPoint 命中验证），与角色卡菜单/会话列表既有 backdrop 模式对齐
+- **安全模式设置项文字掉到选择框下方**：`.settings-panel label` 特异性压过 `.safe-mode-label`，提特异性并显式横向布局
+- **P2P 群聊输入框聚焦后 iOS 自动放大页面**：textarea 无样式覆盖落入「聚焦 <16px 输入框自动缩放」老坑，`.input-bar` 样式扩展到 textarea
+
+## [0.15.0] - 2026-08-31
+
+### Added
+
+- **聊天字体大小调节**：设置页滑杆 85%–150% 实时调节气泡字号（单聊/示例/群聊一致生效），CSS 变量挂根元素、localStorage 持久化、重载即恢复，非默认值一键重置；四语言文案同步
 
 ## [0.14.0] - 2026-08-29
 
