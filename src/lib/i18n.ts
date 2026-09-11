@@ -190,6 +190,45 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
     ja: 'タイトルの保存に失敗しました（再読み込みで戻る可能性があります）',
     ko: '제목 저장 실패 — 새로고침 시 되돌아갈 수 있습니다',
   },
+  // TV-04（2026-09-11 同族补强）：store 其余 IndexedDB 写/删点失败的可见反馈。
+  // 各路径失败后果不同（清空回退/新会话消失/角色改动丢失/删除未生效/迁移中断），
+  // 文案按实际后果区分，不共用笼统提示。
+  'chat.clearSaveFailed': {
+    zh: '清空未能保存，刷新后原对话内容会恢复',
+    en: 'Failed to save the cleared chat — old messages will come back after refresh',
+    ja: 'クリアの保存に失敗しました（再読み込みで元の会話が戻ります）',
+    ko: '지우기 저장 실패 — 새로고침 시 원래 대화가 복원됩니다',
+  },
+  'chat.newConvSaveFailed': {
+    zh: '新建会话保存失败，请重试',
+    en: 'Failed to create the conversation — please try again',
+    ja: '新規会話の保存に失敗しました。もう一度お試しください',
+    ko: '새 대화 저장 실패 — 다시 시도해 주세요',
+  },
+  'chat.characterSaveFailed': {
+    zh: '角色保存失败，刷新后改动可能丢失',
+    en: 'Failed to save the character — changes may be lost after refresh',
+    ja: 'キャラクターの保存に失敗しました（再読み込みで変更が失われる可能性があります）',
+    ko: '캐릭터 저장 실패 — 새로고침 시 변경 사항이 사라질 수 있습니다',
+  },
+  'chat.characterDeleteFailed': {
+    zh: '角色删除失败，请重试',
+    en: 'Failed to delete the character — please try again',
+    ja: 'キャラクターの削除に失敗しました。もう一度お試しください',
+    ko: '캐릭터 삭제 실패 — 다시 시도해 주세요',
+  },
+  'chat.convDeleteFailed': {
+    zh: '会话删除失败，请重试',
+    en: 'Failed to delete the conversation — please try again',
+    ja: '会話の削除に失敗しました。もう一度お試しください',
+    ko: '대화 삭제 실패 — 다시 시도해 주세요',
+  },
+  'chat.migrateSaveFailed': {
+    zh: '部分历史会话迁移未完成，副本角色仍可正常使用',
+    en: 'Some past conversations could not be migrated — the copied character still works',
+    ja: '一部の過去会話の移行が完了していませんが、コピーしたキャラクターはそのまま使えます',
+    ko: '일부 과거 대화가 마이그레이션되지 않았지만, 복사된 캐릭터는 정상 사용 가능합니다',
+  },
   'chat.aiDisclosure': { zh: 'AI 角色扮演 · 非真人', en: 'AI roleplay · not a real person', ja: 'AIロールプレイ · 実在の人物ではありません', ko: 'AI 롤플레이 · 실제 인물이 아닙니다' },
   'chat.crisis': {
     zh: '如果你正处在难以承受的情绪中，请记得你并不孤单。可拨打全国心理援助热线 12356（24 小时），或北京心理危机研究与干预中心 010-82951332。',

@@ -294,7 +294,16 @@ export const useStore = create<State>((set, get) => ({
       avatarUrl,
       createdAt: Date.now(),
     }
-    await dbPutCharacter(stored)
+    // TV-04（2026-09-11 同族补强）：dbPutCharacter 会抛（openDB/tx reject），
+    // 未接住即 unhandled rejection。store 层接住并提示，覆盖全部调用方
+    // （批量导入 App.tsx、分享链接 confirmSharedCard）。
+    try {
+      await dbPutCharacter(stored)
+    } catch (e) {
+      console.error('[db] 角色入库失败', e)
+      set({ error: t(get().lang, 'chat.characterSaveFailed') })
+      return // 未落库则不进内存列表：内存与库保持一致
+    }
     set((s) => ({ characters: [stored, ...s.characters] }))
     trackOnce('import_success') // 漏斗事件②：导入成功（每设备一次）
   },
@@ -309,7 +318,15 @@ export const useStore = create<State>((set, get) => ({
       }))
       return
     }
-    await dbDeleteCharacter(id)
+    // TV-04（同族补强）：删除落库失败时内存与库保持一致（都不删），并给出可见提示，
+    // 避免 unhandled rejection + 用户点了删除毫无反馈。
+    try {
+      await dbDeleteCharacter(id)
+    } catch (e) {
+      console.error('[db] 角色删除落库失败', e)
+      set({ error: t(get().lang, 'chat.characterDeleteFailed') })
+      return
+    }
     set((s) => ({
       characters: s.characters.filter((c) => c.id !== id),
       activeCharId: s.activeCharId === id ? null : s.activeCharId,
@@ -331,7 +348,14 @@ export const useStore = create<State>((set, get) => ({
         createdAt: Date.now(),
         // 不设置 builtin 标记，成为用户角色
       }
-      await dbPutCharacter(stored)
+      // TV-04（同族补强）：副本落库失败 → 未建成，不更新内存（与库一致），给出提示
+      try {
+        await dbPutCharacter(stored)
+      } catch (e) {
+        console.error('[db] 内置角色副本落库失败', e)
+        set({ error: t(get().lang, 'chat.characterSaveFailed') })
+        return undefined
+      }
       set((s) => ({
         characters: [stored, ...s.characters], // 添加到列表顶部
         activeCharId: s.activeCharId === id ? newId : s.activeCharId,
@@ -341,7 +365,15 @@ export const useStore = create<State>((set, get) => ({
     } else {
       // 用户角色：直接更新
       const updated = { ...existing, card }
-      await dbPutCharacter(updated)
+      // TV-04（同族补强）：改动落库失败 → 不更新内存（与库一致），给出提示，
+      // 避免界面已显示新内容、刷新后改动丢失且无任何提示。
+      try {
+        await dbPutCharacter(updated)
+      } catch (e) {
+        console.error('[db] 角色改动落库失败', e)
+        set({ error: t(get().lang, 'chat.characterSaveFailed') })
+        return undefined
+      }
       set((s) => ({
         characters: s.characters.map((c) => c.id === id ? updated : c),
       }))
@@ -389,11 +421,25 @@ export const useStore = create<State>((set, get) => ({
         id: newId, card: existing.card, avatarUrl: existing.avatarUrl,
         createdAt: Date.now(), boundLorebookId: lorebookId ?? undefined,
       }
-      await dbPutCharacter(stored)
+      // TV-04（同族补强）：副本落库失败 → 未建成，不更新内存（与库一致），给出提示
+      try {
+        await dbPutCharacter(stored)
+      } catch (e) {
+        console.error('[db] 内置角色副本落库失败', e)
+        set({ error: t(get().lang, 'chat.characterSaveFailed') })
+        return
+      }
       // 会话迁移：内置角色的历史会话归到副本名下（chat 连续性）
       const convs = await dbGetConversations(charId)
       const moved = convs.map((c) => ({ ...c, characterId: newId }))
-      for (const c of moved) await dbPutConversation(c)
+      // TV-04（同族补强）：迁移逐条落库，任一条失败即中断剩余迁移、只提示一次。
+      // 副本本体已建成可用，不因此回滚；历史会话用户可重新复制（再次绑定）获得。
+      try {
+        for (const c of moved) await dbPutConversation(c)
+      } catch (e) {
+        console.error('[db] 副本会话迁移落库失败', e)
+        set({ error: t(get().lang, 'chat.migrateSaveFailed') })
+      }
       set((s) => ({
         characters: [stored, ...s.characters],
         activeCharId: s.activeCharId === charId ? newId : s.activeCharId,
@@ -403,7 +449,14 @@ export const useStore = create<State>((set, get) => ({
       return
     }
     const updated: StoredCharacter = { ...existing, boundLorebookId: lorebookId ?? undefined }
-    await dbPutCharacter(updated)
+    // TV-04（同族补强）：绑定落库失败 → 不更新内存（与库一致），给出提示
+    try {
+      await dbPutCharacter(updated)
+    } catch (e) {
+      console.error('[db] 世界书绑定落库失败', e)
+      set({ error: t(get().lang, 'chat.characterSaveFailed') })
+      return
+    }
     set((s) => ({ characters: s.characters.map((c) => c.id === charId ? updated : c) }))
   },
 
@@ -422,7 +475,16 @@ export const useStore = create<State>((set, get) => ({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
-    await dbPutConversation(conv)
+    // TV-04（2026-09-11 同族补强）：dbPutConversation 会抛（openDB/tx reject），
+    // 此前未接住即 unhandled rejection——列表闪现新会话、刷新后消失且无提示。
+    // store 层接住并提示，覆盖所有调用方（App.tsx、openCharacter）。
+    try {
+      await dbPutConversation(conv)
+    } catch (e) {
+      console.error('[db] 新会话落库失败', e)
+      set({ error: t(get().lang, 'chat.newConvSaveFailed') })
+      return // 未落库则不进列表：内存与库保持一致
+    }
     set((s) => ({ conversations: [conv, ...s.conversations], activeConvId: conv.id, error: null }))
   },
 
@@ -439,7 +501,14 @@ export const useStore = create<State>((set, get) => ({
       abortController?.abort()
       set({ streaming: false })
     }
-    await dbDeleteConversation(id)
+    // TV-04（同族补强）：删除落库失败时内存与库保持一致（都不删），并给出可见提示
+    try {
+      await dbDeleteConversation(id)
+    } catch (e) {
+      console.error('[db] 会话删除落库失败', e)
+      set({ error: t(get().lang, 'chat.convDeleteFailed') })
+      return
+    }
     set((s) => {
       const convs = s.conversations.filter((c) => c.id !== id)
       return {
@@ -467,6 +536,9 @@ export const useStore = create<State>((set, get) => ({
   },
 
   sendMessage: (text) => {
+    // TV-04：重入守卫——流式进行中忽略再次发送（对齐 fetchImpersonate/refineImpersonate
+    // 的 streaming 守卫），避免并发流式互相打断、消息错序。
+    if (get().streaming) return
     const { endpoint, characters, activeCharId, conversations, activeConvId, lang, persona } = get()
     const char = characters.find((c) => c.id === activeCharId)
     const conv = conversations.find((c) => c.id === activeConvId)
@@ -642,7 +714,12 @@ export const useStore = create<State>((set, get) => ({
       messages: firstMsg ? [{ role: 'assistant', content: firstMsg, ts: Date.now() }] : [],
       updatedAt: Date.now(),
     }
-    dbPutConversation(cleared)
+    // TV-04（2026-09-11 同族补强）：此前裸 fire-and-forget，dbPutConversation 会抛
+    // （openDB/tx reject）→ 界面已清空、刷新后旧对话复活且无任何提示。现显式接住并告知。
+    dbPutConversation(cleared).catch((e: unknown) => {
+      console.error('[db] 清空落库失败', e)
+      set({ error: t(get().lang, 'chat.clearSaveFailed') })
+    })
     set((s) => ({
       conversations: s.conversations.map((c) => c.id === conv.id ? cleared : c),
       error: null,

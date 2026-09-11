@@ -22,7 +22,7 @@ FATI Tavern（肥猫酒馆）支持以手机或浏览器加入桌面端 FATI 创
 ## 3. 加入房间步骤
 
 1. **桌面端启动 relay**  
-   运行 `scripts/start-relay.sh`，终端会打印一行：  
+   该脚本位于 **fati 桌面端仓库**（仓内路径 `scripts/start-relay.sh`），**不在本 Web 仓 fati-tavern 内**。在桌面端仓库运行它，终端会打印一行：  
    ```
    INVITE_TOKEN: eyJ...签名...
    ```  
