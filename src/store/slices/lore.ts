@@ -24,15 +24,23 @@ function saveActiveLorebookId(id: string | null) {
 interface LoreState {
   lorebooks: StoredLorebook[]
   activeLorebookId: string | null // 全局激活书（聊天注入优先级：角色绑定 > 全局激活）
+  // TV-06：写/删库失败的可见通道。本 slice 拿不到 lang 且不得反向引用主 store（见文件头），
+  // 故存 i18n key 字符串（如 'lore.saveFailed'），由 LorebookPanel 用 t(lang, key) 翻译渲染。
+  loreError: string | null
   initLore: () => Promise<void>
-  importLorebook: (book: TavernBook, source?: string) => Promise<StoredLorebook>
-  removeLorebook: (id: string) => Promise<void>
+  // TV-06：写库失败不再抛，改返回 null——调用方（App.tsx 批量导入）按返回值计数，
+  // 否则失败书被计入成功数（toast 虚高），与 TV-05 修掉的 importCard 同型。
+  importLorebook: (book: TavernBook, source?: string) => Promise<StoredLorebook | null>
+  // TV-06：删除失败返回 false（成功 true），与 TV-05 的 importCard 布尔契约一致
+  removeLorebook: (id: string) => Promise<boolean>
+  clearLoreError: () => void
   setActiveLorebook: (id: string | null) => void
 }
 
 export const useLoreStore = create<LoreState>((set, get) => ({
   lorebooks: [],
   activeLorebookId: loadActiveLorebookId(),
+  loreError: null,
 
   initLore: async () => {
     // TV-05（2026-09-11 读路径同族收尾，总管自修）：dbGetLorebooks 会抛（openDB/tx reject），
@@ -67,13 +75,30 @@ export const useLoreStore = create<LoreState>((set, get) => ({
       source,
       imported: Date.now(),
     }
-    await dbPutLorebook(stored)
+    // TV-06：写库失败不再裸抛（IndexedDB 配额耗尽/隐私模式/事务冲突）。
+    // 失败时置 loreError（i18n key，由面板翻译渲染）并返回 null，且不把书塞进
+    // 内存列表——内存与库保持一致；调用方按返回值计数（App.tsx handleFiles）。
+    try {
+      await dbPutLorebook(stored)
+    } catch (e) {
+      console.error('[db] 世界书写入失败（importLorebook）', e)
+      set({ loreError: 'lore.saveFailed' })
+      return null
+    }
     set((s) => ({ lorebooks: [stored, ...s.lorebooks] }))
     return stored
   },
 
   removeLorebook: async (id) => {
-    await dbDeleteLorebook(id) // 内部级联删除衍生剧情
+    // TV-06：删库失败（dbDeleteLorebook 内部级联删除衍生剧情）时不把书从内存移除、
+    // 不清激活态——内存与库一致；置 loreError 并返回 false 供调用方反馈。
+    try {
+      await dbDeleteLorebook(id)
+    } catch (e) {
+      console.error('[db] 世界书删除失败（removeLorebook）', e)
+      set({ loreError: 'lore.deleteFailed' })
+      return false
+    }
     set((s) => {
       const clearingActive = s.activeLorebookId === id
       if (clearingActive) saveActiveLorebookId(null)
@@ -82,7 +107,10 @@ export const useLoreStore = create<LoreState>((set, get) => ({
         activeLorebookId: clearingActive ? null : s.activeLorebookId,
       }
     })
+    return true
   },
+
+  clearLoreError: () => set({ loreError: null }),
 
   setActiveLorebook: (id) => {
     saveActiveLorebookId(id)

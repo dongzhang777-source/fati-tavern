@@ -536,8 +536,13 @@ function Gallery() {
           if (kind === 'lorebook') {
             const book = parseLorebookJson(json)
             if (!book) throw new Error(t(lang, 'import.unknownFormat'))
-            await importLorebook(book, file.name)
-            okBooks++
+            // TV-06：importLorebook 写库失败已不抛（slice 层接住返回 null），改按返回值计数——
+            // 与上方 importCard 分支同契约；漏改会把失败书计入成功数（toast 虚高）。
+            if (await importLorebook(book, file.name)) {
+              okBooks++
+            } else {
+              fails.push({ name: file.name, reason: localizeError(lang, t(lang, 'lore.saveFailed')) })
+            }
           } else {
             const card = parseCharacterJson(json)
             if (!card) throw new Error(t(lang, 'import.unknownFormat'))

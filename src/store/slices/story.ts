@@ -91,7 +91,16 @@ export const useStoryStore = create<StorySliceState>((set, get) => ({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
-    await dbPutStory(story)
+    // TV-06：创建剧情落库失败不再裸抛（调用方 LorebookPanel 为 fire-and-forget 链）。
+    // 失败时置 storyError 并 early return——不把 story 塞进 stories、不设 activeStory，
+    // 内存与库保持一致（对齐 TV-04 纪律）。
+    try {
+      await dbPutStory(story)
+    } catch (e) {
+      console.error('[db] 剧情写入失败（openStory）', e)
+      set({ storyError: t(storyLang, 'story.saveFailed') })
+      return
+    }
     set((s) => ({
       stories: [story, ...s.stories],
       activeStory: story,
@@ -161,7 +170,19 @@ export const useStoryStore = create<StorySliceState>((set, get) => ({
         scenes: [...activeStory.scenes, scene],
         updatedAt: Date.now(),
       }
-      await dbPutStory(updated)
+      // TV-06：本幕落库失败与流式失败分开报告。此前共用外层 catch，用户看到
+      // 「剧情生成失败」（误导——生成其实成功了）且本幕被静默丢弃。现按 TV-04
+      // 纪律处理：写失败本幕不进内存（内存与库一致），文案讲清实际后果（保存失败）。
+      try {
+        await dbPutStory(updated)
+      } catch (e) {
+        console.error('[db] 剧情写入失败（advanceStory）', e)
+        set({
+          sceneStreaming: false, sceneBuffer: '', storyProgress: null,
+          storyError: t(storyLang, 'story.sceneSaveFailed'),
+        })
+        return
+      }
       set((s) => ({
         sceneStreaming: false,
         sceneBuffer: '',
@@ -190,7 +211,15 @@ export const useStoryStore = create<StorySliceState>((set, get) => ({
     const { activeStory } = get()
     if (!activeStory) return
     storyAbort?.abort()
-    await dbDeleteStory(activeStory.id)
+    // TV-06：删库失败不清空 activeStory、不移出 stories——原进度仍在库里，
+    // 内存与库保持一致；置 storyError 提示（StoryView 失败可见性由它承担）。
+    try {
+      await dbDeleteStory(activeStory.id)
+    } catch (e) {
+      console.error('[db] 剧情删除失败（restartStory）', e)
+      set({ storyError: t(storyLang, 'story.deleteFailed') })
+      return
+    }
     set((s) => ({
       stories: s.stories.filter((x) => x.id !== activeStory.id),
       activeStory: null,
@@ -209,10 +238,25 @@ export const useStoryStore = create<StorySliceState>((set, get) => ({
 
   removeStoriesForLorebook: async (lorebookId) => {
     const doomed = get().stories.filter((s) => s.lorebookId === lorebookId)
-    for (const s of doomed) await dbDeleteStory(s.id)
+    // TV-06：逐条保护，语义对齐 TV-04 的内置角色迁移循环——首败中断剩余、只提示一次；
+    // 内存列表按「实际删除成功与否」过滤（删成功的才移除，未删的保留），activeStory
+    // 仅在它本身删除成功时才清空。全部成功时 deletedIds 覆盖整个 doomed，与原行为等价。
+    const deletedIds = new Set<string>()
+    let failed = false
+    for (const s of doomed) {
+      try {
+        await dbDeleteStory(s.id)
+        deletedIds.add(s.id)
+      } catch (e) {
+        console.error('[db] 剧情批量删除失败（removeStoriesForLorebook）', e)
+        failed = true
+        break
+      }
+    }
     set((s) => ({
-      stories: s.stories.filter((x) => x.lorebookId !== lorebookId),
-      activeStory: s.activeStory?.lorebookId === lorebookId ? null : s.activeStory,
+      stories: s.stories.filter((x) => !deletedIds.has(x.id)),
+      activeStory: s.activeStory && deletedIds.has(s.activeStory.id) ? null : s.activeStory,
+      ...(failed ? { storyError: t(storyLang, 'story.batchDeleteFailed') } : null),
     }))
   },
 }))

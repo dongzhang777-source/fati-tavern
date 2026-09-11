@@ -335,6 +335,21 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'lore.bindChar': { zh: '绑定到角色（该角色聊天时优先用这本书）', en: 'Bind to a character (this book takes priority in their chats)', ja: 'キャラクターに紐付け（そのキャラのチャットでこの本を優先使用）', ko: '캐릭터에 연결(해당 캐릭터 채팅에서 이 책 우선 사용)' },
   'lore.bindPick': { zh: '选择角色…', en: 'Pick a character…', ja: 'キャラクターを選択…', ko: '캐릭터 선택…' },
   'lore.safeHidden': { zh: '安全模式已开启：{n} 本成人世界书已隐藏', en: 'Safe mode on — {n} adult lorebook(s) hidden', ja: 'セーフモード有効：成人向けワールドブック {n} 件を非表示中', ko: '세이프 모드 켜짐 — 성인 월드북 {n}권 숨김' },
+  // TV-06（2026-09-11 slice 层写/删库失败可见化）：lore slice 的 IndexedDB 写/删失败反馈。
+  // loreError 存 i18n key（slice 拿不到 lang 且不得反向引用主 store），面板渲染时 t(lang, key) 翻译。
+  // 文案按实际后果区分，不共用笼统提示（与 TV-04 文案纪律一致）。
+  'lore.saveFailed': {
+    zh: '世界书导入失败（本地存储写入未完成），请重试',
+    en: 'Failed to save the lorebook (local write did not complete) — please try again',
+    ja: 'ワールドブックの保存に失敗しました（ローカル書き込み未完了）。もう一度お試しください',
+    ko: '월드북 저장 실패(로컬 쓰기 미완료) — 다시 시도해 주세요',
+  },
+  'lore.deleteFailed': {
+    zh: '世界书删除失败，列表仍保留原书，请重试',
+    en: 'Failed to delete the lorebook — it remains in the list, please try again',
+    ja: 'ワールドブックの削除に失敗しました（リストに残っています）。もう一度お試しください',
+    ko: '월드북 삭제 실패 — 목록에 그대로 남아 있습니다. 다시 시도해 주세요',
+  },
 
   // ── 剧情模式 ──
   'story.back': { zh: '← 返回', en: '← Back', ja: '← 戻る', ko: '← 뒤로' },
@@ -351,6 +366,33 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'story.inputPlaceholder': { zh: '你想怎么做…', en: 'What do you do…', ja: 'あなたはどうする…', ko: '당신은 무엇을 하나요…' },
   'story.fail': { zh: '剧情生成失败', en: 'Failed to generate scene', ja: 'シーンの生成に失敗しました', ko: '장면 생성 실패' },
   'story.plainHint': { zh: '本地小模型剧情档：无选项按钮，用输入框自由推进', en: 'Local small-model story mode: no choice buttons — drive the story via the input box', ja: 'ローカル小型モデルのストーリーモード：選択肢ボタンなし、入力欄で自由に進行', ko: '로컬 소형 모델 스토리 모드: 선택 버튼 없음, 입력창으로 자유롭게 진행' },
+  // TV-06（2026-09-11 同族补强）：剧情 slice 写/删库失败反馈（复用既有 storyError 通道）。
+  'story.saveFailed': {
+    zh: '剧情保存失败，新剧情未能创建，请重试',
+    en: 'Failed to save the story — it was not created, please try again',
+    ja: 'ストーリーの保存に失敗しました（作成されていません）。もう一度お試しください',
+    ko: '스토리 저장 실패 — 생성되지 않았습니다. 다시 시도해 주세요',
+  },
+  'story.deleteFailed': {
+    zh: '剧情进度删除失败，原进度保留，请重试',
+    en: 'Failed to delete the story — original progress kept, please try again',
+    ja: 'ストーリーの削除に失敗しました（元の進行は保持）。もう一度お試しください',
+    ko: '스토리 삭제 실패 — 원래 진행이 유지됩니다. 다시 시도해 주세요',
+  },
+  'story.batchDeleteFailed': {
+    zh: '部分剧情进度删除未完成，未删项已保留在列表中',
+    en: 'Some story progress could not be deleted — unfinished items remain in the list',
+    ja: '一部のストーリー進行を削除できませんでした（未削除項目はリストに残っています）',
+    ko: '일부 스토리 진행 삭제 미완료 — 삭제되지 않은 항목은 목록에 남아 있습니다',
+  },
+  // TV-06 坑点 2：advanceStory 本幕落库失败——与流式生成失败分开报告（此前共用
+  // 外层 catch 误报「剧情生成失败」）。按 TV-04 纪律写失败本幕不进内存，文案讲清后果。
+  'story.sceneSaveFailed': {
+    zh: '本幕保存失败，内容未能保留，请重试推进',
+    en: 'Failed to save this scene — it was not kept, please try again',
+    ja: 'このシーンの保存に失敗しました（保持されていません）。もう一度お試しください',
+    ko: '이 장면 저장 실패 — 유지되지 않았습니다. 다시 시도해 주세요',
+  },
 
   // ── 模型选择器 ──
   'model.picker': { zh: '选择模型', en: 'Select model', ja: 'モデルを選択', ko: '모델 선택' },

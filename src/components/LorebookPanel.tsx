@@ -12,14 +12,25 @@ import type { StoredCharacter } from '../lib/db'
 
 export function LorebookPanel() {
   const { characters, lang, endpoint, bindLorebookToCharacter, enterStoryView, safeMode, ageGate } = useStore()
-  const { lorebooks, activeLorebookId, removeLorebook, setActiveLorebook } = useLoreStore()
+  const { lorebooks, activeLorebookId, loreError, removeLorebook, clearLoreError, setActiveLorebook } = useLoreStore()
   const { openStory, stories } = useStoryStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // TV-06：写/删库失败横幅——loreError 存 i18n key（slice 拿不到 lang），此处翻译渲染；
+  // 关闭按钮调 clearLoreError。空列表分支也渲染（首本导入失败时列表可能为空）。
+  // 复用 .story-error 错误条样式（App.css 不在本单可写清单，不新增 CSS 类）。
+  const loreErrorBanner = loreError && (
+    <div className="story-error" role="alert">
+      <span>{t(lang, loreError)}</span>{' '}
+      <button onClick={clearLoreError} title={t(lang, 'imp.close')}>×</button>
+    </div>
+  )
 
   if (lorebooks.length === 0) {
     return (
       <section className="lore-panel">
         <h3 className="lore-title">📖 {t(lang, 'lore.section')}</h3>
+        {loreErrorBanner}
         <div className="lore-empty">{t(lang, 'lore.empty')}</div>
       </section>
     )
@@ -36,6 +47,7 @@ export function LorebookPanel() {
   return (
     <section className="lore-panel">
       <h3 className="lore-title">📖 {t(lang, 'lore.section')}</h3>
+      {loreErrorBanner}
       <p className="lore-hint">{t(lang, 'lore.hint')}</p>
       {hiddenCount > 0 && (
         <p className="safe-hidden-note">{t(lang, 'lore.safeHidden', { n: hiddenCount })}</p>
@@ -83,7 +95,12 @@ export function LorebookPanel() {
                     className="btn-del lore-del"
                     title={t(lang, 'gallery.delete')}
                     onClick={() => {
-                      if (confirm(t(lang, 'lore.deleteConfirm'))) void removeLorebook(lb.id)
+                      if (confirm(t(lang, 'lore.deleteConfirm'))) {
+                        // TV-06：删除失败不再靠异常冒泡（slice 已 catch 返回 false）。
+                        // 失败可见反馈由 slice 置 loreError → 本面板横幅承担（成功则条目消失）；
+                        // 布尔返回值契约的消费方是 App.tsx 批量导入计数与本单回归测试。
+                        void removeLorebook(lb.id)
+                      }
                     }}
                   >
                     ×

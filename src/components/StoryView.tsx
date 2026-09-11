@@ -26,6 +26,10 @@ export function StoryView() {
   if (!activeStory) {
     return (
       <div className="story-empty">
+        {/* TV-06：openStory 创建剧情写库失败时会落在此分支（LorebookPanel 仍会切入剧情视图）——
+            把 storyError 显示出来，否则用户只看到「还没有进行中的剧情」，失败原因不可见。
+            restart 失败不走此分支（activeStory 保留，由下方正文区 story-error 渲染）。 */}
+        {storyError && <p className="story-error">{storyError}</p>}
         <p>{t(lang, 'story.noActive')}</p>
         <button className="btn-story-back" onClick={backToGallery}>{t(lang, 'story.backGallery')}</button>
       </div>
