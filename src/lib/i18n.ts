@@ -176,6 +176,20 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
   'chat.placeholder': { zh: '对 {name} 说点什么…', en: 'Say something to {name}…', ja: '{name}に話しかける…', ko: '{name}에게 말을 걸어보세요…' },
   'chat.stop': { zh: '■ 停止', en: '■ Stop', ja: '■ 停止', ko: '■ 정지' },
   'chat.send': { zh: '发送', en: 'Send', ja: '送信', ko: '보내기' },
+  // TV 交付修复（2026-09-11 全库审查 P1-1/P1-2）：落库失败的可见反馈。
+  // 此前写库失败被吞、无任何提示，用户看到"已保存"实则刷新即回退。
+  'chat.saveFailed': {
+    zh: '对话保存失败，刷新后可能丢失本段内容',
+    en: 'Failed to save this conversation — it may be lost after refresh',
+    ja: '会話の保存に失敗しました（再読み込みで失われる可能性があります）',
+    ko: '대화 저장 실패 — 새로고침 시 내용이 사라질 수 있습니다',
+  },
+  'chat.renameSaveFailed': {
+    zh: '新标题保存失败，刷新后可能回退',
+    en: 'Failed to save the new title — it may revert after refresh',
+    ja: 'タイトルの保存に失敗しました（再読み込みで戻る可能性があります）',
+    ko: '제목 저장 실패 — 새로고침 시 되돌아갈 수 있습니다',
+  },
   'chat.aiDisclosure': { zh: 'AI 角色扮演 · 非真人', en: 'AI roleplay · not a real person', ja: 'AIロールプレイ · 実在の人物ではありません', ko: 'AI 롤플레이 · 실제 인물이 아닙니다' },
   'chat.crisis': {
     zh: '如果你正处在难以承受的情绪中，请记得你并不孤单。可拨打全国心理援助热线 12356（24 小时），或北京心理危机研究与干预中心 010-82951332。',

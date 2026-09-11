@@ -457,7 +457,13 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({
       conversations: s.conversations.map((c) => c.id === id ? renamed : c),
     }))
-    dbPutConversation(renamed)
+    // TV 交付修复（2026-09-11 全库审查 P1-2）：此前 fire-and-forget，
+    // dbPutConversation 会抛（openDB/tx reject），未接住即 unhandled rejection，
+    // 且用户看到标题已改、刷新后回退，无任何提示。现显式接住并告知。
+    dbPutConversation(renamed).catch((e: unknown) => {
+      console.error('[db] 重命名落库失败', e)
+      set({ error: t(get().lang, 'chat.renameSaveFailed') })
+    })
   },
 
   sendMessage: (text) => {
@@ -581,8 +587,17 @@ export const useStore = create<State>((set, get) => ({
       if (assistantText && detectSelfHarm(assistantText)) {
         set({ safetyNotice: true })
       }
+      // TV 交付修复（2026-09-11 全库审查 P1-1）：这是**对话的唯一落盘点**
+      // （用户消息与 AI 回复只在流式收尾时统一写一次），此前 fire-and-forget，
+      // 而 dbPutConversation 会抛（openDB/tx reject）→ 写失败时界面已显示、
+      // 刷新后整段对话消失且无任何提示。现显式接住并告知用户。
       const final = get().conversations.find((c) => c.id === conv.id)
-      if (final) dbPutConversation(final)
+      if (final) {
+        dbPutConversation(final).catch((e: unknown) => {
+          console.error('[db] 对话落库失败', e)
+          set({ error: t(get().lang, 'chat.saveFailed') })
+        })
+      }
     }).catch((e: any) => {
       if (e.name === 'AbortError') {
         set({ streaming: false, webllmProgress: null })
@@ -592,8 +607,17 @@ export const useStore = create<State>((set, get) => ({
           : (e.message || t(get().lang, 'error.request'))
         set({ streaming: false, webllmProgress: null, error: msg })
       }
+      // TV 交付修复（2026-09-11 全库审查 P1-1）：这是**对话的唯一落盘点**
+      // （用户消息与 AI 回复只在流式收尾时统一写一次），此前 fire-and-forget，
+      // 而 dbPutConversation 会抛（openDB/tx reject）→ 写失败时界面已显示、
+      // 刷新后整段对话消失且无任何提示。现显式接住并告知用户。
       const final = get().conversations.find((c) => c.id === conv.id)
-      if (final) dbPutConversation(final)
+      if (final) {
+        dbPutConversation(final).catch((e: unknown) => {
+          console.error('[db] 对话落库失败', e)
+          set({ error: t(get().lang, 'chat.saveFailed') })
+        })
+      }
     })
   },
 
