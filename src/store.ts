@@ -80,7 +80,8 @@ interface State {
 
   // actions
   init: () => Promise<void>
-  importCard: (card: TavernCard, file?: File) => Promise<void>
+  // TV-05：返回值契约——落库并进内存列表后 true，写库失败 false（调用方据此计数/反馈）
+  importCard: (card: TavernCard, file?: File) => Promise<boolean>
   confirmSharedCard: () => Promise<void>
   dismissSharedCard: () => void
   removeCharacter: (id: string) => Promise<void>
@@ -258,7 +259,16 @@ export const useStore = create<State>((set, get) => ({
       history.replaceState(null, '', location.pathname + location.search)
     }
     // 加载用户导入的角色（IndexedDB）
-    const userChars = await dbGetCharacters()
+    // TV-05（读路径同族补强）：dbGetCharacters 会抛（openDB/tx reject），此前裸 await
+    // 会让 init 整体失败——角色列表空且无提示。读失败时降级为仅内置角色继续启动
+    // （「降级可用」不是「吞错」：错误横幅可见），init 必须正常 resolve，否则应用白屏。
+    let userChars: StoredCharacter[] = []
+    try {
+      userChars = await dbGetCharacters()
+    } catch (e) {
+      console.error('[db] 角色库读取失败（init）', e)
+      set({ error: t(get().lang, 'chat.loadFailed') })
+    }
     // 加载内置角色目录（不写 IndexedDB，标记 builtin: true）
     const builtinChars: StoredCharacter[] = BUILTIN_CHARACTERS.map((c) => ({
       id: c._id,
@@ -297,15 +307,18 @@ export const useStore = create<State>((set, get) => ({
     // TV-04（2026-09-11 同族补强）：dbPutCharacter 会抛（openDB/tx reject），
     // 未接住即 unhandled rejection。store 层接住并提示，覆盖全部调用方
     // （批量导入 App.tsx、分享链接 confirmSharedCard）。
+    // TV-05：失败从隐式 undefined 改为显式 false——写失败已不抛，
+    // App.tsx 批量导入改按返回值计数，否则失败卡会被计入成功数（虚高）。
     try {
       await dbPutCharacter(stored)
     } catch (e) {
       console.error('[db] 角色入库失败', e)
       set({ error: t(get().lang, 'chat.characterSaveFailed') })
-      return // 未落库则不进内存列表：内存与库保持一致
+      return false // 未落库则不进内存列表：内存与库保持一致
     }
     set((s) => ({ characters: [stored, ...s.characters] }))
     trackOnce('import_success') // 漏斗事件②：导入成功（每设备一次）
+    return true
   },
 
   removeCharacter: async (id) => {
@@ -382,7 +395,18 @@ export const useStore = create<State>((set, get) => ({
   },
 
   openCharacter: async (id) => {
-    const convs = await dbGetConversations(id)
+    // TV-05（读路径同族补强）：会话列表读取失败 → 提示并保持当前视图（不切 chat），
+    // 不让异常抛到 React 事件边界（此前表现为点击角色毫无反应）。
+    // early return 同时跳过下方 newConversation() 兜底——有意为之：
+    // 读失败时不应再触发写路径（新会话落库），避免在库不可用时制造更多不一致。
+    let convs: StoredConversation[]
+    try {
+      convs = await dbGetConversations(id)
+    } catch (e) {
+      console.error('[db] 会话列表读取失败（openCharacter）', e)
+      set({ error: t(get().lang, 'chat.convLoadFailed') })
+      return
+    }
     set({ activeCharId: id, conversations: convs, view: 'chat' })
     // 自动选中最近的会话，或创建新的
     if (convs.length > 0) {
@@ -430,7 +454,16 @@ export const useStore = create<State>((set, get) => ({
         return
       }
       // 会话迁移：内置角色的历史会话归到副本名下（chat 连续性）
-      const convs = await dbGetConversations(charId)
+      // TV-05（读路径同族补强）：迁移前读取失败 → 副本本体已落库可用，
+      // 仍完成下方绑定 set(...)（不 return）；历史会话迁移跳过——
+      // 语义与下方迁移中断一致，用户可重新绑定获得历史会话。
+      let convs: StoredConversation[] = []
+      try {
+        convs = await dbGetConversations(charId)
+      } catch (e) {
+        console.error('[db] 副本会话迁移前读取失败', e)
+        set({ error: t(get().lang, 'chat.migrateSaveFailed') })
+      }
       const moved = convs.map((c) => ({ ...c, characterId: newId }))
       // TV-04（同族补强）：迁移逐条落库，任一条失败即中断剩余迁移、只提示一次。
       // 副本本体已建成可用，不因此回滚；历史会话用户可重新复制（再次绑定）获得。

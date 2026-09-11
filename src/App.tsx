@@ -517,8 +517,13 @@ function Gallery() {
         if (isPng) {
           const buf = await file.arrayBuffer()
           const card = await parsePngCard(buf)
-          await importCard(card, file)
-          okCards++
+          // TV-05：importCard 写库失败已不抛（store 层接住），改按返回值计数——
+          // 否则失败卡被计入成功数（toast 虚高），fails 清单里却没有它。
+          if (await importCard(card, file)) {
+            okCards++
+          } else {
+            fails.push({ name: file.name, reason: localizeError(lang, t(lang, 'chat.characterSaveFailed')) })
+          }
         } else if (isJson) {
           const text = await file.text()
           let json: any
@@ -536,8 +541,12 @@ function Gallery() {
           } else {
             const card = parseCharacterJson(json)
             if (!card) throw new Error(t(lang, 'import.unknownFormat'))
-            await importCard(card, file)
-            okCards++
+            // TV-05：同上，按返回值计数（JSON 角色分支）
+            if (await importCard(card, file)) {
+              okCards++
+            } else {
+              fails.push({ name: file.name, reason: localizeError(lang, t(lang, 'chat.characterSaveFailed')) })
+            }
           }
         } else {
           throw new Error(t(lang, 'import.unsupported'))

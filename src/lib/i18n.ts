@@ -229,6 +229,20 @@ const dict: Record<string, { zh: string; en: string; ja: string; ko: string }> =
     ja: '一部の過去会話の移行が完了していませんが、コピーしたキャラクターはそのまま使えます',
     ko: '일부 과거 대화가 마이그레이션되지 않았지만, 복사된 캐릭터는 정상 사용 가능합니다',
   },
+  // TV-05（2026-09-11 同族补强）：IndexedDB 读路径失败的可见反馈。
+  // init 读挂 → 仅内置角色降级可用；openCharacter 读挂 → 不切视图留在原处。
+  'chat.loadFailed': {
+    zh: '本地角色数据加载失败，当前仅显示内置角色',
+    en: 'Failed to load saved characters — showing built-in characters only',
+    ja: '保存されたキャラクターの読み込みに失敗しました（内蔵キャラクターのみ表示中）',
+    ko: '저장된 캐릭터 로드 실패 — 내장 캐릭터만 표시 중입니다',
+  },
+  'chat.convLoadFailed': {
+    zh: '会话读取失败，请重试',
+    en: 'Failed to load conversations — please try again',
+    ja: '会話の読み込みに失敗しました。もう一度お試しください',
+    ko: '대화 로드 실패 — 다시 시도해 주세요',
+  },
   'chat.aiDisclosure': { zh: 'AI 角色扮演 · 非真人', en: 'AI roleplay · not a real person', ja: 'AIロールプレイ · 実在の人物ではありません', ko: 'AI 롤플레이 · 실제 인물이 아닙니다' },
   'chat.crisis': {
     zh: '如果你正处在难以承受的情绪中，请记得你并不孤单。可拨打全国心理援助热线 12356（24 小时），或北京心理危机研究与干预中心 010-82951332。',

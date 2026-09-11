@@ -59,7 +59,15 @@ export const useStoryStore = create<StorySliceState>((set, get) => ({
   storyProgress: null,
 
   initStories: async () => {
-    const stories = await dbGetStories()
+    // TV-05（2026-09-11 读路径同族收尾，总管自修）：dbGetStories 会抛，store.ts
+    // 以 void 调用本函数 → 裸 await 即 unhandled rejection。读失败降级为空列表
+    // （断点续玩不可用但不崩溃；下次 openStory 正常路径不受影响）。
+    let stories: StoredStory[] = []
+    try {
+      stories = await dbGetStories()
+    } catch (e) {
+      console.error('[db] 剧情读取失败（initStories）', e)
+    }
     set({ stories })
   },
 

@@ -35,7 +35,16 @@ export const useLoreStore = create<LoreState>((set, get) => ({
   activeLorebookId: loadActiveLorebookId(),
 
   initLore: async () => {
-    const userBooks = await dbGetLorebooks()
+    // TV-05（2026-09-11 读路径同族收尾，总管自修）：dbGetLorebooks 会抛（openDB/tx reject），
+    // store.ts 以 void 调用本函数 → 裸 await 即 unhandled rejection。
+    // 读失败降级为仅内置样本世界书继续；LoreState 无 error 通道且本 slice
+    // 不反向引用主 store（见文件头），横幅接线需独立设计，此处先 console 可诊断。
+    let userBooks: StoredLorebook[] = []
+    try {
+      userBooks = await dbGetLorebooks()
+    } catch (e) {
+      console.error('[db] 世界书读取失败（initLore）', e)
+    }
     // 内置样本世界书（不写 IndexedDB，标记 builtin: true；与内置角色同模式）
     const builtinBooks: StoredLorebook[] = BUILTIN_LOREBOOKS.map((b) => ({
       id: b.id,
