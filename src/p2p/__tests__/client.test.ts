@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createP2PClient, type P2PMessage } from '../client'
 import { generateEcdhKeyPair, generateGroupKey, encryptGroupKeyForPeer, encryptMessage, importEcdhPublicKey } from '../crypto'
+import { b64urlEncode } from '../token'
 
 class FakeWS {
   static instances: FakeWS[] = []
@@ -22,6 +23,41 @@ class FakeWS {
 
 // setTimeout(10) 而非 0：全量并发跑时微任务时序竞争导致偶发失败，加 10ms 让 FakeWS 队列稳定
 const flush = () => new Promise(r => setTimeout(r, 10))
+
+// TV-01（2026-09-11 fail-closed）：旧测试用明文 `tok` + 无 sig 的 group_key 帧，
+// 新客户端会拒收。凡要走通 E2E 的用例，须用算力端票 + 合法签名构造帧。
+function fakeToken(pk: string): string {
+  const payload = {
+    ep: 'ws://127.0.0.1:8081/p2p/test-room',
+    pk,
+    caps: ['chat', 'compute'],
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    n: 'multi',
+    jti: 'test-jti',
+  }
+  return `${b64urlEncode(JSON.stringify(payload))}.FAKESIG`
+}
+
+async function makeComputeSigner() {
+  const kp = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify'])
+  const pubRaw = await crypto.subtle.exportKey('raw', kp.publicKey)
+  return {
+    pubB64: b64urlEncode(pubRaw),
+    sign: async (msg: string) => {
+      const s = await crypto.subtle.sign('Ed25519', kp.privateKey, new TextEncoder().encode(msg))
+      return b64urlEncode(s)
+    },
+  }
+}
+
+async function signedGroupKey(
+  signer: { sign: (msg: string) => Promise<string> },
+  serverPub: string,
+  enc: { data: string; iv: string },
+) {
+  const sig = await signer.sign(`group_key|${serverPub}|${enc.data}|${enc.iv}`)
+  return { kind: 'group_key', serverPub, encrypted: enc, from: 'peer_srv', sig }
+}
 
 beforeEach(() => {
   FakeWS.instances = []
@@ -87,7 +123,8 @@ describe('client 连接与状态机', () => {
   })
 
   it('断线后重置加密握手并重新协商新密钥', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     const groupKey = await generateGroupKey()
 
@@ -100,7 +137,7 @@ describe('client 连接与状态机', () => {
       await flush()
       const reply = socket.sent.map(frame => JSON.parse(frame)).find(m => m.kind === 'ecdh_pub')
       const encryptedKey = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, key)
-      socket.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: encryptedKey, from: 'peer_srv' })
+      socket.receive(await signedGroupKey(signer, server.publicKeyB64, encryptedKey))
       await flush(); await flush(); await flush()
       expect(h.isEncrypted()).toBe(true)
     }
@@ -169,7 +206,8 @@ describe('client 连接与状态机', () => {
 describe('client E2E 状态机', () => {
   // H-1：加密帧不再附带 body 明文（relay 不可直读）
   it('ecdh_pub → 回公钥 → group_key 解密 → chat 仅发密文（无 body）', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const got: P2PMessage[] = []
     h.onMessage(m => got.push(m))
     const ws = FakeWS.instances[0]
@@ -187,7 +225,7 @@ describe('client E2E 状态机', () => {
     await importEcdhPublicKey(reply.pub) // 公钥格式合法（SPKI base64）
 
     const enc = await encryptGroupKeyForPeer(server.privateKey, reply.pub, groupKey)
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    ws.receive(await signedGroupKey(signer, server.publicKeyB64, enc))
     await flush(); await flush(); await flush()
     expect(h.isEncrypted()).toBe(true)
 
@@ -209,7 +247,8 @@ describe('client E2E 状态机', () => {
   })
 
   it('解不开的 group_key 静默忽略（relay 广播给了别人）', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
     ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
@@ -219,7 +258,8 @@ describe('client E2E 状态机', () => {
     await flush() // 额外 flush 确保 generateEcdhKeyPair 完成
     const stranger = await generateEcdhKeyPair()
     const enc = await encryptGroupKeyForPeer(server.privateKey, stranger.publicKeyB64, await generateGroupKey())
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    // TV-01：带合法签名（验签通过、解密失败 → 仍为 false，走的是解密分支而非签名分支）
+    ws.receive(await signedGroupKey(signer, server.publicKeyB64, enc))
     await flush()
     expect(h.isEncrypted()).toBe(false)
   })
@@ -241,7 +281,8 @@ describe('client E2E 状态机', () => {
   })
 
   it('requestCompute 在有 groupKey 时仅发密文帧（H-1：无 body）', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
     ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
@@ -254,7 +295,7 @@ describe('client E2E 状态机', () => {
     await flush(); await flush()
     const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
     const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    ws.receive(await signedGroupKey(signer, server.publicKeyB64, enc))
     await flush(); await flush(); await flush()
 
     const id = h.requestCompute('写一首诗')
@@ -270,7 +311,8 @@ describe('client E2E 状态机', () => {
 
   // H-1：算力端在房但密钥未建立 → 排队等加密，绝不降级明文
   it('房内有算力端时 sendChat 排队，group_key 到达后仅密文发出', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
     ws.receive({ kind: 'welcome', peerId: 'p1', peers: [{ id: 'peer_srv', isCompute: true }] })
@@ -287,7 +329,7 @@ describe('client E2E 状态机', () => {
     await flush(); await flush()
     const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
     const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    ws.receive(await signedGroupKey(signer, server.publicKeyB64, enc))
     await flush(); await flush(); await flush()
     const frames = ws.sent.map(s => JSON.parse(s)).filter(m => m.kind === 'chat')
     expect(frames.length).toBe(1)
@@ -298,7 +340,8 @@ describe('client E2E 状态机', () => {
 
   // H-2：首密钥锁定——groupKey 建立后拒绝后续 group_key 重投
   it('group_key 重复投递不覆盖已建立的群组密钥', async () => {
-    const h = createP2PClient('tok', 'ws://127.0.0.1:8081')
+    const signer = await makeComputeSigner()
+    const h = createP2PClient(fakeToken(signer.pubB64), 'ws://127.0.0.1:8081')
     const ws = FakeWS.instances[0]
     ws.open()
     ws.receive({ kind: 'welcome', peerId: 'p1', peers: [] })
@@ -311,15 +354,16 @@ describe('client E2E 状态机', () => {
     await flush(); await flush()
     const reply = ws.sent.map(s => JSON.parse(s)).find(m => m.kind === 'ecdh_pub')
     const enc = await encryptGroupKeyForPeer(server.privateKey, reply!.pub, groupKey)
-    ws.receive({ kind: 'group_key', serverPub: server.publicKeyB64, encrypted: enc, from: 'peer_srv' })
+    ws.receive(await signedGroupKey(signer, server.publicKeyB64, enc))
     await flush(); await flush(); await flush()
     expect(h.isEncrypted()).toBe(true)
 
     // 恶意 relay 重投另一个密钥（能解开的）——应被忽略
+    // TV-01：首密钥锁定先于验签，此处带合法签名以证明是锁定（而非验签）在拒绝
     const attacker = await generateEcdhKeyPair()
     const evilKey = await generateGroupKey()
     const evilEnc = await encryptGroupKeyForPeer(attacker.privateKey, reply!.pub, evilKey)
-    ws.receive({ kind: 'group_key', serverPub: attacker.publicKeyB64, encrypted: evilEnc, from: 'peer_srv' })
+    ws.receive(await signedGroupKey(signer, attacker.publicKeyB64, evilEnc))
     await flush(); await flush(); await flush()
     // 用原密钥加密仍能解密 → 密钥未被覆盖
     const probe = await encryptMessage(groupKey, 'probe')

@@ -24,8 +24,8 @@ export interface KeyPair {
   privateKey: CryptoKey | JsonWebKey // 私钥（仅算力端持有，不外泄）
 }
 
-// ─── base64url 工具 ───────────────────────────────────────
-function b64urlEncode(buf: ArrayBuffer | string): string {
+// ─── base64url 工具（导出供 group_key 签名测试复用，与 fati 侧对齐）───
+export function b64urlEncode(buf: ArrayBuffer | string): string {
   let bytes: Uint8Array
   if (typeof buf === 'string') bytes = new TextEncoder().encode(buf)
   else bytes = new Uint8Array(buf as ArrayBuffer)

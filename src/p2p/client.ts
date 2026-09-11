@@ -182,15 +182,26 @@ export function createP2PClient(token: string, relayUrl?: string): P2PClientHand
         if (!ecdhKp) return
         // H-2：首密钥锁定——群组密钥建立后拒绝后续重投，防恶意 relay 覆盖密钥
         if (groupKey) return
-        // H-2（前向兼容）：帧带 sig 时用票内 Ed25519 公钥验签（签名消息格式
-        // `group_key|<serverPub>|<data>|<iv>`，待算力端升级后强制）；无签名旧端迁移期容忍
-        if (typeof msg.sig === 'string') {
-          const enc = msg.encrypted as { data: string; iv: string } | undefined
-          const sigMsg = `group_key|${String(msg.serverPub || '')}|${enc?.data || ''}|${enc?.iv || ''}`
-          if (!serverSignPub || !(await verifyFrameSignature(serverSignPub, msg.sig, sigMsg))) {
-            console.warn('[p2p] group_key 帧签名验证失败，已拒绝')
-            return
-          }
+        // P0 修复（2026-09-11）：**无条件验签（fail-closed）**。
+        //
+        // 此前实现是 `if (typeof msg.sig === 'string') { 验签 }`——「帧带 sig 才验，
+        // 无 sig 直接放行」。后果：中转方（relay）**不需要伪造签名**，只要在转发
+        // group_key 帧时**删掉 sig 字段**，接收端就会走「无 sig → 放行」分支，
+        // 从而绕过唯一能证明「密钥来自算力端」的防线，用自己替换的 ECDH 公钥
+        // 重新加密群组密钥骗过客户端（同族缺陷亦见于 fati 的 server.ts，已同步修复）。
+        //
+        // 现规则：无 sig、票内无公钥、验签失败 —— 三种情况一律拒绝该帧，
+        // 不建立加密会话（宁可功能不可用，也不接受来源不明的群组密钥）。
+        // 签名消息格式 `group_key|<serverPub>|<data>|<iv>` 与 fati server.ts 逐字对齐。
+        const enc = msg.encrypted as { data: string; iv: string } | undefined
+        const sigMsg = `group_key|${String(msg.serverPub || '')}|${enc?.data || ''}|${enc?.iv || ''}`
+        if (typeof msg.sig !== 'string' || !serverSignPub) {
+          console.warn('[p2p] group_key 帧缺少签名或票内无算力端公钥，已拒绝（防中转方替换密钥）')
+          return
+        }
+        if (!(await verifyFrameSignature(serverSignPub, msg.sig, sigMsg))) {
+          console.warn('[p2p] group_key 帧签名验证失败，已拒绝')
+          return
         }
         try {
           groupKey = await decryptGroupKeyFromPeer(
