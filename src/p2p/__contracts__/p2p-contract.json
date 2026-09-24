@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "version": 1,
+    "source": "fati/src/p2p/token.ts + server.ts",
+    "generatedFor": "TV-03 跨仓契约机器校验（DRIFT-LEDGER D-18）",
+    "createdAt": "2026-09-11",
+    "baseline": {
+      "fati": "f78ad00 (v0.54.2)",
+      "fatiTavern": "92eabb1"
+    },
+    "nonDeterministicFieldsExcluded": ["jti", "exp"],
+    "singleSourceRule": "本文件是唯一规范源，位于 fati 仓；fati-tavern/src/p2p/__contracts__/p2p-contract.json 只许逐字节拷贝，禁止手改（scripts/check-p2p-contract-vendor-sync.mjs 把关）。生产代码不得读取本文件——它只服务两侧 __tests__/p2p-contract.test.ts。"
+  },
+  "signatureFormat": {
+    "function": "groupKeySigMessage",
+    "contractPoint": "C-1：group_key 帧签名消息格式。fati 侧=token.ts 导出纯函数；tavern 侧=client.ts 内联字符串。字段非空时两侧输出逐字相同（真实协议路径即如此）。",
+    "undefinedSemanticsNote": "已知语义差异，如实记录、不强行断言相等：字段为 undefined 时 fati 会插字面量 'undefined'（模板插值），tavern 会插空串（String(x || '') 兜底）。故本向量的边界用例一律用空字符串表达（两侧共同可判定域），不存在任何『两侧在 undefined 下相等』的断言。",
+    "cases": [
+      {
+        "name": "常规值（b64url 真实形态，即线上协议路径）",
+        "serverPub": "P-JXLt1HZ2LFKChkM3YeHnhUQHIYe5oVWV5z5TFF168",
+        "data": "ZW5jcnlwdGVkLWdyb3VwLWtleS1kYXRhLXNhbXBsZQ",
+        "iv": "MTIzNDU2Nzg5MDEy",
+        "expected": "group_key|P-JXLt1HZ2LFKChkM3YeHnhUQHIYe5oVWV5z5TFF168|ZW5jcnlwdGVkLWdyb3VwLWtleS1kYXRhLXNhbXBsZQ|MTIzNDU2Nzg5MDEy"
+      },
+      {
+        "name": "空串边界（两侧共同可判定域；勿改用 undefined，见 undefinedSemanticsNote）",
+        "serverPub": "",
+        "data": "A",
+        "iv": "B",
+        "expected": "group_key||A|B"
+      },
+      {
+        "name": "值含分隔符 | ：验证『不转义』——字面拼接，任何一侧加转义/编码即漂移",
+        "serverPub": "s|p",
+        "data": "d|1",
+        "iv": "i",
+        "expected": "group_key|s|p|d|1|i"
+      }
+    ]
+  },
+  "interopVector": {
+    "purpose": "C-1 跨仓互操作：sig 由 fati 侧 signWithKey 对 sigMsg 签出（确定性 JWK，可复现）；tavern 侧 verifyFrameSignature 必须验真。确定性密钥仅服务测试，勿用于任何真实房间。",
+    "signerJwk": {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "alg": "Ed25519",
+      "key_ops": ["sign"],
+      "ext": true,
+      "d": "qDse8y8M4isba3y7qxsJZT3SwU69pnHMo1VAfaIduyI",
+      "x": "P-JXLt1HZ2LFKChkM3YeHnhUQHIYe5oVWV5z5TFF168"
+    },
+    "signerPubB64": "P-JXLt1HZ2LFKChkM3YeHnhUQHIYe5oVWV5z5TFF168",
+    "serverPub": "dGVzdC1zZXJ2ZXItZWNkaC1wdWJsaWMta2V5LTAxMjM",
+    "data": "ZW5jcnlwdGVkLWdyb3VwLWtleS1kYXRhLXNhbXBsZQ",
+    "iv": "MTIzNDU2Nzg5MDEy",
+    "sigMsg": "group_key|dGVzdC1zZXJ2ZXItZWNkaC1wdWJsaWMta2V5LTAxMjM|ZW5jcnlwdGVkLWdyb3VwLWtleS1kYXRhLXNhbXBsZQ|MTIzNDU2Nzg5MDEy",
+    "sig": "J24zBvnZ-iCCgbEXh-MFz-z5L25Nq_pMww4jumKBdqbU_DYbPHXgNDy_yGYoqJTdlLqj505O7sfQ-CZ28QnxDA"
+  },
+  "invitePayloadFields": ["caps", "ep", "exp", "jti", "n", "pk"],
+  "kinds": {
+    "note": "C-4 词表。computeSideProduces=fati src/p2p/server.ts 产出的 kind 字面量（kind: '...'）；clientReceives=fati-tavern src/p2p/client.ts handleMessage 的 case '...' 标签。断言用源码正则静态提取（不改生产代码），提取为空集一律判失败（防正则失效后空==空永真）。tavern 侧 _state_change/_e2e_ready 等是 emit 出的内部伪 kind（非线上协议帧、非 case 标签），compute_request 是 client 发送的 kind——均不在 clientReceives 内，与本词表无冲突。",
+    "computeSideProduces": ["compute_result", "ecdh_pub", "group_key", "join"],
+    "clientReceives": ["chat", "compute_result", "ecdh_pub", "group_key", "presence", "welcome"]
+  }
+}
