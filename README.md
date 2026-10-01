@@ -1,3 +1,5 @@
+简体中文 | [English](README.en.md)
+
 <div align="center">
 
 <img src="public/logo.svg" alt="FATI Tavern" width="200" />
@@ -10,6 +12,8 @@ Drop a character card in and start chatting.
 零安装 · 零注册 · 零后端 —— 你的 Key 和聊天记录永远不离开你的设备
 
 [在线体验 →](https://fati-tavern.vercel.app)
+
+![30 秒演示：拖入角色卡 → 开聊](docs/assets/demo-zh.gif)
 
 </div>
 
